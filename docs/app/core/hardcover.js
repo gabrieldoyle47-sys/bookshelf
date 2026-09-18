@@ -75,30 +75,73 @@ export async function searchBooks(gql, query, perPage = 8) {
   return hits.map((hit) => normaliseHit(hit.document));
 }
 
-/** Flatten a Typesense book document into our own shape. */
+/**
+ * Flatten a Typesense book document into our own shape.
+ *
+ * The search index is richer than it looks: it carries the exact release date,
+ * series membership *and* author ids inline. That means adding a book costs one
+ * request rather than three, which matters — the API allows 60 calls a minute
+ * with a burst of only 10.
+ */
 function normaliseHit(d) {
-  const series = d.featured_series ?? null;
-  const rawPos = d.featured_series_position;
+  // `featured_series` is `{}` (not null) for standalones, so test the nested id
+  // rather than the object.
+  const fs = d.featured_series;
+  const series = fs?.series?.id
+    ? {
+        id: String(fs.series.id),
+        name: fs.series.name ?? d.series_names?.[0] ?? null,
+        position: fs.position ?? (d.featured_series_position ?? null),
+        booksCount: fs.series.books_count ?? null,
+      }
+    : null;
+
+  const authors = [];
+  const seen = new Set();
+  for (const c of d.contributions ?? []) {
+    // Cover artists and narrators are contributors too; only actual authors
+    // should end up on the author watchlist.
+    if (c.contribution && c.contribution !== 'Author') continue;
+    const a = c.author;
+    if (!a?.id || seen.has(String(a.id))) continue;
+    seen.add(String(a.id));
+    authors.push({ id: String(a.id), name: a.name });
+  }
+  // Fall back to the plain name list if contributions were unhelpful, so a book
+  // is never author-less on screen just because we can't watch that author.
+  if (!authors.length) {
+    for (const name of d.author_names ?? []) authors.push({ id: null, name });
+  }
+
   return {
     id: String(d.id),
     title: d.title ?? '(untitled)',
     subtitle: d.subtitle ?? null,
-    authors: d.author_names ?? [],
-    series: series
-      ? {
-          id: series.series_id != null ? String(series.series_id) : null,
-          name: series.series_name ?? d.series_names?.[0] ?? null,
-          position: rawPos == null ? null : Number(rawPos),
-        }
-      : null,
+    authors,
+    series,
     pages: d.pages ?? null,
+    releaseDate: normaliseDate(d.release_date),
     releaseYear: d.release_year ?? null,
-    // release_date_i is a unix-ish integer; the exact date comes from bookById()
     image: d.image?.url ?? null,
     slug: d.slug ?? null,
     rating: d.rating ?? null,
     usersCount: d.users_count ?? 0,
+    description: d.description ?? null,
   };
+}
+
+/**
+ * Hardcover frequently stores "we know the year but not the day" as January 1st.
+ * Keep the value (it is still the best guess available) but flag it, so the UI
+ * can show "2021" rather than confidently claiming the 1st of January.
+ */
+export function isPlaceholderDate(date) {
+  return typeof date === 'string' && date.endsWith('-01-01');
+}
+
+function normaliseDate(value) {
+  if (!value || typeof value !== 'string') return null;
+  return value.slice(0, 10);
 }
 
 /* -------------------------------------------------------------- book detail */

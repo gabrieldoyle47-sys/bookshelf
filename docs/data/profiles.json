@@ -5,6 +5,12 @@
       "name": "Gabriel",
       "colour": "#6366f1",
       "lastSeen": null
+    },
+    {
+      "id": "stephanie",
+      "name": "Stephanie",
+      "colour": "#ec4899",
+      "lastSeen": null
     }
   ]
 }

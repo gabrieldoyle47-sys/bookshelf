@@ -1,0 +1,10 @@
+import { createClient } from '../docs/app/core/hardcover.js';
+import { loadToken } from '../src/store.js';
+const gql = createClient(await loadToken());
+const d = await gql(`query { search(query:"project hail mary", query_type:"Book", per_page:1, page:1){ results } }`);
+const doc = d.search.results.hits[0].document;
+console.log('title:', doc.title);
+console.log('release_date:', JSON.stringify(doc.release_date));
+console.log('author_names:', JSON.stringify(doc.author_names));
+console.log('contributions:', JSON.stringify(doc.contributions)?.slice(0,300));
+console.log('featured_series:', JSON.stringify(doc.featured_series));

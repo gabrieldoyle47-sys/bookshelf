@@ -8,7 +8,7 @@
 
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
-import { createClient, searchBooks, bookById } from '../docs/app/core/hardcover.js';
+import { createClient, searchBooks } from '../docs/app/core/hardcover.js';
 import {
   bookFromHardcover, findBook, matchBooks, setStatus,
   deriveWatchlist, setWatchOverride, today, STATUSES,
@@ -135,18 +135,16 @@ async function cmdAdd(args, flags, status) {
   const chosen = await pick(hits, { auto: flags.yes === true });
   if (!chosen) return console.log(c.dim('Nothing added.'));
 
-  // The search index only carries a release year; the exact date matters for
-  // the watcher, so spend one more request on the precise record.
-  const detail = await bookById(gql, chosen.id);
-  const merged = { ...chosen, ...(detail ?? {}), id: chosen.id };
-
+  // The search index already carries the exact release date, series id and
+  // author ids, so no follow-up request is needed. That matters: the API
+  // allows a burst of only 10 calls.
   const library = await store.loadLibrary(profile.id);
   if (findBook(library, `hc:${chosen.id}`)) {
     return console.log(c.yellow(`Already on ${profile.name}'s shelf: ${chosen.title}`));
   }
 
   const rating = flags.rating != null && flags.rating !== true ? Number(flags.rating) : null;
-  const book = bookFromHardcover(merged, {
+  const book = bookFromHardcover(chosen, {
     status,
     rating,
     note: typeof flags.note === 'string' ? flags.note : '',
