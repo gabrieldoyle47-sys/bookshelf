@@ -1,0 +1,7 @@
+# Secrets — NEVER commit. This repo is public.
+.env
+.env.*
+*.token
+
+node_modules/
+.DS_Store
