@@ -1,34 +1,5 @@
 {
-  "books": [
-    {
-      "id": "hc:427825",
-      "hardcoverId": "427825",
-      "title": "The Fifth Season",
-      "authors": [
-        {
-          "id": "233040",
-          "name": "N. K. Jemisin"
-        }
-      ],
-      "series": {
-        "id": "1001",
-        "name": "The Broken Earth",
-        "position": 1,
-        "booksCount": 8
-      },
-      "pages": 468,
-      "released": "2015-01-01",
-      "releaseYear": 2015,
-      "cover": "https://assets.hardcover.app/editions/30436469/70e6b452-e137-4ff2-8d6f-d83a2c852070.jpg",
-      "slug": "the-fifth-season",
-      "status": "tbr",
-      "rating": null,
-      "note": "",
-      "added": "2026-09-18",
-      "started": null,
-      "finished": null
-    }
-  ],
+  "books": [],
   "watch": {
     "series": {},
     "authors": {}

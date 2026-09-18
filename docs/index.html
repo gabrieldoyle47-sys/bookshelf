@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bookshelf</title>
+<meta name="description" content="Shared reading tracker with automatic series-release watching">
+<link rel="stylesheet" href="./app/ui/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>📚</text></svg>">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <button id="menu-toggle" class="menu-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+
+  <div class="layout">
+    <nav id="sidebar" class="sidebar" aria-label="Profiles and views">
+      <div class="brand"><span class="brand-mark">📚</span> Bookshelf</div>
+      <div id="nav" class="nav"></div>
+      <div class="sidebar-foot">
+        <button id="open-settings" class="link-btn">Settings</button>
+        <span id="sync-state" class="sync" aria-live="polite"></span>
+      </div>
+    </nav>
+
+    <main id="main" class="main" tabindex="-1">
+      <div class="loading">Loading…</div>
+    </main>
+  </div>
+
+  <!-- Add-a-book dialog -->
+  <dialog id="add-dialog" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2 id="add-title">Add a book</h2>
+      <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
+    </form>
+    <div class="dialog-body">
+      <label class="field">
+        <span>Title</span>
+        <input id="add-query" type="search" placeholder="Start typing a title…"
+               autocomplete="off" spellcheck="false">
+      </label>
+      <p id="add-hint" class="hint">Search Hardcover for the book you mean.</p>
+      <div id="add-results" class="results" role="listbox" aria-label="Search results"></div>
+    </div>
+  </dialog>
+
+  <!-- Book detail / edit dialog -->
+  <dialog id="book-dialog" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2 id="book-title">Book</h2>
+      <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
+    </form>
+    <div id="book-body" class="dialog-body"></div>
+  </dialog>
+
+  <!-- Settings dialog -->
+  <dialog id="settings-dialog" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2>Settings</h2>
+      <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
+    </form>
+    <div class="dialog-body" id="settings-body"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./app/ui/main.js"></script>
+</body>
+</html>

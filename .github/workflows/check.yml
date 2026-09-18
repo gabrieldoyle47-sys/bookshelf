@@ -1,0 +1,52 @@
+name: Check for new releases
+
+on:
+  schedule:
+    # 13:07 UTC daily. Deliberately not on the hour — every cron job in the
+    # world fires at :00, and GitHub delays runs when the queue is busy.
+    - cron: '7 13 * * *'
+  workflow_dispatch:
+
+# Needed to push the refreshed data back to the branch.
+permissions:
+  contents: write
+
+concurrency:
+  # Never let two runs write the data files at once.
+  group: release-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The diff engine decides what gets announced, so a regression here means
+      # wrong or missing alerts. Cheap to run, so run it every time.
+      - name: Run tests
+        run: node --test test/watch.test.js
+
+      - name: Check watched series
+        env:
+          HARDCOVER_API_TOKEN: ${{ secrets.HARDCOVER_API_TOKEN }}
+        run: node src/run-check.js
+
+      - name: Commit any changes
+        run: |
+          if [ -z "$(git status --porcelain docs/data)" ]; then
+            echo "No changes — nothing new today."
+            exit 0
+          fi
+          git config user.name  "bookshelf-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          git commit -m "Release check $(date -u +%Y-%m-%d)"
+          # Someone may have added a book from the website mid-run; rebase
+          # rather than clobber their commit.
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
