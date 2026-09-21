@@ -139,6 +139,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:386446",
+      "hardcoverId": "386446",
+      "title": "The Way of Kings",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "997",
+        "name": "The Stormlight Archive",
+        "position": 1,
+        "booksCount": 38
+      },
+      "pages": 1007,
+      "released": "2010-01-01",
+      "releaseYear": 2010,
+      "cover": "https://assets.hardcover.app/edition/3134360/a18d937805a28e3214a556442c8d33f41c02f2cb.jpeg",
+      "slug": "the-way-of-kings",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
