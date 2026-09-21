@@ -111,6 +111,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:374131",
+      "hardcoverId": "374131",
+      "title": "Words of Radiance",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "997",
+        "name": "The Stormlight Archive",
+        "position": 2,
+        "booksCount": 38
+      },
+      "pages": 1088,
+      "released": "2014-03-04",
+      "releaseYear": 2014,
+      "cover": "https://assets.hardcover.app/edition/419923/7428154-L.jpg",
+      "slug": "words-of-radiance",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
