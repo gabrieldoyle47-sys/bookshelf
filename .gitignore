@@ -5,3 +5,8 @@
 
 node_modules/
 .DS_Store
+
+# Wrangler's local cache — contains the Cloudflare account id and account name
+# (which embeds an email address). Never belongs in a public repo.
+.wrangler/
+worker/.wrangler/
