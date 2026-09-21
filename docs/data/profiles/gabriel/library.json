@@ -27,6 +27,34 @@
       "added": "2026-09-21",
       "started": "2026-09-13",
       "finished": "2026-09-25"
+    },
+    {
+      "id": "hc:427473",
+      "hardcoverId": "427473",
+      "title": "Red Rising",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 1,
+        "booksCount": 14
+      },
+      "pages": 382,
+      "released": "2014-01-28",
+      "releaseYear": 2014,
+      "cover": "https://assets.hardcover.app/editions/26096001/3897005112280259.jpg",
+      "slug": "red-rising",
+      "status": "reading",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
