@@ -21,7 +21,7 @@ export const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hos
  * every access is guarded — a missing config must degrade to read-only, never
  * to a blank page.
  */
-const EMPTY = { repo: '', token: '', hardcover: '', worker: '', key: '' };
+const EMPTY = { repo: '', token: '', hardcover: '', worker: '' };
 
 export function getConfig() {
   try {
@@ -59,20 +59,20 @@ export async function adoptLocalConfig() {
 }
 
 /**
- * Can we write? Locally always; on Pages either through the write proxy (the
- * key from the link) or, as a fallback, a GitHub token pasted into Settings.
+ * Can we write? Locally always; on Pages through the Worker, which holds the
+ * credentials so nobody has to paste anything.
  */
 export function canWrite() {
   if (isLocal) return true;
-  const { repo, token, worker, key } = getConfig();
-  return Boolean((worker && key) || (repo && token));
+  const { repo, token, worker } = getConfig();
+  return Boolean(worker || (repo && token));
 }
 
 /** Which write path is in use — for wording the UI honestly. */
 export function writeMode() {
   if (isLocal) return 'local';
-  const { repo, token, worker, key } = getConfig();
-  if (worker && key) return 'link';
+  const { repo, token, worker } = getConfig();
+  if (worker) return 'live';
   if (repo && token) return 'token';
   return 'read-only';
 }
@@ -82,7 +82,6 @@ export function writeMode() {
  * than something each person has to enter.
  */
 export async function loadSiteConfig() {
-  if (getConfig().worker) return;
   try {
     const res = await fetch(`./site.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return;
@@ -153,12 +152,12 @@ export async function loadJSON(rel, fallback) {
 }
 
 export async function loadText(rel) {
-  const { repo, token, worker, key } = getConfig();
+  const { repo, token, worker } = getConfig();
 
   // Pages serves a cached copy for up to a minute after a commit, so someone
   // could add a book and reload straight into a version that predates it.
   // Reading back through the proxy avoids that entirely.
-  if (!isLocal && worker && key) {
+  if (!isLocal && worker) {
     try {
       const res = await fetch(`${worker}/read?path=${encodeURIComponent(rel)}`);
       if (res.status === 404) return null;
@@ -205,16 +204,15 @@ export async function saveJSON(rel, value, message) {
     return;
   }
 
-  const { repo, token, worker, key } = getConfig();
+  const { repo, token, worker } = getConfig();
 
-  if (worker && key) {
+  if (worker) {
     const res = await fetch(`${worker}/write`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, path: rel, content: text, message: message ?? `Update ${rel}` }),
+      body: JSON.stringify({ path: rel, content: text, message: message ?? `Update ${rel}` }),
     });
     if (res.status === 409) throw new ConflictError(`${rel} changed underneath us`);
-    if (res.status === 403) throw new Error('This link is not allowed to make changes. Ask for the editing link.');
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(`Could not save: ${body.error ?? res.status}`);
@@ -224,7 +222,7 @@ export async function saveJSON(rel, value, message) {
     return;
   }
 
-  if (!repo || !token) throw new Error('Open the editing link, or add a GitHub token in Settings.');
+  if (!repo || !token) throw new Error('This site is not connected to its backend yet.');
 
   const res = await ghFetch(ghUrl(rel), {
     method: 'PUT',

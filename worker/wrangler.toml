@@ -4,9 +4,7 @@ compatibility_date = "2026-01-01"
 
 [vars]
 REPO = "gabrieldoyle47-sys/bookshelf"
-ALLOWED_ORIGIN = "https://gabrieldoyle47-sys.github.io"
 
-# Secrets are NOT set here — they would end up in the public repo.
-# Set them once after the first deploy:
+# Secrets live with Cloudflare, never in this repo:
 #   npx wrangler secret put GITHUB_TOKEN
-#   npx wrangler secret put WRITE_KEY
+#   npx wrangler secret put HARDCOVER_TOKEN

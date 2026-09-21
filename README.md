@@ -15,8 +15,9 @@ slipped by reading the git history.
 
 ## Using it
 
-**On the website.** Open it, pick your name in the sidebar, and press *Add a book*.
-Search, pick the right edition, choose a shelf. That's the whole interaction.
+**On the website.** Open the link, pick your name in the sidebar, and press *Add a
+book*. Search, pick the right edition, choose a shelf. That's the whole
+interaction — on a laptop or a phone, for anyone you share the link with.
 
 **On your own machine,** if you'd rather use a terminal:
 
@@ -56,20 +57,14 @@ the whole picture.
 
 3. **Actions secret** — Settings → Secrets → Actions → `HARDCOVER_API_TOKEN`.
 
-4. **To save from the published site**, deploy the write proxy in `worker/` and put
-   its URL in `docs/site.json`. After that there are two links:
+4. **The backend** — deploy the Worker in `worker/` and put its URL in
+   `docs/site.json`. It holds the GitHub and Hardcover tokens, which a static
+   site can't, and that's what makes the link work with nothing to set up.
 
-   - `…/bookshelf/` — read-only, safe to share with anyone.
-   - `…/bookshelf/?k=<key>` — unlocks editing on whatever device opens it, once.
-
-   The second link is the credential. Open it on a phone and that phone can add
-   books from then on; nothing to paste, nothing to install. Keep it between the
-   two of you, and see `worker/README.md` for exactly what a leaked key can do
-   (much less than you'd think — writes are confined to the two data files).
-
-   This is not a login: anyone holding the editing link can change either
-   profile. Fine between two people who trust each other; don't mistake it for
-   security.
+That's it. After that there is **one link**, it works on any device, and anyone
+you give it to can add books — no accounts, no tokens, no settings. Writes are
+open on purpose; every change is a commit, so anything unwanted is one
+`git revert` away.
 
 ## Layout
 

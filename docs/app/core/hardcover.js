@@ -76,6 +76,20 @@ export async function searchBooks(gql, query, perPage = 8) {
 }
 
 /**
+ * Search through the Worker, which holds the Hardcover token server-side.
+ * Same results as searchBooks, no token needed in the browser.
+ */
+export async function searchViaProxy(workerUrl, query, perPage = 8) {
+  const res = await fetch(`${workerUrl}/search?q=${encodeURIComponent(query)}&n=${perPage}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Search failed (${res.status})`);
+  }
+  const data = await res.json();
+  return (data?.search?.results?.hits ?? []).map((hit) => normaliseHit(hit.document));
+}
+
+/**
  * Flatten a Typesense book document into our own shape.
  *
  * The search index is richer than it looks: it carries the exact release date,

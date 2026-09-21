@@ -5,7 +5,7 @@
 
 import { h, clear, fmtDate, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
-import { createClient, searchBooks } from '../core/hardcover.js';
+import { createClient, searchBooks, searchViaProxy } from '../core/hardcover.js';
 import { bookFromHardcover, deriveWatchlist, STATUSES } from '../core/model.js';
 import { shelfView, upcomingView, whatsNewView, allUpcomingView, sharedView } from './views.js';
 import { statsView } from './stats.js';
@@ -24,25 +24,8 @@ const PROFILE_TABS = [
 
 /* ------------------------------------------------------------------- boot */
 
-/**
- * The editing link carries its key as ?k=. Take it, remember it, and strip it
- * from the address bar — so it is not sitting on screen to be shoulder-surfed
- * or copied into a screenshot. It lives in this browser from then on.
- */
-function adoptKeyFromLink() {
-  const params = new URLSearchParams(location.search);
-  const key = params.get('k');
-  if (!key) return false;
-  storage.setConfig({ key });
-  params.delete('k');
-  const query = params.toString();
-  history.replaceState(null, '', location.pathname + (query ? `?${query}` : '') + location.hash);
-  return true;
-}
-
 async function boot() {
   await storage.loadSiteConfig();
-  const cameFromLink = adoptKeyFromLink();
   await storage.adoptLocalConfig();
   state.canWrite = storage.canWrite();
   try {
@@ -70,9 +53,6 @@ async function boot() {
 
   readRoute();
   render();
-  if (cameFromLink) {
-    toast(state.canWrite ? 'Editing unlocked on this device' : 'That link did not unlock editing', !state.canWrite);
-  }
 }
 
 function toggleMenu() {
@@ -175,7 +155,7 @@ function renderSidebar() {
   const sync = document.getElementById('sync-state');
   sync.textContent = {
     local: 'local · saving to disk',
-    link: 'editing unlocked',
+    live: 'saving',
     token: 'synced to GitHub',
     'read-only': 'read-only',
   }[storage.writeMode()];
@@ -225,9 +205,7 @@ ctx.actions.openAdd = (profile) => {
   const input = document.getElementById('add-query');
   input.value = '';
   clear(document.getElementById('add-results'));
-  setHint(storage.getConfig().hardcover
-    ? 'Search Hardcover for the book you mean.'
-    : 'Add a Hardcover API token in Settings before searching.', !storage.getConfig().hardcover);
+  setHint('Search for the book you mean.');
   dialog.showModal();
   input.focus();
 };
@@ -243,8 +221,8 @@ async function runSearch() {
   const results = clear(document.getElementById('add-results'));
   if (query.length < 3) return setHint('Keep typing…');
 
-  const token = storage.getConfig().hardcover;
-  if (!token) return setHint('Add a Hardcover API token in Settings before searching.', true);
+  const { hardcover, worker } = storage.getConfig();
+  if (!worker && !hardcover) return setHint('This site is not connected to its backend yet.', true);
 
   // Responses can land out of order — a slow "harry" arriving after a fast
   // "potter" would repaint stale results. Only the newest request may draw.
@@ -252,7 +230,9 @@ async function runSearch() {
   setHint('Searching…');
 
   try {
-    const hits = await searchBooks(createClient(token), query, 8);
+    const hits = worker
+      ? await searchViaProxy(worker, query, 8)
+      : await searchBooks(createClient(hardcover), query, 8);
     if (seq !== searchSeq) return;
     if (!hits.length) return setHint(`Hardcover has nothing for “${query}”.`, true);
     setHint('Pick the right edition — everything else is filled in for you.');
@@ -421,9 +401,9 @@ function openSettings() {
   body.append(
     h('p', { class: 'hint', text: {
       local: 'Running locally: changes are written straight to the files on disk.',
-      link: 'Editing is unlocked on this device. Changes are saved as commits to the repo.',
+      live: 'Everything is set up — anyone with this link can add books. Nothing to configure.',
       token: 'Saving with a GitHub token stored in this browser.',
-      'read-only': 'This browser can read but not change anything. Open the editing link to unlock it.',
+      'read-only': 'This site is not connected to its backend yet, so nothing can be saved.',
     }[storage.writeMode()] }),
 
     h('label', { class: 'field' }, h('span', { text: 'Hardcover API token (for searching)' }),
@@ -437,15 +417,6 @@ function openSettings() {
     !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub token (Contents: read and write)' }),
       h('input', { type: 'text', value: cfg.token, placeholder: 'github_pat_…', autocomplete: 'off',
         oninput: (e) => { draft.token = e.target.value.trim(); } })),
-
-    storage.writeMode() === 'link' && h('div', { class: 'row' },
-      h('button', { class: 'btn danger', type: 'button', onclick: () => {
-        storage.setConfig({ key: '' });
-        state.canWrite = storage.canWrite();
-        dialog.close();
-        toast('Editing locked on this device');
-        render();
-      } }, 'Lock editing on this device')),
 
     h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' }),
 
