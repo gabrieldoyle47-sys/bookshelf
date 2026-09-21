@@ -78,11 +78,11 @@
       "cover": "https://assets.hardcover.app/edition/26332868/ca7c2f58-409f-4dbf-8d69-7d94cf302d5f.jpg",
       "slug": "rhythm-of-war",
       "status": "read",
-      "rating": null,
+      "rating": 5,
       "note": "",
       "added": "2026-09-21",
-      "started": null,
-      "finished": null
+      "started": "2026-08-28",
+      "finished": "2026-09-09"
     }
   ],
   "watch": {
