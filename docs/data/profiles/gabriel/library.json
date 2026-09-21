@@ -22,11 +22,11 @@
       "cover": "https://assets.hardcover.app/editions/30395755/5517573796567974.jpg",
       "slug": "wind-and-truth",
       "status": "read",
-      "rating": null,
+      "rating": 5,
       "note": "",
       "added": "2026-09-21",
-      "started": null,
-      "finished": null
+      "started": "2026-09-13",
+      "finished": "2026-09-25"
     }
   ],
   "watch": {
