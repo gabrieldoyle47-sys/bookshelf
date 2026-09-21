@@ -251,6 +251,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:445584",
+      "hardcoverId": "445584",
+      "title": "The Shadow of What Was Lost",
+      "authors": [
+        {
+          "id": "238975",
+          "name": "James Islington"
+        }
+      ],
+      "series": {
+        "id": "5982",
+        "name": "The Licanius Trilogy",
+        "position": 1,
+        "booksCount": 4
+      },
+      "pages": 608,
+      "released": "2014-01-01",
+      "releaseYear": 2014,
+      "cover": "https://assets.hardcover.app/edition/22194126/e8ed24b048e641f5562f48be628928e2ca2f1811.jpeg",
+      "slug": "the-shadow-of-what-was-lost",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
