@@ -307,6 +307,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:441085",
+      "hardcoverId": "441085",
+      "title": "The Light of All That Falls",
+      "authors": [
+        {
+          "id": "238975",
+          "name": "James Islington"
+        }
+      ],
+      "series": {
+        "id": "5982",
+        "name": "The Licanius Trilogy",
+        "position": 3,
+        "booksCount": 4
+      },
+      "pages": 830,
+      "released": "2019-01-01",
+      "releaseYear": 2019,
+      "cover": "https://assets.hardcover.app/edition/30405513/6cfa324e11cecd1e730e3fefd28007de17a688a9.jpeg",
+      "slug": "the-light-of-all-that-falls",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
