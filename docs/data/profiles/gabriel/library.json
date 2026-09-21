@@ -335,6 +335,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:594985",
+      "hardcoverId": "594985",
+      "title": "The Will of the Many",
+      "authors": [
+        {
+          "id": "238975",
+          "name": "James Islington"
+        }
+      ],
+      "series": {
+        "id": "35077",
+        "name": "Hierarchy",
+        "position": 1,
+        "booksCount": 3
+      },
+      "pages": 640,
+      "released": "2023-05-23",
+      "releaseYear": 2023,
+      "cover": "https://assets.hardcover.app/edition/30615590/1fe836a2-7004-4378-add0-dc78b96b2d17.jpg",
+      "slug": "the-will-of-the-many-2023",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
