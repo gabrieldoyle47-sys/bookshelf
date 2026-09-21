@@ -223,6 +223,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:103241",
+      "hardcoverId": "103241",
+      "title": "The Hero of Ages",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "10001",
+        "name": "The Mistborn Saga: The Original Trilogy",
+        "position": 3,
+        "booksCount": 9
+      },
+      "pages": 572,
+      "released": "2008-01-01",
+      "releaseYear": 2008,
+      "cover": "https://assets.hardcover.app/book_mappings/7332415/e3dcf34cb6632d5de4f946fbbd5d20558f3d69d6.jpeg",
+      "slug": "the-hero-of-ages",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
