@@ -1,1 +1,154 @@
-{}
+{
+  "997": {
+    "id": "997",
+    "name": "The Stormlight Archive",
+    "checkedAt": "2026-09-21",
+    "books": {
+      "374131": {
+        "position": 2,
+        "title": "Words of Radiance",
+        "releaseDate": "2014-03-04",
+        "releaseYear": 2014
+      },
+      "386446": {
+        "position": 1,
+        "title": "The Way of Kings",
+        "releaseDate": "2010-01-01",
+        "releaseYear": 2010
+      },
+      "427522": {
+        "position": 4,
+        "title": "Rhythm of War",
+        "releaseDate": "2020-01-01",
+        "releaseYear": 2020
+      },
+      "427544": {
+        "position": 2.5,
+        "title": "Edgedancer",
+        "releaseDate": "2016-11-08",
+        "releaseYear": 2016
+      },
+      "427945": {
+        "position": 3.5,
+        "title": "Dawnshard",
+        "releaseDate": "2020-11-05",
+        "releaseYear": 2020
+      },
+      "459452": {
+        "position": 3,
+        "title": "Oathbringer",
+        "releaseDate": "2017-01-01",
+        "releaseYear": 2017
+      },
+      "460907": {
+        "position": 6,
+        "title": "Untitled Stormlight Archive #6",
+        "releaseDate": "2031-12-01",
+        "releaseYear": 2031
+      },
+      "460908": {
+        "position": 10,
+        "title": "Untitled Stormlight Archive #10",
+        "releaseDate": "2035-01-01",
+        "releaseYear": 2035
+      },
+      "460974": {
+        "position": 9,
+        "title": "Untitled Stormlight Archive #9",
+        "releaseDate": "2034-01-01",
+        "releaseYear": 2034
+      },
+      "460975": {
+        "position": 8,
+        "title": "Untitled Stormlight Archive #8",
+        "releaseDate": "2033-01-01",
+        "releaseYear": 2033
+      },
+      "460976": {
+        "position": 7,
+        "title": "Untitled Stormlight Archive #7",
+        "releaseDate": "2032-01-01",
+        "releaseYear": 2032
+      },
+      "463080": {
+        "position": null,
+        "title": "The Stormlight Archive - A Pocket Companion to The Way of Kings and Words of Radiance",
+        "releaseDate": "2016-01-01",
+        "releaseYear": 2016
+      },
+      "484948": {
+        "position": 0.1,
+        "title": "The Way of Kings Prime",
+        "releaseDate": "2020-01-01",
+        "releaseYear": 2020
+      },
+      "665261": {
+        "position": 5,
+        "title": "Wind and Truth",
+        "releaseDate": "2024-12-06",
+        "releaseYear": 2024
+      },
+      "1233347": {
+        "position": 4.5,
+        "title": "Horneater",
+        "releaseDate": "2026-12-01",
+        "releaseYear": 2026
+      },
+      "2270949": {
+        "position": 2.1,
+        "title": "Elsecaller and King Lopen the First of Alethkar",
+        "releaseDate": "2025-12-01",
+        "releaseYear": 2025
+      }
+    }
+  },
+  "1033": {
+    "id": "1033",
+    "name": "Red Rising Saga",
+    "checkedAt": "2026-09-21",
+    "books": {
+      "378044": {
+        "position": 2,
+        "title": "Golden Son",
+        "releaseDate": "2015-01-01",
+        "releaseYear": 2015
+      },
+      "427456": {
+        "position": 3,
+        "title": "Morning Star",
+        "releaseDate": "2016-09-27",
+        "releaseYear": 2016
+      },
+      "427473": {
+        "position": 1,
+        "title": "Red Rising",
+        "releaseDate": "2014-01-28",
+        "releaseYear": 2014
+      },
+      "427678": {
+        "position": 4,
+        "title": "Iron Gold",
+        "releaseDate": "2018-01-01",
+        "releaseYear": 2018
+      },
+      "427876": {
+        "position": 5,
+        "title": "Dark Age",
+        "releaseDate": "2019-01-01",
+        "releaseYear": 2019
+      },
+      "507636": {
+        "position": 7,
+        "title": "Red God",
+        "releaseDate": null,
+        "releaseYear": null
+      },
+      "620124": {
+        "position": 6,
+        "title": "Light Bringer",
+        "releaseDate": "2023-01-01",
+        "releaseYear": 2023
+      }
+    }
+  }
+}
