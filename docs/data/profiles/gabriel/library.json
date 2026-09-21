@@ -83,6 +83,34 @@
       "added": "2026-09-21",
       "started": "2026-08-28",
       "finished": "2026-09-09"
+    },
+    {
+      "id": "hc:459452",
+      "hardcoverId": "459452",
+      "title": "Oathbringer",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "997",
+        "name": "The Stormlight Archive",
+        "position": 3,
+        "booksCount": 38
+      },
+      "pages": 1243,
+      "released": "2017-01-01",
+      "releaseYear": 2017,
+      "cover": "https://assets.hardcover.app/edition/30455612/1deeb21c2576843fe4556815fea2eb784e406908.jpeg",
+      "slug": "oathbringer",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
