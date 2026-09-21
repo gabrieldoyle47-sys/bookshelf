@@ -1,1 +1,409 @@
-{}
+{
+  "204214": {
+    "id": "204214",
+    "name": "Brandon Sanderson",
+    "checkedAt": "2026-09-21",
+    "books": {
+      "7243": {
+        "title": "The Shattered Lens",
+        "releaseDate": "2010-01-01"
+      },
+      "39657": {
+        "title": "Steelheart",
+        "releaseDate": "2013-09-24"
+      },
+      "80765": {
+        "title": "Arcanum Unbounded: The Cosmere Collection",
+        "releaseDate": "2016-11-08"
+      },
+      "81913": {
+        "title": "A Memory of Light",
+        "releaseDate": "2013-01-01"
+      },
+      "103241": {
+        "title": "The Hero of Ages",
+        "releaseDate": "2008-01-01"
+      },
+      "113379": {
+        "title": "Alcatraz vs. the Evil Librarians",
+        "releaseDate": "2007-01-01"
+      },
+      "135725": {
+        "title": "Shadows of Self",
+        "releaseDate": "2015-01-01"
+      },
+      "183698": {
+        "title": "The Gathering Storm",
+        "releaseDate": "2009-11-07"
+      },
+      "223518": {
+        "title": "The Scrivener's Bones",
+        "releaseDate": "2008-01-01"
+      },
+      "330249": {
+        "title": "The Alloy of Law",
+        "releaseDate": "2011-01-01"
+      },
+      "334179": {
+        "title": "The Knights of Crystallia",
+        "releaseDate": "2009-01-01"
+      },
+      "338931": {
+        "title": "Elantris",
+        "releaseDate": "2005-05-01"
+      },
+      "369692": {
+        "title": "Mistborn: The Final Empire",
+        "releaseDate": "2003-11-17"
+      },
+      "374131": {
+        "title": "Words of Radiance",
+        "releaseDate": "2014-03-04"
+      },
+      "385491": {
+        "title": "Warbreaker",
+        "releaseDate": "2009-06-09"
+      },
+      "386446": {
+        "title": "The Way of Kings",
+        "releaseDate": "2010-01-01"
+      },
+      "427383": {
+        "title": "The Well of Ascension",
+        "releaseDate": "2007-08-21"
+      },
+      "427458": {
+        "title": "Firefight",
+        "releaseDate": "2014-01-01"
+      },
+      "427474": {
+        "title": "Mitosis: A Reckoners Story",
+        "releaseDate": "2013-12-03"
+      },
+      "427477": {
+        "title": "Calamity",
+        "releaseDate": "2001-07-08"
+      },
+      "427522": {
+        "title": "Rhythm of War",
+        "releaseDate": "2020-01-01"
+      },
+      "427544": {
+        "title": "Edgedancer",
+        "releaseDate": "2016-11-08"
+      },
+      "427626": {
+        "title": "The Emperor's Soul",
+        "releaseDate": "2012-01-01"
+      },
+      "427707": {
+        "title": "Mistborn Trilogy",
+        "releaseDate": "2009-11-03"
+      },
+      "427735": {
+        "title": "Legion",
+        "releaseDate": "2012-01-01"
+      },
+      "427749": {
+        "title": "Skyward",
+        "releaseDate": "2018-01-01"
+      },
+      "427768": {
+        "title": "Legion: Lies of the Beholder",
+        "releaseDate": "1999-01-01"
+      },
+      "427807": {
+        "title": "Firstborn",
+        "releaseDate": "2008-12-17"
+      },
+      "427815": {
+        "title": "The Hope of Elantris",
+        "releaseDate": "2006-01-01"
+      },
+      "427820": {
+        "title": "Awakening",
+        "releaseDate": "2011-06-18"
+      },
+      "427830": {
+        "title": "Redemption",
+        "releaseDate": "2005-05-01"
+      },
+      "427831": {
+        "title": "Legion and the Emperor's Soul",
+        "releaseDate": "2013-01-01"
+      },
+      "427840": {
+        "title": "Shadows for Silence in the Forests of Hell",
+        "releaseDate": "2013-12-03"
+      },
+      "427844": {
+        "title": "The Eleventh Metal",
+        "releaseDate": "2012-04-10"
+      },
+      "427846": {
+        "title": "Sixth of the Dusk",
+        "releaseDate": "2014-10-16"
+      },
+      "427863": {
+        "title": "The Lost Metal",
+        "releaseDate": "2022-01-01"
+      },
+      "427864": {
+        "title": "Perfect State",
+        "releaseDate": "2015-03-31"
+      },
+      "427881": {
+        "title": "Mistborn: Secret History",
+        "releaseDate": "2016-01-01"
+      },
+      "427888": {
+        "title": "Bastille vs. the Evil Librarians",
+        "releaseDate": "2022-01-01"
+      },
+      "427892": {
+        "title": "Allomancer Jak and the Pits of Eltania",
+        "releaseDate": "2014-08-03"
+      },
+      "427923": {
+        "title": "Cytonic",
+        "releaseDate": "2018-06-20"
+      },
+      "427945": {
+        "title": "Dawnshard",
+        "releaseDate": "2020-11-05"
+      },
+      "427950": {
+        "title": "The Original",
+        "releaseDate": "2020-09-14"
+      },
+      "427966": {
+        "title": "The Bands of Mourning",
+        "releaseDate": "2016-01-01"
+      },
+      "427967": {
+        "title": "The Dark Talent",
+        "releaseDate": "2016-01-01"
+      },
+      "428036": {
+        "title": "The Rithmatist",
+        "releaseDate": "2013-01-01"
+      },
+      "429287": {
+        "title": "White Sand, Vol. 2",
+        "releaseDate": "2018-01-01"
+      },
+      "429355": {
+        "title": "White Sand, Vol. 3",
+        "releaseDate": "2019-01-01"
+      },
+      "432451": {
+        "title": "Lux",
+        "releaseDate": "2021-01-01"
+      },
+      "433227": {
+        "title": "Towers of Midnight",
+        "releaseDate": "2010-11-02"
+      },
+      "434333": {
+        "title": "Snapshot",
+        "releaseDate": "2017-02-17"
+      },
+      "434340": {
+        "title": "Defiant",
+        "releaseDate": "2023-01-01"
+      },
+      "434356": {
+        "title": "ReDawn",
+        "releaseDate": "2021-10-26"
+      },
+      "434357": {
+        "title": "Sunreach",
+        "releaseDate": "2021-09-28"
+      },
+      "434359": {
+        "title": "Evershore",
+        "releaseDate": "2021-12-28"
+      },
+      "446511": {
+        "title": "Starsight",
+        "releaseDate": "2019-01-01"
+      },
+      "459452": {
+        "title": "Oathbringer",
+        "releaseDate": "2017-01-01"
+      },
+      "459850": {
+        "title": "Dark One, Vol. 1",
+        "releaseDate": "2020-05-17"
+      },
+      "460903": {
+        "title": "Untitled Elantris, Vol. 3",
+        "releaseDate": null
+      },
+      "460907": {
+        "title": "Untitled Stormlight Archive #6",
+        "releaseDate": "2031-12-01"
+      },
+      "460908": {
+        "title": "Untitled Stormlight Archive #10",
+        "releaseDate": "2035-01-01"
+      },
+      "460972": {
+        "title": "The Aztlanian",
+        "releaseDate": null
+      },
+      "460973": {
+        "title": "Nightblood",
+        "releaseDate": null
+      },
+      "460974": {
+        "title": "Untitled Stormlight Archive #9",
+        "releaseDate": "2034-01-01"
+      },
+      "460976": {
+        "title": "Untitled Stormlight Archive #7",
+        "releaseDate": "2032-01-01"
+      },
+      "462528": {
+        "title": "Shadows Beneath: The Writing Excuses Anthology",
+        "releaseDate": "2014-06-28"
+      },
+      "463085": {
+        "title": "Children of the Nameless",
+        "releaseDate": "2018-12-12"
+      },
+      "481728": {
+        "title": "By Grace and Banners Fallen: Prologue to A Memory of Light",
+        "releaseDate": "2012-01-01"
+      },
+      "484948": {
+        "title": "The Way of Kings Prime",
+        "releaseDate": "2020-01-01"
+      },
+      "484983": {
+        "title": "Defending Elysium",
+        "releaseDate": "2008-01-01"
+      },
+      "497269": {
+        "title": "Skyward Flight: The Collection: Sunreach / ReDawn / Evershore",
+        "releaseDate": "2022-01-01"
+      },
+      "602482": {
+        "title": "Tress of the Emerald Sea",
+        "releaseDate": "2023-01-01"
+      },
+      "630615": {
+        "title": "The Frugal Wizard's Handbook for Surviving Medieval England",
+        "releaseDate": "2023-01-01"
+      },
+      "665261": {
+        "title": "Wind and Truth",
+        "releaseDate": "2024-12-06"
+      },
+      "676415": {
+        "title": "White Sand, Vol. 1",
+        "releaseDate": "2016-01-01"
+      },
+      "763207": {
+        "title": "Yumi and the Nightmare Painter",
+        "releaseDate": "2023-01-01"
+      },
+      "799171": {
+        "title": "Unfettered",
+        "releaseDate": "2013-06-21"
+      },
+      "879946": {
+        "title": "Words of Radiance, Part 1",
+        "releaseDate": "2014-03-04"
+      },
+      "889484": {
+        "title": "The Sunlit Man",
+        "releaseDate": "2023-10-01"
+      },
+      "978066": {
+        "title": "The Way of Kings, Part 1",
+        "releaseDate": "2010-01-01"
+      },
+      "1070354": {
+        "title": "Brandon Sanderson's White Sand Omnibus",
+        "releaseDate": "2019-09-18"
+      },
+      "1081603": {
+        "title": "Long Chills and Case Dough",
+        "releaseDate": "2023-12-01"
+      },
+      "1179741": {
+        "title": "Isles of the Emberdark",
+        "releaseDate": "2025-01-01"
+      },
+      "1217692": {
+        "title": "Legion: Skin Deep",
+        "releaseDate": "2014-01-01"
+      },
+      "1218531": {
+        "title": "Songs of the Dead",
+        "releaseDate": "2026-06-16"
+      },
+      "1221223": {
+        "title": "Dragonsteel Prime",
+        "releaseDate": "2024-03-05"
+      },
+      "1233347": {
+        "title": "Horneater",
+        "releaseDate": "2026-12-01"
+      },
+      "1255222": {
+        "title": " Words of Radiance, Part 2",
+        "releaseDate": "2014-01-01"
+      },
+      "1361245": {
+        "title": "Hyperthief",
+        "releaseDate": "2023-11-21"
+      },
+      "1386734": {
+        "title": "The Way of Kings, Part 2",
+        "releaseDate": "2010-01-01"
+      },
+      "1438175": {
+        "title": "The Most Boring Book Ever",
+        "releaseDate": "2024-09-24"
+      },
+      "1624454": {
+        "title": "Oathbringer, Part 1",
+        "releaseDate": "2017-01-01"
+      },
+      "1624456": {
+        "title": "Oathbringer, Part 2",
+        "releaseDate": "2017-01-01"
+      },
+      "1644075": {
+        "title": "Tailored Realities",
+        "releaseDate": "2025-12-09"
+      },
+      "1821546": {
+        "title": "Ghostbloods 2",
+        "releaseDate": "2029-12-01"
+      },
+      "1878844": {
+        "title": "Ghostbloods 1",
+        "releaseDate": "2028-12-01"
+      },
+      "2189587": {
+        "title": "The Fires of December",
+        "releaseDate": "2026-09-15"
+      },
+      "2235778": {
+        "title": "Blightfall",
+        "releaseDate": "2026-09-01"
+      },
+      "2270949": {
+        "title": "Elsecaller and King Lopen the First of Alethkar",
+        "releaseDate": "2025-12-01"
+      },
+      "2390073": {
+        "title": "Legion: The Many Lives of Stephen Leeds",
+        "releaseDate": "2018-01-01"
+      }
+    }
+  }
+}
