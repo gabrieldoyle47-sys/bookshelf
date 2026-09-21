@@ -1,5 +1,29 @@
 {
-  "books": [],
+  "books": [
+    {
+      "id": "hc:TEST",
+      "hardcoverId": "TEST",
+      "title": "Worker Round Trip",
+      "authors": [
+        {
+          "id": "a",
+          "name": "Test"
+        }
+      ],
+      "series": null,
+      "pages": 1,
+      "released": null,
+      "releaseYear": null,
+      "cover": null,
+      "slug": null,
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
+    }
+  ],
   "watch": {
     "series": {},
     "authors": {}
