@@ -363,6 +363,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:824777",
+      "hardcoverId": "824777",
+      "title": "The Strength of the Few",
+      "authors": [
+        {
+          "id": "238975",
+          "name": "James Islington"
+        }
+      ],
+      "series": {
+        "id": "35077",
+        "name": "Hierarchy",
+        "position": 2,
+        "booksCount": 3
+      },
+      "pages": 723,
+      "released": "2025-01-01",
+      "releaseYear": 2025,
+      "cover": "https://assets.hardcover.app/edition/30836340/6923cac7-42de-42ce-994c-c5eaf8d5c586.jpg",
+      "slug": "the-strength-of-the-few",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
