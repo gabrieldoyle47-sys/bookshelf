@@ -55,6 +55,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:427522",
+      "hardcoverId": "427522",
+      "title": "Rhythm of War",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "997",
+        "name": "The Stormlight Archive",
+        "position": 4,
+        "booksCount": 38
+      },
+      "pages": 1232,
+      "released": "2020-01-01",
+      "releaseYear": 2020,
+      "cover": "https://assets.hardcover.app/edition/26332868/ca7c2f58-409f-4dbf-8d69-7d94cf302d5f.jpg",
+      "slug": "rhythm-of-war",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
