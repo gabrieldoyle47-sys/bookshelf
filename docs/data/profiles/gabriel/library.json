@@ -195,6 +195,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:427383",
+      "hardcoverId": "427383",
+      "title": "The Well of Ascension",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "10001",
+        "name": "The Mistborn Saga: The Original Trilogy",
+        "position": 2,
+        "booksCount": 9
+      },
+      "pages": 590,
+      "released": "2007-08-21",
+      "releaseYear": 2007,
+      "cover": "https://assets.hardcover.app/book_mappings/7332358/43f95ab5370016fe0b2eddf9adee5f338850e6c4.jpeg",
+      "slug": "the-well-of-ascension",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
