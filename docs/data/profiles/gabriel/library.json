@@ -279,6 +279,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:441081",
+      "hardcoverId": "441081",
+      "title": "An Echo of Things to Come",
+      "authors": [
+        {
+          "id": "238975",
+          "name": "James Islington"
+        }
+      ],
+      "series": {
+        "id": "5982",
+        "name": "The Licanius Trilogy",
+        "position": 2,
+        "booksCount": 4
+      },
+      "pages": 608,
+      "released": "2017-01-01",
+      "releaseYear": 2017,
+      "cover": "https://assets.hardcover.app/edition/30407510/cd4c3265730d541a2fe1d93d298d8d3c2d3fa6ab.jpeg",
+      "slug": "an-echo-of-things-to-come",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
