@@ -103,21 +103,30 @@ export function deriveWatchlist(library) {
   const series = new Map();
   const authors = new Map();
 
+  // Two passes, because a single pass is order-dependent: whether a dislike
+  // suppressed a series would depend on whether the disliked book happened to
+  // sit before or after the liked one in the array. Collect the vetoes first,
+  // then add only what survives them.
+  const vetoed = new Set();
   for (const book of library.books) {
-    const engaged = book.status === 'reading' || book.status === 'read';
+    if (!book.series?.id) continue;
     const disliked =
       book.status === 'abandoned' ||
       (typeof book.rating === 'number' && book.rating <= DISLIKE_AT_OR_BELOW);
+    if (disliked) vetoed.add(book.series.id);
+  }
 
-    if (book.series?.id) {
-      if (disliked) series.delete(book.series.id);
-      // A dislike elsewhere in the series shouldn't be undone by an earlier
-      // book we liked, so only add when nothing has dropped it.
-      else if (engaged && !series.has(book.series.id)) {
+  for (const book of library.books) {
+    if (book.series?.id && !vetoed.has(book.series.id)) {
+      const engaged = book.status === 'reading' || book.status === 'read';
+      if (engaged && !series.has(book.series.id)) {
         series.set(book.series.id, { id: book.series.id, name: book.series.name, reason: 'auto' });
       }
     }
 
+    // Author watching is deliberately not vetoed the same way. Giving up on one
+    // book by someone whose other work you rated 5 says nothing about whether
+    // you want to hear about their next one.
     const loved = typeof book.rating === 'number' && book.rating >= AUTHOR_WATCH_AT_OR_ABOVE;
     if (loved) {
       for (const a of book.authors ?? []) {

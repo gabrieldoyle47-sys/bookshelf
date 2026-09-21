@@ -7,6 +7,15 @@
 <meta name="description" content="Shared reading tracker with automatic series-release watching">
 <link rel="stylesheet" href="./app/ui/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>📚</text></svg>">
+
+<!-- Match the browser chrome to the page in both themes. -->
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171512" media="(prefers-color-scheme: dark)">
+<!-- Behave like an app when added to a phone's home screen. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bookshelf">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
@@ -64,6 +73,31 @@
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <noscript>
+    <p style="padding:1rem">Bookshelf needs JavaScript to search for books and show your shelf.</p>
+  </noscript>
+
+  <script>
+    // Fail loudly rather than showing a blank page on a browser too old to run
+    // the app. Everything here is ES5 so it parses anywhere.
+    (function () {
+      var ok = typeof Promise === 'function' &&
+               typeof structuredClone === 'function' &&
+               typeof window.HTMLDialogElement === 'function' &&
+               !!window.HTMLDialogElement.prototype.showModal &&
+               'noModule' in document.createElement('script');
+      if (ok) return;
+      document.addEventListener('DOMContentLoaded', function () {
+        var m = document.getElementById('main');
+        if (m) {
+          m.innerHTML = '<div class="card"><h2>This browser is a little too old</h2>' +
+            '<p>Bookshelf needs a browser from 2022 or later &mdash; iOS 15.4+, or a recent ' +
+            'Chrome, Firefox, Edge or Safari. Updating should be all it takes.</p></div>';
+        }
+      });
+    })();
+  </script>
 
   <script type="module" src="./app/ui/main.js"></script>
 </body>

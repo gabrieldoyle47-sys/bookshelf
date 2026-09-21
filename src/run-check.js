@@ -91,7 +91,11 @@ async function main() {
 
   await store.saveSeriesState(seriesState);
   await store.saveAuthorState(authorState);
-  await store.appendEvents(fresh);
+  // `detectedAt` is a plain date for display, but "unread" needs finer
+  // resolution: without it, marking the feed read hides anything found later
+  // the same day until the date rolls over.
+  const stamped = new Date().toISOString();
+  await store.appendEvents(fresh.map((e) => ({ ...e, at: stamped })));
 
   console.log(`\n${fresh.length} new event(s)`);
   for (const ev of fresh) {

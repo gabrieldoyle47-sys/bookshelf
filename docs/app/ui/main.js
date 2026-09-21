@@ -3,7 +3,7 @@
  * every mutation goes through.
  */
 
-import { h, clear, stars, fmtDate, authorNames, coverEl, seriesLabel, toast, todayISO } from './dom.js';
+import { h, clear, fmtDate, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
 import { createClient, searchBooks } from '../core/hardcover.js';
 import { bookFromHardcover, deriveWatchlist, STATUSES } from '../core/model.js';
@@ -181,7 +181,7 @@ async function saveLibrary(profileId, mutate, message) {
 /* -------------------------------------------------------------- add dialog */
 
 let searchTimer = null;
-let searchAbort = null;
+let searchSeq = 0;
 let addProfile = null;
 
 function wireAddDialog() {
@@ -222,12 +222,14 @@ async function runSearch() {
   const token = storage.getConfig().hardcover;
   if (!token) return setHint('Add a Hardcover API token in Settings before searching.', true);
 
-  searchAbort?.abort();
-  searchAbort = new AbortController();
+  // Responses can land out of order — a slow "harry" arriving after a fast
+  // "potter" would repaint stale results. Only the newest request may draw.
+  const seq = ++searchSeq;
   setHint('Searching…');
 
   try {
     const hits = await searchBooks(createClient(token), query, 8);
+    if (seq !== searchSeq) return;
     if (!hits.length) return setHint(`Hardcover has nothing for “${query}”.`, true);
     setHint('Pick the right edition — everything else is filled in for you.');
 
@@ -243,7 +245,7 @@ async function runSearch() {
           h('div', { class: 'book-meta', text: bits.join(' · ') }))));
     }
   } catch (err) {
-    setHint(err.message, true);
+    if (seq === searchSeq) setHint(err.message, true);
   }
 }
 
@@ -275,8 +277,10 @@ function chooseStatus(hit) {
 
 /* ------------------------------------------------------------- book dialog */
 
-ctx.actions.openBook = (book) => {
-  const profile = state.profiles.find((p) => (state.libraries[p.id]?.books ?? []).some((b) => b.id === book.id));
+ctx.actions.openBook = (book, owner) => {
+  const profile = owner
+    ?? state.profiles.find((p) => (state.libraries[p.id]?.books ?? []).some((b) => b.id === book.id));
+  if (!profile) return toast('Could not tell whose shelf that book is on.', true);
   const dialog = document.getElementById('book-dialog');
   document.getElementById('book-title').textContent = book.title;
   const body = clear(document.getElementById('book-body'));
@@ -372,7 +376,7 @@ ctx.actions.markSeen = async (profile) => {
   try {
     const next = await storage.mutateJSON('profiles.json', { profiles: [] }, (data) => {
       const p = data.profiles.find((x) => x.id === profile.id);
-      if (p) p.lastSeen = new Date().toISOString().slice(0, 10);
+      if (p) p.lastSeen = new Date().toISOString();
       return data;
     }, `Mark ${profile.name}'s news as read`);
     state.profiles = next.profiles;

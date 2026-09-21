@@ -4,7 +4,7 @@
  * ctx.actions so every change goes through one save path.
  */
 
-import { h, clear, stars, fmtDate, fmtDays, authorNames, coverEl, seriesLabel, daysUntil } from './dom.js';
+import { h, stars, fmtDate, fmtDays, authorNames, coverEl, seriesLabel, daysUntil } from './dom.js';
 import { deriveWatchlist } from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
 
@@ -33,11 +33,11 @@ function emptyState(text) {
 }
 
 /** One book row. `side` is whatever belongs on the right-hand side. */
-function bookRow(book, ctx, side) {
+function bookRow(book, ctx, side, owner) {
   const bits = [authorNames(book), seriesLabel(book)].filter(Boolean);
   return h('button', {
     class: 'book', type: 'button',
-    onclick: () => ctx.actions.openBook(book),
+    onclick: () => ctx.actions.openBook(book, owner),
   },
     coverEl(book),
     h('div', { class: 'book-main' },
@@ -177,12 +177,14 @@ const EVENT_TEXT = {
 };
 
 export function whatsNewView(ctx, profile) {
+  const stamp = (e) => String(e.at ?? e.detectedAt ?? '');
   const mine = ctx.state.events
     .filter((e) => e.profile === profile.id)
-    .sort((a, b) => String(b.detectedAt).localeCompare(String(a.detectedAt)));
+    .sort((a, b) => stamp(b).localeCompare(stamp(a)));
 
   const since = profile.lastSeen;
-  const unseen = since ? mine.filter((e) => String(e.detectedAt) > since) : mine;
+  const unseen = since ? mine.filter((e) => stamp(e) > since) : mine;
+  const unseenKeys = new Set(unseen.map((e) => e.key ?? stamp(e) + e.title));
 
   const markRead = h('button', {
     class: 'btn secondary', type: 'button',
@@ -203,7 +205,7 @@ export function whatsNewView(ctx, profile) {
     pageHead(`What's new · ${profile.name}`,
       unseen.length ? `${unseen.length} since you last looked` : 'All caught up', markRead),
     mine.length
-      ? h('div', { class: 'books' }, mine.slice(0, 80).map((e) => row(e, unseen.includes(e))))
+      ? h('div', { class: 'books' }, mine.slice(0, 80).map((e) => row(e, unseenKeys.has(e.key ?? stamp(e) + e.title))))
       : emptyState('No release news yet. The watcher runs daily and anything it finds shows up here.'));
 }
 
@@ -234,10 +236,13 @@ export function sharedView(ctx) {
     .filter((p) => p.gap >= 2)
     .sort((x, y) => y.gap - x.gap);
 
-  const ratingPair = (p) => h('div', { class: 'row' },
-    h('span', { class: 'stars', text: stars(p.mine.rating) }),
-    h('span', { class: 'count', text: `${a.name} · ${b.name}` }),
-    h('span', { class: 'stars', text: stars(p.theirs.rating) }));
+  // Name each rating rather than relying on left/right position, which is
+  // guesswork for the reader.
+  const rating = (person, value) => h('div', { class: 'rating-line' },
+    h('span', { class: 'who', text: person.name }),
+    h('span', { class: 'stars', text: stars(value) || '—' }));
+  const ratingPair = (p) => h('div', { class: 'rating-pair' },
+    rating(a, p.mine.rating), rating(b, p.theirs.rating));
 
   return frag(
     pageHead('Both of us', `${a.name} and ${b.name}`),
@@ -247,7 +252,7 @@ export function sharedView(ctx) {
         h('h2', { text: 'Where you disagree' }),
         h('span', { class: 'count', text: String(disagree.length) })),
       disagree.length
-        ? h('div', { class: 'books' }, disagree.map((p) => bookRow(p.book, ctx, ratingPair(p))))
+        ? h('div', { class: 'books' }, disagree.map((p) => bookRow(p.mine, ctx, ratingPair(p), a)))
         : emptyState('No strong disagreements — you have rated everything within a star of each other.')),
 
     h('section', { class: 'section' },
@@ -255,8 +260,7 @@ export function sharedView(ctx) {
         h('h2', { text: 'Both read' }),
         h('span', { class: 'count', text: String(readBoth.length) })),
       readBoth.length
-        ? h('div', { class: 'books' }, readBoth.map((p) => bookRow(p.book, ctx,
-            h('span', { class: 'stars', text: stars(p.mine.rating) }))))
+        ? h('div', { class: 'books' }, readBoth.map((p) => bookRow(p.mine, ctx, ratingPair(p), a)))
         : emptyState('Nothing you have both finished yet.')),
 
     h('section', { class: 'section' },
@@ -274,7 +278,7 @@ function recommendations(libA, libB, a, b, ctx) {
 
   if (!picks.length) return h('p', { class: 'empty', text: `Nothing ${b.name} has rated 4+ that ${a.name} is missing.` });
   return h('div', { class: 'books' }, picks.map((x) => bookRow(x, ctx,
-    h('span', { class: 'stars', text: stars(x.rating) }))));
+    h('span', { class: 'stars', text: stars(x.rating) }), b)));
 }
 
 export { frag, pageHead, emptyState, bookRow };
