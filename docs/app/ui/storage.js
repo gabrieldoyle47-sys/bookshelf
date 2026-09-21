@@ -21,11 +21,13 @@ export const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hos
  * every access is guarded — a missing config must degrade to read-only, never
  * to a blank page.
  */
+const EMPTY = { repo: '', token: '', hardcover: '', worker: '', key: '' };
+
 export function getConfig() {
   try {
-    return { repo: '', token: '', hardcover: '', ...JSON.parse(localStorage.getItem(CONFIG_KEY) ?? '{}') };
+    return { ...EMPTY, ...JSON.parse(localStorage.getItem(CONFIG_KEY) ?? '{}') };
   } catch {
-    return { repo: '', token: '', hardcover: '' };
+    return { ...EMPTY };
   }
 }
 
@@ -56,11 +58,39 @@ export async function adoptLocalConfig() {
   }
 }
 
-/** Can we write? Locally always; on Pages only with a repo and token. */
+/**
+ * Can we write? Locally always; on Pages either through the write proxy (the
+ * key from the link) or, as a fallback, a GitHub token pasted into Settings.
+ */
 export function canWrite() {
   if (isLocal) return true;
-  const { repo, token } = getConfig();
-  return Boolean(repo && token);
+  const { repo, token, worker, key } = getConfig();
+  return Boolean((worker && key) || (repo && token));
+}
+
+/** Which write path is in use — for wording the UI honestly. */
+export function writeMode() {
+  if (isLocal) return 'local';
+  const { repo, token, worker, key } = getConfig();
+  if (worker && key) return 'link';
+  if (repo && token) return 'token';
+  return 'read-only';
+}
+
+/**
+ * The Worker's address is not a secret, so it ships as a plain file rather
+ * than something each person has to enter.
+ */
+export async function loadSiteConfig() {
+  if (getConfig().worker) return;
+  try {
+    const res = await fetch(`./site.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const { workerUrl } = await res.json();
+    if (workerUrl) setConfig({ worker: workerUrl.replace(/\/$/, '') });
+  } catch {
+    // No site.json yet: the token path still works.
+  }
 }
 
 /* ------------------------------------------------------------------ base64 */
@@ -123,7 +153,24 @@ export async function loadJSON(rel, fallback) {
 }
 
 export async function loadText(rel) {
-  const { repo, token } = getConfig();
+  const { repo, token, worker, key } = getConfig();
+
+  // Pages serves a cached copy for up to a minute after a commit, so someone
+  // could add a book and reload straight into a version that predates it.
+  // Reading back through the proxy avoids that entirely.
+  if (!isLocal && worker && key) {
+    try {
+      const res = await fetch(`${worker}/read?path=${encodeURIComponent(rel)}`);
+      if (res.status === 404) return null;
+      if (res.ok) {
+        const body = await res.json();
+        if (body.sha) shas.set(rel, body.sha);
+        return body.content;
+      }
+    } catch {
+      // Fall through to the static copy rather than showing nothing.
+    }
+  }
 
   if (!isLocal && repo && token) {
     const res = await ghFetch(ghUrl(rel));
@@ -158,8 +205,26 @@ export async function saveJSON(rel, value, message) {
     return;
   }
 
-  const { repo, token } = getConfig();
-  if (!repo || !token) throw new Error('Add a GitHub repo and token in Settings to save changes.');
+  const { repo, token, worker, key } = getConfig();
+
+  if (worker && key) {
+    const res = await fetch(`${worker}/write`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, path: rel, content: text, message: message ?? `Update ${rel}` }),
+    });
+    if (res.status === 409) throw new ConflictError(`${rel} changed underneath us`);
+    if (res.status === 403) throw new Error('This link is not allowed to make changes. Ask for the editing link.');
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(`Could not save: ${body.error ?? res.status}`);
+    }
+    const body = await res.json();
+    if (body.sha) shas.set(rel, body.sha);
+    return;
+  }
+
+  if (!repo || !token) throw new Error('Open the editing link, or add a GitHub token in Settings.');
 
   const res = await ghFetch(ghUrl(rel), {
     method: 'PUT',

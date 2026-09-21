@@ -56,12 +56,20 @@ the whole picture.
 
 3. **Actions secret** — Settings → Secrets → Actions → `HARDCOVER_API_TOKEN`.
 
-4. **To save from the published site**, each person needs a fine-grained personal
-   access token scoped to this repo alone with *Contents: read and write*, pasted into
-   Settings in the app. It's kept in that browser and never committed.
+4. **To save from the published site**, deploy the write proxy in `worker/` and put
+   its URL in `docs/site.json`. After that there are two links:
 
-   This is not a login. Anyone with that token can edit either profile — fine for two
-   people who trust each other, but don't mistake it for security.
+   - `…/bookshelf/` — read-only, safe to share with anyone.
+   - `…/bookshelf/?k=<key>` — unlocks editing on whatever device opens it, once.
+
+   The second link is the credential. Open it on a phone and that phone can add
+   books from then on; nothing to paste, nothing to install. Keep it between the
+   two of you, and see `worker/README.md` for exactly what a leaked key can do
+   (much less than you'd think — writes are confined to the two data files).
+
+   This is not a login: anyone holding the editing link can change either
+   profile. Fine between two people who trust each other; don't mistake it for
+   security.
 
 ## Layout
 

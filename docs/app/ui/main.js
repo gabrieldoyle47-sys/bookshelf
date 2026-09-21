@@ -24,7 +24,25 @@ const PROFILE_TABS = [
 
 /* ------------------------------------------------------------------- boot */
 
+/**
+ * The editing link carries its key as ?k=. Take it, remember it, and strip it
+ * from the address bar — so it is not sitting on screen to be shoulder-surfed
+ * or copied into a screenshot. It lives in this browser from then on.
+ */
+function adoptKeyFromLink() {
+  const params = new URLSearchParams(location.search);
+  const key = params.get('k');
+  if (!key) return false;
+  storage.setConfig({ key });
+  params.delete('k');
+  const query = params.toString();
+  history.replaceState(null, '', location.pathname + (query ? `?${query}` : '') + location.hash);
+  return true;
+}
+
 async function boot() {
+  await storage.loadSiteConfig();
+  const cameFromLink = adoptKeyFromLink();
   await storage.adoptLocalConfig();
   state.canWrite = storage.canWrite();
   try {
@@ -52,6 +70,9 @@ async function boot() {
 
   readRoute();
   render();
+  if (cameFromLink) {
+    toast(state.canWrite ? 'Editing unlocked on this device' : 'That link did not unlock editing', !state.canWrite);
+  }
 }
 
 function toggleMenu() {
@@ -152,9 +173,12 @@ function renderSidebar() {
     }, h('span', { text: '👥' }), 'Both of us')));
 
   const sync = document.getElementById('sync-state');
-  sync.textContent = storage.isLocal
-    ? 'local · saving to disk'
-    : state.canWrite ? 'synced to GitHub' : 'read-only';
+  sync.textContent = {
+    local: 'local · saving to disk',
+    link: 'editing unlocked',
+    token: 'synced to GitHub',
+    'read-only': 'read-only',
+  }[storage.writeMode()];
 }
 
 /* ------------------------------------------------------------------ saving */
@@ -395,9 +419,12 @@ function openSettings() {
   const draft = { ...cfg };
 
   body.append(
-    h('p', { class: 'hint', text: storage.isLocal
-      ? 'Running locally: changes are written straight to the files on disk. Only the Hardcover token is needed.'
-      : 'Running on GitHub Pages: changes are saved as commits, so a repo and token are needed.' }),
+    h('p', { class: 'hint', text: {
+      local: 'Running locally: changes are written straight to the files on disk.',
+      link: 'Editing is unlocked on this device. Changes are saved as commits to the repo.',
+      token: 'Saving with a GitHub token stored in this browser.',
+      'read-only': 'This browser can read but not change anything. Open the editing link to unlock it.',
+    }[storage.writeMode()] }),
 
     h('label', { class: 'field' }, h('span', { text: 'Hardcover API token (for searching)' }),
       h('input', { type: 'text', value: cfg.hardcover, placeholder: 'hc_pat_…', autocomplete: 'off',
@@ -411,7 +438,16 @@ function openSettings() {
       h('input', { type: 'text', value: cfg.token, placeholder: 'github_pat_…', autocomplete: 'off',
         oninput: (e) => { draft.token = e.target.value.trim(); } })),
 
-    h('p', { class: 'hint', text: 'Tokens are kept in this browser only. They are never committed to the repo — which is public.' }),
+    storage.writeMode() === 'link' && h('div', { class: 'row' },
+      h('button', { class: 'btn danger', type: 'button', onclick: () => {
+        storage.setConfig({ key: '' });
+        state.canWrite = storage.canWrite();
+        dialog.close();
+        toast('Editing locked on this device');
+        render();
+      } }, 'Lock editing on this device')),
+
+    h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' }),
 
     h('div', { class: 'row end' },
       h('button', { class: 'btn', type: 'button', onclick: () => {
