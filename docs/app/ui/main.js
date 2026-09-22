@@ -6,7 +6,7 @@
 import { h, clear, fmtDate, fmtReadOn, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
 import { createClient, searchBooks, searchViaProxy } from '../core/hardcover.js';
-import { bookFromHardcover, deriveWatchlist, STATUSES, readOnOf, isValidReadOn, today as todayISO } from '../core/model.js';
+import { bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO } from '../core/model.js';
 import { shelfView, upcomingView, whatsNewView, allUpcomingView, sharedView } from './views.js';
 import { statsView } from './stats.js';
 
@@ -276,7 +276,10 @@ function chooseStatus(hit) {
     if (ok) {
       document.getElementById('add-dialog').close();
       const watching = book.series?.id && deriveWatchlist(state.libraries[addProfile.id]).series[book.series.id];
-      toast(watching ? `Added · now watching ${book.series.name}` : `Added ${book.title}`);
+      const started = status === 'reading' ? ' · started today' : '';
+      toast(watching
+        ? `Added${started} · now watching ${book.series.name}`
+        : `Added ${book.title}${started}`);
     }
   };
 
@@ -447,6 +450,7 @@ async function applyEdit(profile, book, draft) {
   const ok = await saveLibrary(profile.id, (lib) => {
     const target = lib.books.find((b) => b.id === book.id);
     if (!target) throw new Error('That book is no longer on this shelf.');
+    const previous = target.status;
     Object.assign(target, {
       status: draft.status,
       rating: draft.rating,
@@ -455,13 +459,31 @@ async function applyEdit(profile, book, draft) {
       started: draft.started || null,
       finished: draft.finished || null,
     });
+    // Fill in whatever the status change implies, without touching anything
+    // the reader set by hand in the dates panel.
+    applyStatusDates(target, previous);
     return lib;
   }, `Update ${book.title}`);
 
   if (ok) {
     document.getElementById('book-dialog').close();
-    toast(`Saved ${book.title}`);
+    const saved = findBookIn(profile.id, book.id);
+    toast(datesMessage(book, saved) ?? `Saved ${book.title}`);
   }
+}
+
+const findBookIn = (profileId, id) =>
+  (state.libraries[profileId]?.books ?? []).find((b) => b.id === id);
+
+/** Say out loud when a date was recorded for you, so it is never a surprise. */
+function datesMessage(before, after) {
+  if (!after) return null;
+  const gainedStart = !before.started && after.started;
+  const gainedFinish = !before.finished && after.finished;
+  if (gainedStart && gainedFinish) return `Saved — recorded start and finish as today`;
+  if (gainedStart) return `Started ${after.title} — recorded today`;
+  if (gainedFinish) return `Finished ${after.title} — recorded today`;
+  return null;
 }
 
 async function removeBook(profile, book) {

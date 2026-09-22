@@ -96,7 +96,7 @@ export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '
     .map((a) => (typeof a === 'string' ? { id: null, name: a } : a))
     .map((a) => ({ ...a, name: cleanText(a.name) }));
 
-  return {
+  const book = {
     id: `hc:${hit.id}`,
     hardcoverId: String(hit.id),
     title: cleanText(hit.title),
@@ -115,10 +115,14 @@ export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '
     added: today(),
     // When it was read, at whatever precision the reader actually remembers:
     // "2026", "2026-03", or "2026-03-14". See readOn helpers below.
-    readOn: status === 'read' ? today() : null,
+    readOn: null,
     started: null,
     finished: null,
   };
+
+  // Adding a book straight onto "reading" or "finished" is a status change
+  // like any other, so it gets the same dates.
+  return applyStatusDates(book, null);
 }
 
 export function emptyLibrary() {
@@ -145,11 +149,45 @@ export function matchBooks(library, query) {
  * Apply a status change, keeping the optional dates coherent without ever
  * demanding them: we only stamp a date if one is volunteered.
  */
-export function setStatus(book, status, { rating, note } = {}) {
+export function setStatus(book, status, { rating, note, now } = {}) {
   if (!STATUSES.includes(status)) throw new Error(`Unknown status: ${status}`);
+  const previous = book.status;
   book.status = status;
   if (rating !== undefined) book.rating = rating;
   if (note !== undefined) book.note = note;
+  applyStatusDates(book, previous, now);
+  return book;
+}
+
+/**
+ * Record the dates a status change implies.
+ *
+ * Moving a book to "reading now" stamps the day you started it, and that date
+ * survives into the finished record, so a book you actually tracked ends up
+ * with both ends of the read without anyone typing a date.
+ *
+ * Nothing already recorded is ever overwritten: an explicit date the reader
+ * set by hand outranks anything inferred, and re-opening a book you had
+ * already started keeps the original start date rather than resetting it.
+ *
+ * A book marked read without ever passing through "reading" gets a finish date
+ * only - we genuinely do not know when it was started, and guessing would be
+ * worse than leaving it blank.
+ */
+export function applyStatusDates(book, previousStatus, now = today()) {
+  if (book.status === previousStatus) return book;
+
+  if (book.status === 'reading' && !book.started) {
+    book.started = now;
+  }
+
+  if (book.status === 'read') {
+    if (!book.finished) book.finished = now;
+    // Keep the simplified read date in step, unless a coarser one was chosen
+    // deliberately - "2019" must not be clobbered by today's date.
+    if (!isValidReadOn(book.readOn)) book.readOn = book.finished;
+  }
+
   return book;
 }
 

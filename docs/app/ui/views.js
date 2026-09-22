@@ -272,7 +272,13 @@ function sideFor(book) {
       when ? h('span', { class: 'when', text: when }) : null);
   }
   if (book.status === 'tbr' && book.series) return h('span', { class: 'pill', text: 'series' });
-  if (book.status === 'reading') return h('span', { class: 'pill', text: 'reading' });
+  if (book.status === 'reading') {
+    // Showing the start date is what makes the automatic stamp visible -
+    // otherwise it is a silent side effect nobody can check.
+    return book.started
+      ? h('span', { class: 'pill', text: `since ${fmtReadOnShort(book.started)}` })
+      : h('span', { class: 'pill', text: 'reading' });
+  }
   return null;
 }
 
