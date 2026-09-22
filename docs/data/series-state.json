@@ -2,7 +2,7 @@
   "997": {
     "id": "997",
     "name": "The Stormlight Archive",
-    "checkedAt": "2026-09-21",
+    "checkedAt": "2026-09-22",
     "books": {
       "374131": {
         "position": 2,
@@ -105,7 +105,7 @@
   "1033": {
     "id": "1033",
     "name": "Red Rising Saga",
-    "checkedAt": "2026-09-21",
+    "checkedAt": "2026-09-22",
     "books": {
       "378044": {
         "position": 2,
@@ -148,6 +148,325 @@
         "title": "Light Bringer",
         "releaseDate": "2023-01-01",
         "releaseYear": 2023
+      }
+    }
+  },
+  "1275": {
+    "id": "1275",
+    "name": "A Court of Thorns and Roses",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "428290": {
+        "position": 1,
+        "title": "A Court of Thorns and Roses",
+        "releaseDate": "2015-05-05",
+        "releaseYear": 2015
+      },
+      "428929": {
+        "position": 2,
+        "title": "A Court of Mist and Fury",
+        "releaseDate": "2016-05-03",
+        "releaseYear": 2016
+      },
+      "429046": {
+        "position": 5,
+        "title": "A ​Court of Silver Flames",
+        "releaseDate": "2021-01-01",
+        "releaseYear": 2021
+      },
+      "430559": {
+        "position": 6,
+        "title": "A Court of Splintered Harmony",
+        "releaseDate": "2026-10-27",
+        "releaseYear": 2026
+      },
+      "458947": {
+        "position": 3,
+        "title": "A Court of Wings and Ruin",
+        "releaseDate": "2017-01-01",
+        "releaseYear": 2017
+      },
+      "459744": {
+        "position": 4,
+        "title": "A Court of Frost and Starlight",
+        "releaseDate": "2018-05-01",
+        "releaseYear": 2018
+      },
+      "1269372": {
+        "position": 2.1,
+        "title": "Wings and Embers",
+        "releaseDate": "2016-05-03",
+        "releaseYear": 2016
+      },
+      "1290276": {
+        "position": null,
+        "title": "A Court of Thorns and Roses Colouring Book",
+        "releaseDate": "2017-01-01",
+        "releaseYear": 2017
+      },
+      "1295502": {
+        "position": 5.2,
+        "title": "A Court of Silver Flames - Azriel Bonus Chapter",
+        "releaseDate": null,
+        "releaseYear": null
+      },
+      "1389522": {
+        "position": 5.1,
+        "title": "A Court of Silver Flames - Feyre Bonus Chapter",
+        "releaseDate": null,
+        "releaseYear": null
+      },
+      "2472931": {
+        "position": 7,
+        "title": "A Court of Forgotten Melody",
+        "releaseDate": "2027-01-12",
+        "releaseYear": 2027
+      }
+    }
+  },
+  "2211": {
+    "id": "2211",
+    "name": "Crescent City",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "429093": {
+        "position": 2,
+        "title": "House of Sky and Breath",
+        "releaseDate": "2023-09-26",
+        "releaseYear": 2023
+      },
+      "465201": {
+        "position": 1,
+        "title": "House of Earth and Blood",
+        "releaseDate": "2020-03-03",
+        "releaseYear": 2020
+      },
+      "746152": {
+        "position": 3,
+        "title": "House of Flame and Shadow",
+        "releaseDate": "2024-01-01",
+        "releaseYear": 2024
+      }
+    }
+  },
+  "5509": {
+    "id": "5509",
+    "name": "Throne of Glass",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "39629": {
+        "position": 1,
+        "title": "Throne of Glass",
+        "releaseDate": "2012-08-07",
+        "releaseYear": 2012
+      },
+      "153090": {
+        "position": 4,
+        "title": "Queen of Shadows",
+        "releaseDate": "2015-01-01",
+        "releaseYear": 2015
+      },
+      "183545": {
+        "position": 5,
+        "title": "Empire of Storms",
+        "releaseDate": "2016-01-01",
+        "releaseYear": 2016
+      },
+      "283659": {
+        "position": 2,
+        "title": "Crown of Midnight",
+        "releaseDate": "2013-08-15",
+        "releaseYear": 2013
+      },
+      "429015": {
+        "position": 6,
+        "title": "Tower of Dawn",
+        "releaseDate": "2017-01-01",
+        "releaseYear": 2017
+      },
+      "429018": {
+        "position": 7,
+        "title": "Kingdom of Ash",
+        "releaseDate": "2018-01-01",
+        "releaseYear": 2018
+      },
+      "525818": {
+        "position": 0.5,
+        "title": "The Assassin and the Empire",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012
+      },
+      "531375": {
+        "position": 0.4,
+        "title": "The Assassin and the Underworld",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012
+      },
+      "531376": {
+        "position": 0.3,
+        "title": "The Assassin and the Desert",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012
+      },
+      "531377": {
+        "position": 0.2,
+        "title": "The Assassin and the Healer",
+        "releaseDate": "2012-03-30",
+        "releaseYear": 2012
+      },
+      "531378": {
+        "position": 0.1,
+        "title": "The Assassin and the Pirate Lord",
+        "releaseDate": "2012-01-13",
+        "releaseYear": 2012
+      },
+      "544239": {
+        "position": null,
+        "title": "The Throne of Glass Coloring Book",
+        "releaseDate": "2016-01-01",
+        "releaseYear": 2016
+      },
+      "893818": {
+        "position": 1.5,
+        "title": "The Assassin and the Princess",
+        "releaseDate": null,
+        "releaseYear": null
+      },
+      "893847": {
+        "position": 1.1,
+        "title": "The Captain and the Prince",
+        "releaseDate": "2013-05-08",
+        "releaseYear": 2013
+      },
+      "1363844": {
+        "position": 3,
+        "title": "Heir of Fire",
+        "releaseDate": "2014-09-02",
+        "releaseYear": 2014
+      }
+    }
+  },
+  "5982": {
+    "id": "5982",
+    "name": "The Licanius Trilogy",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "441081": {
+        "position": 2,
+        "title": "An Echo of Things to Come",
+        "releaseDate": "2017-01-01",
+        "releaseYear": 2017
+      },
+      "441085": {
+        "position": 3,
+        "title": "The Light of All That Falls",
+        "releaseDate": "2019-01-01",
+        "releaseYear": 2019
+      },
+      "445584": {
+        "position": 1,
+        "title": "The Shadow of What Was Lost",
+        "releaseDate": "2014-01-01",
+        "releaseYear": 2014
+      }
+    }
+  },
+  "10001": {
+    "id": "10001",
+    "name": "The Mistborn Saga: The Original Trilogy",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "103241": {
+        "position": 3,
+        "title": "The Hero of Ages",
+        "releaseDate": "2008-01-01",
+        "releaseYear": 2008
+      },
+      "369692": {
+        "position": 1,
+        "title": "Mistborn: The Final Empire",
+        "releaseDate": "2006-07-17",
+        "releaseYear": 2006
+      },
+      "427383": {
+        "position": 2,
+        "title": "The Well of Ascension",
+        "releaseDate": "2007-08-21",
+        "releaseYear": 2007
+      },
+      "427844": {
+        "position": 0.5,
+        "title": "The Eleventh Metal",
+        "releaseDate": "2012-04-10",
+        "releaseYear": 2012
+      },
+      "427881": {
+        "position": 3.5,
+        "title": "Mistborn: Secret History",
+        "releaseDate": "2016-01-01",
+        "releaseYear": 2016
+      }
+    }
+  },
+  "35077": {
+    "id": "35077",
+    "name": "Hierarchy",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "594985": {
+        "position": 1,
+        "title": "The Will of the Many",
+        "releaseDate": "2023-05-23",
+        "releaseYear": 2023
+      },
+      "824777": {
+        "position": 2,
+        "title": "The Strength of the Few",
+        "releaseDate": "2025-01-01",
+        "releaseYear": 2025
+      },
+      "2333013": {
+        "position": 3,
+        "title": "The Justice of One",
+        "releaseDate": "2027-01-01",
+        "releaseYear": 2027
+      }
+    }
+  },
+  "41764": {
+    "id": "41764",
+    "name": "The Empyrean",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "714600": {
+        "position": 1,
+        "title": "Fourth Wing",
+        "releaseDate": "2023-05-02",
+        "releaseYear": 2023
+      },
+      "747398": {
+        "position": 2,
+        "title": "Iron Flame",
+        "releaseDate": "2023-01-01",
+        "releaseYear": 2023
+      },
+      "1061079": {
+        "position": 4,
+        "title": "Untitled",
+        "releaseDate": null,
+        "releaseYear": null
+      },
+      "1197328": {
+        "position": 3,
+        "title": "Onyx Storm",
+        "releaseDate": "2025-01-21",
+        "releaseYear": 2025
+      },
+      "2769384": {
+        "position": 3.5,
+        "title": "Threshing Day",
+        "releaseDate": "2026-09-29",
+        "releaseYear": 2026
       }
     }
   }
