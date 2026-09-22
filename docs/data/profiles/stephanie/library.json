@@ -78,7 +78,7 @@
       "cover": "https://assets.hardcover.app/edition/30501042/9052e867e43511a1f2ec7dc8ce0e33d01faf7c6e.jpeg",
       "slug": "throne-of-glass",
       "status": "read",
-      "rating": null,
+      "rating": 5,
       "note": "",
       "added": "2026-09-21",
       "started": null,
@@ -395,7 +395,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A Ã¢ÂÂCourt of Silver Flames",
+      "title": "A ÃÂ¢ÃÂÃÂCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
