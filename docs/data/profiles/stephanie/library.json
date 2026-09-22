@@ -111,6 +111,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:283659",
+      "hardcoverId": "283659",
+      "title": "Crown of Midnight",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 2,
+        "booksCount": 18
+      },
+      "pages": 448,
+      "released": "2013-08-15",
+      "releaseYear": 2013,
+      "cover": "https://assets.hardcover.app/external_data/4249036/9b83ee15863ed09e398311073e0bde0429e3bbf6.jpeg",
+      "slug": "crown-of-midnight",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
