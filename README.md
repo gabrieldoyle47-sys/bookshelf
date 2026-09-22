@@ -38,12 +38,22 @@ token is read from `.env` — nothing else to configure.
 
 You can override any of it with `books watch` / `books unwatch`.
 
-## Reading dates are optional
+## Reading dates
 
-`started` and `finished` are never asked for. If you want them, they're in the
-*Reading dates* panel on a book. Anything derived from them — reading pace, books per
-month — says how much of your shelf it actually covers rather than implying it knows
-the whole picture.
+Move a book to **Reading now** and the day you started is recorded for you. That date
+survives into the finished record, so a book you actually tracked ends up with both
+ends of the read without you typing a date. A book marked finished without ever
+passing through *Reading now* gets a finish date only — nobody knows when it was
+started, and guessing would be worse than leaving it blank.
+
+Nothing inferred ever overwrites something you set by hand, and re-reading a book
+keeps the original start date rather than resetting it.
+
+For everything else there's **"When did you read it?"** on each book, which takes
+whatever precision you actually have — a year on its own is a complete answer, and
+so is a month. Exact `started`/`finished` live in the *Reading dates* panel below it.
+Anything derived from dates — reading pace, books per year — says how much of your
+shelf it actually covers rather than implying it knows the whole picture.
 
 ## Setup
 
