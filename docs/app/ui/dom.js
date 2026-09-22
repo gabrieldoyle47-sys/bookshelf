@@ -41,6 +41,31 @@ export function fmtDate(iso) {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/**
+ * Render a partial read date at whatever precision it carries.
+ *
+ * "2019" stays "2019" rather than becoming "1 January 2019" - the whole point
+ * is not to claim a precision the reader never gave us.
+ */
+export function fmtReadOn(value) {
+  if (!value) return '';
+  const [y, m, d] = String(value).split('-');
+  if (!m) return y;
+  const month = new Date(Number(y), Number(m) - 1, 1)
+    .toLocaleDateString(undefined, { month: 'long' });
+  return d ? `${Number(d)} ${month} ${y}` : `${month} ${y}`;
+}
+
+/** Short form for group headings and tight columns: "Mar 2019". */
+export function fmtReadOnShort(value) {
+  if (!value) return '';
+  const [y, m, d] = String(value).split('-');
+  if (!m) return y;
+  const month = new Date(Number(y), Number(m) - 1, 1)
+    .toLocaleDateString(undefined, { month: 'short' });
+  return d ? `${Number(d)} ${month} ${y}` : `${month} ${y}`;
+}
+
 export function fmtDays(days) {
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';

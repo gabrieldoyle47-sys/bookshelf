@@ -12,6 +12,66 @@ export const DISLIKE_AT_OR_BELOW = 2;
 /** Ratings at or above this start watching the author, not just the series. */
 export const AUTHOR_WATCH_AT_OR_ABOVE = 4;
 
+/* --------------------------------------------------------------- text --- */
+
+// Zero-width and formatting characters that carry no meaning in a title but
+// survive round-trips and break string comparison. Hardcover's records contain
+// them - "A Court of Silver Flames" has a zero-width space after the "A".
+const INVISIBLE = /[\u200B-\u200F\u2028\u2029\u2060\uFEFF\u00AD]/g;
+// C0 and C1 control characters, never legitimate in a title.
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g;
+
+/**
+ * Undo Latin-1/UTF-8 double-encoding ("mojibake").
+ *
+ * Text that has been through a byte-as-character round trip comes back as
+ * a run of accented capitals. Re-reading those characters as bytes and
+ * decoding them as UTF-8 reverses one layer; repeat until it settles.
+ * Decoding strictly (fatal) means only a genuinely valid UTF-8 reading is
+ * accepted, so legitimately accented text is left alone.
+ */
+export function repairMojibake(text) {
+  let current = String(text ?? '');
+  for (let pass = 0; pass < 4; pass++) {
+    // Only characters that could have come from a single byte can be re-read.
+    if (!/[\u00C2-\u00C3\u00E2]/.test(current)) break;
+    let bytes;
+    try {
+      bytes = Uint8Array.from(current, (ch) => {
+        const code = ch.charCodeAt(0);
+        if (code > 0xff) throw new Error('not byte-sized');
+        return code;
+      });
+    } catch {
+      break;
+    }
+    let decoded;
+    try {
+      decoded = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+      break; // not double-encoded after all
+    }
+    if (decoded === current) break;
+    current = decoded;
+  }
+  return current;
+}
+
+/**
+ * Normalise text coming from an external source: repair double-encoding, drop
+ * invisible and control characters, put accents into one canonical form so two
+ * spellings of a title compare equal, and collapse stray whitespace.
+ */
+export function cleanText(text) {
+  if (text == null) return text === undefined ? undefined : null;
+  return repairMojibake(String(text))
+    .normalize('NFC')
+    .replace(INVISIBLE, '')
+    .replace(CONTROL, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** ISO date (YYYY-MM-DD) for "today", in local time rather than UTC. */
 export function today(now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
@@ -29,14 +89,19 @@ export function today(now = new Date()) {
 export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '' } = {}) {
   if (!STATUSES.includes(status)) throw new Error(`Unknown status: ${status}`);
 
-  const authors = (hit.authors ?? []).map((a) => (typeof a === 'string' ? { id: null, name: a } : a));
+  // Everything from Hardcover goes through cleanText: their records contain
+  // zero-width characters and occasional mis-encoded text, and left alone those
+  // corrupt further on every save.
+  const authors = (hit.authors ?? [])
+    .map((a) => (typeof a === 'string' ? { id: null, name: a } : a))
+    .map((a) => ({ ...a, name: cleanText(a.name) }));
 
   return {
     id: `hc:${hit.id}`,
     hardcoverId: String(hit.id),
-    title: hit.title,
+    title: cleanText(hit.title),
     authors,
-    series: hit.series ?? null,
+    series: hit.series ? { ...hit.series, name: cleanText(hit.series.name) } : null,
     pages: hit.pages ?? null,
     released: hit.releaseDate ?? null,
     releaseYear: hit.releaseYear ?? null,
@@ -48,6 +113,9 @@ export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '
     note,
 
     added: today(),
+    // When it was read, at whatever precision the reader actually remembers:
+    // "2026", "2026-03", or "2026-03-14". See readOn helpers below.
+    readOn: status === 'read' ? today() : null,
     started: null,
     finished: null,
   };
@@ -182,4 +250,48 @@ export function unionWatchlists(profiles) {
     }
   }
   return { series: [...series.values()], authors: [...authors.values()] };
+}
+
+/* ------------------------------------------------------------ read dates */
+
+/**
+ * When a book was read, at whatever precision is known.
+ *
+ * Stored as a partial ISO date: "2026", "2026-03" or "2026-03-14". Partial
+ * ISO dates sort correctly as plain strings and never imply a precision the
+ * reader did not actually claim — which matters, because most books were read
+ * long before anyone thought to log them.
+ */
+export const READ_PRECISION = ['year', 'month', 'day'];
+
+export function precisionOf(readOn) {
+  if (!readOn) return null;
+  const parts = String(readOn).split('-');
+  return parts.length === 1 ? 'year' : parts.length === 2 ? 'month' : 'day';
+}
+
+export function isValidReadOn(readOn) {
+  return typeof readOn === 'string' && /^\d{4}(-\d{2}(-\d{2})?)?$/.test(readOn);
+}
+
+/**
+ * The best available answer for when a book was read. Falls back to the exact
+ * finish date, so books logged before this field existed still group correctly.
+ */
+export function readOnOf(book) {
+  if (isValidReadOn(book.readOn)) return book.readOn;
+  if (book.finished) return String(book.finished).slice(0, 10);
+  return null;
+}
+
+export function readYearOf(book) {
+  const value = readOnOf(book);
+  return value ? Number(value.slice(0, 4)) : null;
+}
+
+/** Narrow a readOn to a given precision, e.g. "2026-03-14" -> "2026-03". */
+export function coarsen(readOn, precision) {
+  if (!readOn) return null;
+  const length = precision === 'year' ? 4 : precision === 'month' ? 7 : 10;
+  return String(readOn).slice(0, length);
 }

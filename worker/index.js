@@ -34,6 +34,26 @@ const json = (body, statusCode = 200) =>
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...CORS },
   });
 
+/**
+ * Base64 <-> text, via bytes.
+ *
+ * atob() hands back a *binary* string: one character per byte. A multi-byte
+ * UTF-8 sequence therefore arrives as several Latin-1 characters, and saving
+ * that back re-encodes each of them — so a zero-width space (E2 80 8B) grows
+ * into six bytes, then twelve. Going through TextDecoder keeps text as text.
+ */
+const decodeBase64 = (b64) => {
+  const binary = atob(b64.replace(/\s/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(binary, (ch) => ch.charCodeAt(0)));
+};
+
+const encodeBase64 = (text) => {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+};
+
 const gh = (env, path, options = {}) =>
   fetch(`https://api.github.com/repos/${env.REPO}/contents/docs/data/${path}`, {
     ...options,
@@ -84,7 +104,7 @@ export default {
       if (res.status === 404) return json({ error: 'not found' }, 404);
       if (!res.ok) return json({ error: `github ${res.status}` }, 502);
       const body = await res.json();
-      return json({ content: atob(body.content.replace(/\s/g, '')), sha: body.sha });
+      return json({ content: decodeBase64(body.content), sha: body.sha });
     }
 
     /* ---- writes: open, by design ---- */
@@ -114,7 +134,7 @@ export default {
         method: 'PUT',
         body: JSON.stringify({
           message: payload.message ?? `Update ${payload.path}`,
-          content: btoa(unescape(encodeURIComponent(payload.content))),
+          content: encodeBase64(payload.content),
           ...(sha ? { sha } : {}),
         }),
       });

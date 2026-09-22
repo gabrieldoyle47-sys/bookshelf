@@ -12,7 +12,7 @@
  */
 
 import { h, stars } from './dom.js';
-import { deriveWatchlist } from '../core/model.js';
+import { deriveWatchlist, readOnOf, readYearOf } from '../core/model.js';
 import { frag, pageHead, emptyState } from './views.js';
 
 const MIN_POINTS = 3; // below this a chart misleads more than it informs
@@ -22,7 +22,7 @@ export function statsView(ctx, profile) {
   const books = library.books;
   const read = books.filter((b) => b.status === 'read');
   const rated = read.filter((b) => typeof b.rating === 'number' && b.rating > 0);
-  const dated = read.filter((b) => b.finished);
+  const dated = read.filter((b) => readOnOf(b));
   const watch = deriveWatchlist(library);
 
   const pagesKnown = read.filter((b) => b.pages);
@@ -84,7 +84,7 @@ function ratingSection(rated) {
 
 function paceSection(read, dated) {
   const coverage = h('p', { class: 'hint',
-    text: `Based on the ${dated.length} of ${read.length} finished book${read.length === 1 ? '' : 's'} with a finish date recorded. Dates are optional — add them from a book's detail panel if you want this to be complete.` });
+    text: `Based on the ${dated.length} of ${read.length} finished book${read.length === 1 ? '' : 's'} with a read date recorded. Dates are optional — set one from a book's panel, where a year on its own counts.` });
 
   if (dated.length < MIN_POINTS) {
     return h('section', { class: 'section' },
@@ -93,18 +93,39 @@ function paceSection(read, dated) {
       read.length ? coverage : null);
   }
 
-  const months = lastMonths(12);
-  const counts = months.map((m) => ({
-    key: m.short,
-    label: m.short,
-    value: dated.filter((b) => String(b.finished).slice(0, 7) === m.key).length,
-    tip: (n) => `${n} finished in ${m.long}`,
+  // Only books dated to at least a month can sit in a monthly column; a
+  // year-only date would have to be invented into one.
+  const monthly = dated.filter((b) => String(readOnOf(b)).length >= 7);
+
+  if (monthly.length >= MIN_POINTS) {
+    const months = lastMonths(12);
+    const counts = months.map((m) => ({
+      key: m.short,
+      label: m.short,
+      value: monthly.filter((b) => String(readOnOf(b)).slice(0, 7) === m.key).length,
+      tip: (n) => `${n} read in ${m.long}`,
+    }));
+    return h('section', { class: 'section' },
+      h('div', { class: 'section-head' },
+        h('h2', { text: 'Reading pace' }),
+        h('span', { class: 'count', text: 'last 12 months' })),
+      h('div', { class: 'chart-wrap' }, barChart(counts)),
+      coverage);
+  }
+
+  // Otherwise fall back to a per-year view, which every read date can support.
+  const years = [...new Set(dated.map(readYearOf))].filter(Boolean).sort();
+  const counts = years.map((y) => ({
+    key: String(y),
+    label: String(y),
+    value: dated.filter((b) => readYearOf(b) === y).length,
+    tip: (n) => `${n} book${n === 1 ? '' : 's'} read in ${y}`,
   }));
 
   return h('section', { class: 'section' },
     h('div', { class: 'section-head' },
-      h('h2', { text: 'Reading pace' }),
-      h('span', { class: 'count', text: 'last 12 months' })),
+      h('h2', { text: 'Books per year' }),
+      h('span', { class: 'count', text: `${years.length} year${years.length === 1 ? '' : 's'}` })),
     h('div', { class: 'chart-wrap' }, barChart(counts)),
     coverage);
 }
