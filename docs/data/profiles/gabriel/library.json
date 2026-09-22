@@ -543,6 +543,35 @@
       "started": "2026-09-22",
       "finished": null,
       "readOn": null
+    },
+    {
+      "id": "hc:427456",
+      "hardcoverId": "427456",
+      "title": "Morning Star",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 3,
+        "booksCount": 14
+      },
+      "pages": 524,
+      "released": "2016-09-27",
+      "releaseYear": 2016,
+      "cover": "https://assets.hardcover.app/book_mappings/7332844/702879986b75f035349c34acad3d94f88bb737ed.jpeg",
+      "slug": "morning-star",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-22",
+      "readOn": null,
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
