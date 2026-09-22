@@ -100,9 +100,5 @@
   </script>
 
   <script type="module" src="./app/ui/main.js"></script>
-<script>
-// test harness: pick grouping from ?g= before the app boots
-const g = new URLSearchParams(location.search).get('g');
-if (g) { try { localStorage.setItem('bookshelf.grouping', g); } catch {} }
-</script></body>
+</body>
 </html>
