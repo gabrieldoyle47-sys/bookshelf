@@ -302,9 +302,23 @@ export function upcomingView(ctx, profile) {
   const items = upcomingFrom(ctx.state.seriesState, Object.keys(watch.series));
   const watched = Object.values(watch.series);
 
+  // How many watched series the watcher has actually looked at yet. A series
+  // added since the last run has no data, which otherwise looks like "nothing
+  // upcoming" when it really means "not checked yet".
+  const known = watched.filter((s) => ctx.state.seriesState[s.id]).length;
+  const unchecked = watched.length - known;
+
+  const refresh = h('button', {
+    class: 'btn', type: 'button', id: 'refresh-btn',
+    disabled: !ctx.state.canWrite,
+    onclick: (e) => ctx.actions.checkNow(e.currentTarget),
+  }, 'Check for new releases');
+
   return frag(
     pageHead(`Upcoming · ${profile.name}`,
-      `${watched.length} series watched automatically`),
+      `${watched.length} series watched automatically`, refresh),
+    unchecked > 0 ? h('p', { class: 'notice',
+      text: `${unchecked} of these series ${unchecked === 1 ? 'has' : 'have'} not been checked yet — press “Check for new releases”.` }) : null,
     items.length
       ? h('div', { class: 'books' }, items.map((i) => releaseRow(i, ctx)))
       : emptyState(watched.length
