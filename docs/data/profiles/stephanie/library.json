@@ -414,7 +414,7 @@
       "cover": "https://assets.hardcover.app/editions/30707731/3559167047761380.jpeg",
       "slug": "fourth-wing",
       "status": "read",
-      "rating": null,
+      "rating": 4,
       "note": "",
       "added": "2026-09-21",
       "started": null,
@@ -451,7 +451,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A âCourt of Silver Flames",
+      "title": "A Ã¢ÂÂCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
