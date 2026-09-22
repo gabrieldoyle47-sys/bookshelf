@@ -3,10 +3,10 @@
  * every mutation goes through.
  */
 
-import { h, clear, fmtDate, authorNames, coverEl, seriesLabel, toast } from './dom.js';
+import { h, clear, fmtDate, fmtReadOn, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
 import { createClient, searchBooks, searchViaProxy } from '../core/hardcover.js';
-import { bookFromHardcover, deriveWatchlist, STATUSES } from '../core/model.js';
+import { bookFromHardcover, deriveWatchlist, STATUSES, readOnOf, isValidReadOn, today as todayISO } from '../core/model.js';
 import { shelfView, upcomingView, whatsNewView, allUpcomingView, sharedView } from './views.js';
 import { statsView } from './stats.js';
 
@@ -17,6 +17,10 @@ const state = {
 };
 
 const ctx = { state, actions: {} };
+
+// Views call this when a display-only preference changes (grouping, say) and
+// the data itself is untouched.
+ctx.actions.rerender = () => render();
 
 const PROFILE_TABS = [
   ['shelf', 'Shelf'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
@@ -289,8 +293,10 @@ ctx.actions.openBook = (book, owner) => {
   document.getElementById('book-title').textContent = book.title;
   const body = clear(document.getElementById('book-body'));
 
-  const draft = { status: book.status, rating: book.rating ?? null, note: book.note ?? '',
-                  started: book.started ?? '', finished: book.finished ?? '' };
+  const draft = {
+    status: book.status, rating: book.rating ?? null, note: book.note ?? '',
+    readOn: readOnOf(book), started: book.started ?? '', finished: book.finished ?? '',
+  };
 
   body.append(
     h('div', { class: 'row' },
@@ -306,6 +312,8 @@ ctx.actions.openBook = (book, owner) => {
         STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, s)))),
 
     h('div', { class: 'field' }, h('span', { text: 'Rating' }), ratingPicker(draft)),
+
+    h('div', { class: 'field' }, h('span', { text: 'When did you read it?' }), readOnPicker(draft)),
 
     h('label', { class: 'field' }, h('span', { text: 'Note' }),
       h('textarea', { placeholder: 'Optional', oninput: (e) => { draft.note = e.target.value; } }, book.note ?? '')),
@@ -329,6 +337,95 @@ ctx.actions.openBook = (book, owner) => {
   dialog.showModal();
 };
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+const daysInMonth = (year, month) => new Date(Number(year), Number(month), 0).getDate();
+
+/**
+ * "When did you read it?" at whatever precision the reader actually has.
+ *
+ * Three dependent dropdowns rather than a date field, because most books were
+ * read long before anyone started logging them: a date input would force a day
+ * nobody remembers. Year alone is a complete, valid answer here; month and day
+ * are there if you happen to know them.
+ */
+function readOnPicker(draft) {
+  const current = draft.readOn ?? '';
+  let [year = '', month = '', day = ''] = current.split('-');
+
+  const wrap = h('div', { class: 'row readon' });
+
+  const commit = () => {
+    draft.readOn = !year ? null
+      : !month ? year
+      : !day ? `${year}-${month}`
+      : `${year}-${month}-${day}`;
+    paint();
+  };
+
+  const option = (value, label, selected) =>
+    h('option', { value, ...(selected ? { selected: true } : {}) }, label);
+
+  const yearSel = h('select', {
+    'aria-label': 'Year read',
+    onchange: (e) => { year = e.target.value; if (!year) { month = ''; day = ''; } commit(); },
+  });
+  const monthSel = h('select', {
+    'aria-label': 'Month read',
+    onchange: (e) => { month = e.target.value; if (!month) day = ''; commit(); },
+  });
+  const daySel = h('select', {
+    'aria-label': 'Day read',
+    onchange: (e) => { day = e.target.value; commit(); },
+  });
+
+  function paint() {
+    const thisYear = new Date().getFullYear();
+    clear(yearSel).append(option('', 'Year…', !year));
+    for (let y = thisYear; y >= 1960; y--) yearSel.append(option(String(y), String(y), String(y) === year));
+
+    clear(monthSel).append(option('', year ? 'Month (optional)' : '—', !month));
+    MONTHS.forEach((name, i) => {
+      const value = String(i + 1).padStart(2, '0');
+      monthSel.append(option(value, name, value === month));
+    });
+    monthSel.disabled = !year;
+
+    clear(daySel).append(option('', month ? 'Day (optional)' : '—', !day));
+    const max = year && month ? daysInMonth(year, month) : 31;
+    for (let d = 1; d <= max; d++) {
+      const value = String(d).padStart(2, '0');
+      daySel.append(option(value, String(d), value === day));
+    }
+    daySel.disabled = !month;
+
+    summary.textContent = draft.readOn
+      ? `Read ${fmtReadOn(draft.readOn)}`
+      : 'Not recorded — a year on its own is fine';
+  }
+
+  const summary = h('span', { class: 'readon-summary' });
+
+  const quick = h('button', {
+    class: 'btn secondary small', type: 'button',
+    onclick: () => {
+      const iso = todayISO();
+      [year, month, day] = iso.split('-');
+      commit();
+    },
+  }, 'Today');
+
+  const clearBtn = h('button', {
+    class: 'btn secondary small', type: 'button',
+    onclick: () => { year = month = day = ''; commit(); },
+  }, 'Clear');
+
+  paint();
+  wrap.append(yearSel, monthSel, daySel, quick, clearBtn);
+  return h('div', {}, wrap, summary);
+}
+
 function ratingPicker(draft) {
   const wrap = h('div', { class: 'rating-pick' });
   const paint = () => [...wrap.children].forEach((btn, i) =>
@@ -351,6 +448,7 @@ async function applyEdit(profile, book, draft) {
       status: draft.status,
       rating: draft.rating,
       note: draft.note,
+      readOn: isValidReadOn(draft.readOn) ? draft.readOn : null,
       started: draft.started || null,
       finished: draft.finished || null,
     });

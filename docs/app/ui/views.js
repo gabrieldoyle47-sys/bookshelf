@@ -4,8 +4,10 @@
  * ctx.actions so every change goes through one save path.
  */
 
-import { h, stars, fmtDate, fmtDays, authorNames, coverEl, seriesLabel, daysUntil } from './dom.js';
-import { deriveWatchlist } from '../core/model.js';
+import {
+  h, stars, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
+} from './dom.js';
+import { deriveWatchlist, readOnOf, readYearOf } from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -47,6 +49,113 @@ function bookRow(book, ctx, side, owner) {
     side && h('div', { class: 'book-side' }, side));
 }
 
+/* --------------------------------------------------------------- grouping */
+
+export const GROUPINGS = [
+  ['recent', 'Recent'],
+  ['series', 'By series'],
+  ['year', 'By year'],
+];
+
+const GROUPING_KEY = 'bookshelf.grouping';
+
+export function getGrouping() {
+  try {
+    const saved = localStorage.getItem(GROUPING_KEY);
+    return GROUPINGS.some(([id]) => id === saved) ? saved : 'recent';
+  } catch {
+    return 'recent';
+  }
+}
+
+export function setGrouping(value) {
+  try { localStorage.setItem(GROUPING_KEY, value); } catch { /* private mode */ }
+}
+
+/**
+ * Group finished books by series.
+ *
+ * Books within a series are ordered by their position in it, not by when they
+ * were read - the useful question is "where am I up to", and a series read out
+ * of order should still read in order on screen.
+ */
+function groupBySeries(books) {
+  const groups = new Map();
+  const standalone = [];
+
+  for (const book of books) {
+    if (!book.series?.id) { standalone.push(book); continue; }
+    if (!groups.has(book.series.id)) {
+      groups.set(book.series.id, { id: book.series.id, name: book.series.name, books: [] });
+    }
+    groups.get(book.series.id).books.push(book);
+  }
+
+  const ordered = [...groups.values()].map((g) => {
+    g.books.sort((a, b) => (a.series.position ?? 0) - (b.series.position ?? 0));
+    const rated = g.books.filter((b) => typeof b.rating === 'number');
+    g.average = rated.length ? rated.reduce((sum, b) => sum + b.rating, 0) / rated.length : null;
+    g.latest = g.books.map(readOnOf).filter(Boolean).sort().pop() ?? '';
+    return g;
+  });
+
+  // Biggest series first: that's where the reading actually went.
+  ordered.sort((a, b) => b.books.length - a.books.length || a.name.localeCompare(b.name));
+
+  if (standalone.length) {
+    standalone.sort((a, b) => String(readOnOf(b) ?? '').localeCompare(String(readOnOf(a) ?? '')));
+    ordered.push({ id: '__standalone', name: 'Standalones', books: standalone, average: null, standalone: true });
+  }
+  return ordered;
+}
+
+/** Group by the year read, with undated books gathered at the end. */
+function groupByYear(books) {
+  const groups = new Map();
+  for (const book of books) {
+    const year = readYearOf(book);
+    const key = year ?? '__unknown';
+    if (!groups.has(key)) groups.set(key, { id: String(key), year, books: [] });
+    groups.get(key).books.push(book);
+  }
+
+  const ordered = [...groups.values()].filter((g) => g.year != null);
+  ordered.sort((a, b) => b.year - a.year);
+  for (const g of ordered) {
+    g.name = String(g.year);
+    g.books.sort((a, b) => String(readOnOf(b) ?? '').localeCompare(String(readOnOf(a) ?? '')));
+  }
+
+  const unknown = groups.get('__unknown');
+  if (unknown) {
+    unknown.name = 'Year not recorded';
+    unknown.unknown = true;
+    ordered.push(unknown);
+  }
+  return ordered;
+}
+
+/**
+ * A collapsible group. Open by default only for the first one, so a long shelf
+ * opens as a scannable list of series or years rather than a wall of books.
+ */
+function groupBlock(group, ctx, { open, sideFor: side, subtitle }) {
+  const body = h('div', { class: 'books group-body' },
+    // A bucket of undated books is otherwise a dead end - say how to fix it.
+    group.unknown
+      ? h('p', { class: 'group-hint',
+          text: 'Open a book and set when you read it. A year on its own is enough — you do not need the exact date.' })
+      : null,
+    group.books.map((b) => bookRow(b, ctx, side(b))));
+
+  const summary = h('summary', { class: 'group-head' },
+    h('span', { class: 'group-name', text: group.name }),
+    h('span', { class: 'count', text: String(group.books.length) }),
+    subtitle ? h('span', { class: 'group-sub', text: subtitle }) : null);
+
+  return h('details', { class: 'group', ...(open ? { open: true } : {}) }, summary, body);
+}
+
 /* ------------------------------------------------------------------ shelf */
 
 export function shelfView(ctx, profile) {
@@ -72,8 +181,11 @@ export function shelfView(ctx, profile) {
     const group = library.books.filter((b) => b.status === status);
     if (!group.length) return null;
 
-    // Most recently added first within a group; that is nearly always the
-    // order someone wants to see their own shelf in.
+    // The finished pile is the one that grows without limit, so it gets the
+    // grouping control; the others stay a simple list.
+    if (status === 'read' && group.length > 1) return finishedSection(group, ctx);
+
+    // Most recently added first; nearly always the order someone wants.
     group.sort((a, b) => String(b.added ?? '').localeCompare(String(a.added ?? '')));
 
     return h('section', { class: 'section' },
@@ -89,8 +201,50 @@ export function shelfView(ctx, profile) {
     sections);
 }
 
+/** The Finished pile, grouped however the reader last chose. */
+function finishedSection(books, ctx) {
+  const mode = getGrouping();
+
+  const control = h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Group finished books by' },
+    GROUPINGS.map(([id, label]) => h('button', {
+      class: 'seg-btn', type: 'button', role: 'tab',
+      'aria-selected': String(id === mode),
+      onclick: () => { setGrouping(id); ctx.actions.rerender(); },
+    }, label)));
+
+  const head = h('div', { class: 'section-head' },
+    h('h2', { text: STATUS_LABEL.read }),
+    h('span', { class: 'count', text: String(books.length) }),
+    h('div', { class: 'spacer' }),
+    control);
+
+  if (mode === 'recent') {
+    const recent = [...books].sort((a, b) =>
+      String(readOnOf(b) ?? b.added ?? '').localeCompare(String(readOnOf(a) ?? a.added ?? '')));
+    return h('section', { class: 'section' }, head,
+      h('div', { class: 'books' }, recent.map((b) => bookRow(b, ctx, sideFor(b)))));
+  }
+
+  const groups = mode === 'series' ? groupBySeries(books) : groupByYear(books);
+
+  return h('section', { class: 'section' }, head,
+    h('div', { class: 'groups' }, groups.map((g, i) => groupBlock(g, ctx, {
+      open: i === 0,
+      sideFor,
+      subtitle: mode === 'series'
+        ? (g.average ? `avg ${g.average.toFixed(1)}` : null)
+        : null,
+    }))));
+}
+
 function sideFor(book) {
-  if (book.status === 'read' && book.rating) return h('span', { class: 'stars', text: stars(book.rating) });
+  if (book.status === 'read') {
+    const when = fmtReadOnShort(readOnOf(book));
+    if (!book.rating && !when) return null;
+    return h('div', { class: 'read-side' },
+      book.rating ? h('span', { class: 'stars', text: stars(book.rating) }) : null,
+      when ? h('span', { class: 'when', text: when }) : null);
+  }
   if (book.status === 'tbr' && book.series) return h('span', { class: 'pill', text: 'series' });
   if (book.status === 'reading') return h('span', { class: 'pill', text: 'reading' });
   return null;

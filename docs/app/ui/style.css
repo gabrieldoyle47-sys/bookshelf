@@ -336,3 +336,68 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
 .rating-pair { display: grid; gap: .15rem; }
 .rating-line { display: flex; align-items: center; gap: .5rem; justify-content: flex-end; }
 .rating-line .who { font-size: .75rem; color: var(--text-dim); }
+
+/* ------------------------------------------------- grouped finished shelf */
+
+.seg {
+  display: inline-flex; gap: 1px; padding: 2px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+}
+.seg-btn {
+  border: none; background: none; cursor: pointer; font: inherit;
+  font-size: .8rem; color: var(--text-dim);
+  padding: .25rem .7rem; border-radius: 999px; white-space: nowrap;
+}
+.seg-btn:hover { color: var(--text); }
+.seg-btn[aria-selected="true"] {
+  background: var(--surface); color: var(--text); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+
+.groups { display: grid; gap: .5rem; }
+
+.group {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); overflow: hidden;
+}
+.group-head {
+  display: flex; align-items: baseline; gap: .6rem;
+  padding: .7rem .9rem; cursor: pointer; list-style: none;
+  font-family: var(--serif); font-size: 1.02rem; font-weight: 600;
+}
+.group-head::-webkit-details-marker { display: none; }
+/* A disclosure triangle that rotates, so open/closed is obvious at a glance. */
+.group-head::before {
+  content: '▸'; font-family: var(--sans); font-size: .8rem; color: var(--text-dim);
+  transition: transform .15s ease; display: inline-block;
+}
+.group[open] > .group-head::before { transform: rotate(90deg); }
+.group-head:hover { background: var(--surface-2); }
+.group-name { flex: 0 1 auto; min-width: 0; }
+.group-sub { margin-left: auto; font-family: var(--sans); font-size: .78rem; color: var(--text-dim); font-weight: 400; }
+
+.group-body { padding: 0 .55rem .55rem; }
+.group-body .book { background: var(--bg); }
+
+/* The right-hand column on a finished book: rating over date. */
+.read-side { display: grid; gap: .1rem; justify-items: end; }
+.read-side .when { font-size: .75rem; color: var(--text-dim); white-space: nowrap; }
+
+/* ---------------------------------------------------- read-date picker */
+
+.readon { gap: .4rem; align-items: center; }
+.readon select { width: auto; flex: 0 1 auto; min-width: 0; padding: .4rem .5rem; font-size: .88rem; }
+.readon select:disabled { opacity: .45; }
+.btn.small { padding: .35rem .6rem; font-size: .8rem; }
+.readon-summary { display: block; margin-top: .4rem; font-size: .8rem; color: var(--text-dim); }
+
+@media (max-width: 560px) {
+  .seg { width: 100%; justify-content: space-between; }
+  .seg-btn { flex: 1; text-align: center; padding: .3rem .4rem; }
+  .section-head { flex-wrap: wrap; }
+  .readon select { flex: 1 1 30%; }
+}
+.group-hint {
+  margin: .2rem .35rem .6rem; font-size: .83rem; color: var(--text-dim);
+  background: var(--surface-2); border-radius: 8px; padding: .55rem .7rem;
+}
