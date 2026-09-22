@@ -475,3 +475,9 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
 }
 .shelf-col .group-sub { white-space: nowrap; flex: 0 0 auto; }
 .shelf-col .group-head .count { flex: 0 0 auto; }
+
+.notice {
+  background: var(--accent-soft); color: var(--warn);
+  border-radius: var(--radius); padding: .6rem .8rem;
+  font-size: .86rem; margin: 0 0 1rem;
+}

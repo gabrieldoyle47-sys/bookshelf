@@ -499,6 +499,47 @@ async function removeBook(profile, book) {
 
 /* ------------------------------------------------------------- mark as seen */
 
+/**
+ * Run the release check on demand, then reload the data it rewrote.
+ *
+ * It walks every watched series, so it takes a few seconds - the button says
+ * what it is doing rather than appearing to hang.
+ */
+ctx.actions.checkNow = async (button) => {
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Checking…';
+  try {
+    const result = await storage.runCheckNow();
+
+    // The check rewrote series state and the event log; pull both back in.
+    state.seriesState = await storage.loadJSON('series-state.json', {});
+    state.events = await storage.loadEvents();
+    render();
+
+    // A first look at a series is deliberately silent (it would otherwise
+    // announce the whole backlist), so "no events" is not the same as
+    // "nothing happened" - say what was actually found.
+    const checked = `${result.checkedSeries} series checked`;
+    let message;
+    if (result.events) {
+      message = `${checked} — ${result.events} update${result.events === 1 ? '' : 's'}, see What's new`;
+    } else if (result.newSeries) {
+      message = `${checked} — ${result.newSeries} newly tracked, ${result.upcoming} release${result.upcoming === 1 ? '' : 's'} coming`;
+    } else {
+      message = `${checked} — nothing new since last time`;
+    }
+    toast(message);
+    if (result.failures?.length) {
+      console.warn('Series that could not be checked:', result.failures);
+    }
+  } catch (err) {
+    toast(err.message, true);
+    button.disabled = false;
+    button.textContent = original;
+  }
+};
+
 ctx.actions.markSeen = async (profile) => {
   try {
     const next = await storage.mutateJSON('profiles.json', { profiles: [] }, (data) => {

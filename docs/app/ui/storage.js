@@ -325,3 +325,16 @@ export async function loadEvents() {
     try { return [JSON.parse(line)]; } catch { return []; }
   });
 }
+
+/**
+ * Ask the backend to check every watched series for new books and dates now,
+ * instead of waiting for the nightly run.
+ */
+export async function runCheckNow() {
+  const { worker } = getConfig();
+  if (!worker) throw new Error('This site is not connected to its backend.');
+  const res = await fetch(`${worker}/check`, { method: 'POST' });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error ?? `Check failed (${res.status})`);
+  return body;
+}
