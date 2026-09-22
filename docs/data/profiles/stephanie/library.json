@@ -391,34 +391,6 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
-    },
-    {
-      "id": "hc:430559",
-      "hardcoverId": "430559",
-      "title": "A Court of Splintered Harmony",
-      "authors": [
-        {
-          "id": "187135",
-          "name": "Sarah J. Maas"
-        }
-      ],
-      "series": {
-        "id": "1275",
-        "name": "A Court of Thorns and Roses",
-        "position": 6,
-        "booksCount": 19
-      },
-      "pages": 352,
-      "released": "2026-10-27",
-      "releaseYear": 2026,
-      "cover": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-      "slug": "a-court-of-splintered-harmony",
-      "status": "read",
-      "rating": null,
-      "note": "",
-      "added": "2026-09-21",
-      "started": null,
-      "finished": null
     }
   ],
   "watch": {
