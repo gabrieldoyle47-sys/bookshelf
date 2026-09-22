@@ -279,6 +279,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:428290",
+      "hardcoverId": "428290",
+      "title": "A Court of Thorns and Roses",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "1275",
+        "name": "A Court of Thorns and Roses",
+        "position": 1,
+        "booksCount": 19
+      },
+      "pages": 419,
+      "released": "2015-05-05",
+      "releaseYear": 2015,
+      "cover": "https://assets.hardcover.app/edition/32497531/b26901b270b7655187f754b410551754df5a91b4.jpeg",
+      "slug": "a-court-of-thorns-and-roses",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
