@@ -883,5 +883,263 @@
         "releaseDate": null
       }
     }
+  },
+  "238975": {
+    "id": "238975",
+    "name": "James Islington",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "441081": {
+        "title": "An Echo of Things to Come",
+        "releaseDate": "2017-01-01"
+      },
+      "441085": {
+        "title": "The Light of All That Falls",
+        "releaseDate": "2019-01-01"
+      },
+      "445584": {
+        "title": "The Shadow of What Was Lost",
+        "releaseDate": "2014-01-01"
+      },
+      "594985": {
+        "title": "The Will of the Many",
+        "releaseDate": "2023-05-23"
+      },
+      "824777": {
+        "title": "The Strength of the Few",
+        "releaseDate": "2025-01-01"
+      },
+      "1080242": {
+        "title": "The Licanius Trilogy",
+        "releaseDate": "2020-01-01"
+      },
+      "2000508": {
+        "title": "Deep Magic - Winter 2018",
+        "releaseDate": "2018-12-11"
+      },
+      "2333013": {
+        "title": "The Justice of One",
+        "releaseDate": "2027-01-01"
+      },
+      "2460032": {
+        "title": "Scion",
+        "releaseDate": "2026-09-01"
+      }
+    }
+  },
+  "252677": {
+    "id": "252677",
+    "name": "Rebecca Yarros",
+    "checkedAt": "2026-09-22",
+    "books": {
+      "355758": {
+        "title": "Australia",
+        "releaseDate": "2020-02-02"
+      },
+      "472164": {
+        "title": "Wilder",
+        "releaseDate": "2016-09-12"
+      },
+      "486325": {
+        "title": "The Last Letter",
+        "releaseDate": "2019-01-01"
+      },
+      "500901": {
+        "title": "Muses & Melodies",
+        "releaseDate": "2020-10-06"
+      },
+      "501204": {
+        "title": "Nova",
+        "releaseDate": "2017-02-20"
+      },
+      "501205": {
+        "title": "Rebel",
+        "releaseDate": "2015-09-22"
+      },
+      "501585": {
+        "title": "Eyes Turned Skyward",
+        "releaseDate": "2014-01-01"
+      },
+      "502042": {
+        "title": "The Things We Leave Unfinished",
+        "releaseDate": "2021-01-01"
+      },
+      "506182": {
+        "title": "1001 Dark Nights: Bundle Six",
+        "releaseDate": "2016-01-01"
+      },
+      "548728": {
+        "title": "Full Measures",
+        "releaseDate": "2014-01-01"
+      },
+      "677565": {
+        "title": "Nightingale: A Charity Anthology in Support of Ukraine",
+        "releaseDate": "2022-01-01"
+      },
+      "689075": {
+        "title": "Great and Precious Things",
+        "releaseDate": "2020-01-01"
+      },
+      "714600": {
+        "title": "Fourth Wing",
+        "releaseDate": "2023-05-02"
+      },
+      "734732": {
+        "title": "Girl in Luv",
+        "releaseDate": "2019-10-19"
+      },
+      "734738": {
+        "title": "Beyond What is Given",
+        "releaseDate": "2015-01-01"
+      },
+      "747398": {
+        "title": "Iron Flame",
+        "releaseDate": "2023-01-01"
+      },
+      "747399": {
+        "title": "Hallowed Ground",
+        "releaseDate": "2016-01-25"
+      },
+      "790895": {
+        "title": "In The Likely Event",
+        "releaseDate": "2023-01-01"
+      },
+      "804157": {
+        "title": "A Little Too Close",
+        "releaseDate": "2022-10-11"
+      },
+      "882542": {
+        "title": "Beaus & Arrows: A Collection of Sweet and Sexy Stories",
+        "releaseDate": "2017-02-06"
+      },
+      "1061079": {
+        "title": "Untitled",
+        "releaseDate": null
+      },
+      "1085995": {
+        "title": "Quickies",
+        "releaseDate": "2020-04-22"
+      },
+      "1123208": {
+        "title": "The Reality of Everything",
+        "releaseDate": "2020-01-01"
+      },
+      "1197328": {
+        "title": "Onyx Storm",
+        "releaseDate": "2025-01-21"
+      },
+      "1308236": {
+        "title": "Boy in Luv",
+        "releaseDate": "2019-01-01"
+      },
+      "1390320": {
+        "title": "Variation: A Novel",
+        "releaseDate": "2024-01-01"
+      },
+      "1454239": {
+        "title": "Ignite",
+        "releaseDate": "2016-01-01"
+      },
+      "1773338": {
+        "title": "Point of Origin",
+        "releaseDate": "2016-03-06"
+      },
+      "1783223": {
+        "title": "Possess - An Alpha Romance Anthology",
+        "releaseDate": "2015-11-08"
+      },
+      "1820307": {
+        "title": "Reason To Believe",
+        "releaseDate": "2018-01-01"
+      },
+      "1906591": {
+        "title": "Fourth Wing (Part 2 of 2) [Dramatized Adaptation]",
+        "releaseDate": "2024-02-09"
+      },
+      "2345168": {
+        "title": "The Empyrean Series, 3 Books Collection Set, Fourth Wing, Iron Flame, Onyx Storm, by Rebecca Yarros",
+        "releaseDate": "2025-01-01"
+      },
+      "2373501": {
+        "title": "Iron Flame (Part 1 of 2) [Dramatized Adaptation]",
+        "releaseDate": "2024-05-17"
+      },
+      "2389432": {
+        "title": "Fourth Wing, Iron Flame",
+        "releaseDate": "2023-01-01"
+      },
+      "2421455": {
+        "title": "1984: Against All Odds",
+        "releaseDate": "2016-05-27"
+      },
+      "2421464": {
+        "title": "Begin Again",
+        "releaseDate": "2018-01-06"
+      },
+      "2483328": {
+        "title": "The Bet:  A legacy Story",
+        "releaseDate": null
+      },
+      "2578431": {
+        "title": "Peculiar Stars",
+        "releaseDate": "2026-11-17"
+      },
+      "2606339": {
+        "title": "Peculiar Stars",
+        "releaseDate": "2026-11-17"
+      },
+      "2722083": {
+        "title": "The Renegades Series Collection by Rebecca Yarros",
+        "releaseDate": null
+      },
+      "2769069": {
+        "title": "Fourth Wing Tarot",
+        "releaseDate": null
+      },
+      "2769384": {
+        "title": "Threshing Day",
+        "releaseDate": "2026-09-29"
+      },
+      "2795005": {
+        "title": "Flight & Glory Series Collection 5 Books, Vol. 1.0",
+        "releaseDate": null
+      },
+      "2875357": {
+        "title": "The Last Letter & Great and Precious Things",
+        "releaseDate": null
+      },
+      "2888050": {
+        "title": "Fourth wing, tome 1.5 : Bonus",
+        "releaseDate": null
+      },
+      "2898212": {
+        "title": "Fourth Wing (Part 1 of 2) [Dramatized Adaptation]",
+        "releaseDate": "2023-12-27"
+      },
+      "2902669": {
+        "title": "Iron Flame (Part 2 of 2) [Dramatized Adaptation]",
+        "releaseDate": "2024-05-17"
+      },
+      "2916871": {
+        "title": "Legacy. Donde todo comienza",
+        "releaseDate": "2022-01-01"
+      },
+      "2916874": {
+        "title": "Las cosas más preciosas",
+        "releaseDate": "2020-01-01"
+      },
+      "2941784": {
+        "title": "Fourth Wing: The Official Coloring Book",
+        "releaseDate": null
+      },
+      "2943417": {
+        "title": "Le Feu et la Cendre",
+        "releaseDate": "2016-01-01"
+      },
+      "2975987": {
+        "title": "Um caso improvável",
+        "releaseDate": null
+      }
+    }
   }
 }
