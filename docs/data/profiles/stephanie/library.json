@@ -251,6 +251,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:429018",
+      "hardcoverId": "429018",
+      "title": "Kingdom of Ash",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 7,
+        "booksCount": 18
+      },
+      "pages": 984,
+      "released": "2018-01-01",
+      "releaseYear": 2018,
+      "cover": "https://assets.hardcover.app/external_data/61236994/977131bd833b4a4de2424de518adbbb74dec2570.jpeg",
+      "slug": "kingdom-of-ash",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
