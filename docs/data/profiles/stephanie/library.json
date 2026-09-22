@@ -139,6 +139,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:1363844",
+      "hardcoverId": "1363844",
+      "title": "Heir of Fire",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 3,
+        "booksCount": 18
+      },
+      "pages": 565,
+      "released": "2014-09-02",
+      "releaseYear": 2014,
+      "cover": "https://assets.hardcover.app/edition/30432118/7be2fd1c-ec1f-482b-872e-a88ede019c74.jpg",
+      "slug": "heir-of-fire",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
