@@ -447,6 +447,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:80765",
+      "hardcoverId": "80765",
+      "title": "Arcanum Unbounded: The Cosmere Collection",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "5497",
+        "name": "The Cosmere",
+        "position": 35,
+        "booksCount": 42
+      },
+      "pages": 672,
+      "released": "2016-11-08",
+      "releaseYear": 2016,
+      "cover": "https://assets.hardcover.app/edition/31276301/b5b1c6b758306caf9553430c4ccf576f29b9bd19.jpeg",
+      "slug": "arcanum-unbounded",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
