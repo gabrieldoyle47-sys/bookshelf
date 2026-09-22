@@ -35,8 +35,13 @@ function emptyState(text) {
 }
 
 /** One book row. `side` is whatever belongs on the right-hand side. */
-function bookRow(book, ctx, side, owner) {
-  const bits = [authorNames(book), seriesLabel(book)].filter(Boolean);
+function bookRow(book, ctx, side, owner, opts = {}) {
+  // Inside a series group the series name is already the heading, so repeating
+  // it on every row just crowds a narrow column.
+  const series = opts.hideSeries
+    ? (book.series?.position != null ? `#${book.series.position}` : null)
+    : seriesLabel(book);
+  const bits = [authorNames(book), series].filter(Boolean);
   return h('button', {
     class: 'book', type: 'button',
     onclick: () => ctx.actions.openBook(book, owner),
@@ -52,9 +57,9 @@ function bookRow(book, ctx, side, owner) {
 /* --------------------------------------------------------------- grouping */
 
 export const GROUPINGS = [
+  ['series', 'Series'],
+  ['year', 'Year'],
   ['recent', 'Recent'],
-  ['series', 'By series'],
-  ['year', 'By year'],
 ];
 
 const GROUPING_KEY = 'bookshelf.grouping';
@@ -62,9 +67,9 @@ const GROUPING_KEY = 'bookshelf.grouping';
 export function getGrouping() {
   try {
     const saved = localStorage.getItem(GROUPING_KEY);
-    return GROUPINGS.some(([id]) => id === saved) ? saved : 'recent';
+    return GROUPINGS.some(([id]) => id === saved) ? saved : 'series';
   } catch {
-    return 'recent';
+    return 'series';
   }
 }
 
@@ -139,14 +144,14 @@ function groupByYear(books) {
  * A collapsible group. Open by default only for the first one, so a long shelf
  * opens as a scannable list of series or years rather than a wall of books.
  */
-function groupBlock(group, ctx, { open, sideFor: side, subtitle }) {
+function groupBlock(group, ctx, { open, sideFor: side, subtitle, hideSeries }) {
   const body = h('div', { class: 'books group-body' },
     // A bucket of undated books is otherwise a dead end - say how to fix it.
     group.unknown
       ? h('p', { class: 'group-hint',
           text: 'Open a book and set when you read it. A year on its own is enough — you do not need the exact date.' })
       : null,
-    group.books.map((b) => bookRow(b, ctx, side(b))));
+    group.books.map((b) => bookRow(b, ctx, side(b), undefined, { hideSeries })));
 
   const summary = h('summary', { class: 'group-head' },
     h('span', { class: 'group-name', text: group.name }),
@@ -165,7 +170,7 @@ export function shelfView(ctx, profile) {
   const addBtn = h('button', {
     class: 'btn', type: 'button',
     disabled: !canWrite,
-    title: canWrite ? '' : 'Add a GitHub token in Settings to make changes',
+    title: canWrite ? '' : 'This browser cannot make changes',
     onclick: () => ctx.actions.openAdd(profile),
   }, '+ Add a book');
 
@@ -177,32 +182,46 @@ export function shelfView(ctx, profile) {
         : 'This shelf is empty, and this browser is in read-only mode.'));
   }
 
-  const sections = STATUS_ORDER.map((status) => {
-    const group = library.books.filter((b) => b.status === status);
-    if (!group.length) return null;
+  const of = (status) => library.books.filter((b) => b.status === status);
 
-    // The finished pile is the one that grows without limit, so it gets the
-    // grouping control; the others stay a simple list.
-    if (status === 'read' && group.length > 1) return finishedSection(group, ctx);
+  // Three columns, past to present to future reading left to right: what you
+  // mean to read, what you are reading, what you have read.
+  const columns = h('div', { class: 'shelf-columns' },
+    plainColumn('tbr', of('tbr'), ctx),
+    plainColumn('reading', of('reading'), ctx),
+    finishedColumn(of('read'), ctx));
 
-    // Most recently added first; nearly always the order someone wants.
-    group.sort((a, b) => String(b.added ?? '').localeCompare(String(a.added ?? '')));
-
-    return h('section', { class: 'section' },
-      h('div', { class: 'section-head' },
-        h('h2', { text: STATUS_LABEL[status] }),
-        h('span', { class: 'count', text: String(group.length) })),
-      h('div', { class: 'books' },
-        group.map((b) => bookRow(b, ctx, sideFor(b)))));
-  });
+  const abandoned = of('abandoned');
 
   return frag(
     pageHead(profile.name, plural(library.books.length, 'book'), addBtn),
-    sections);
+    columns,
+    abandoned.length ? h('details', { class: 'optional' },
+      h('summary', { text: plural(abandoned.length, 'book') + ' you gave up on' }),
+      h('div', { class: 'books' }, abandoned.map((b) => bookRow(b, ctx, sideFor(b))))) : null);
 }
 
-/** The Finished pile, grouped however the reader last chose. */
-function finishedSection(books, ctx) {
+function columnHead(label, count, extra) {
+  return h('div', { class: 'col-head' },
+    h('h2', { text: label }),
+    h('span', { class: 'count', text: String(count) }),
+    extra ?? null);
+}
+
+/** A column that is just a list: to-read and currently-reading. */
+function plainColumn(status, books, ctx) {
+  const sorted = [...books].sort((a, b) =>
+    String(b.added ?? '').localeCompare(String(a.added ?? '')));
+
+  return h('section', { class: 'shelf-col' },
+    columnHead(STATUS_LABEL[status], books.length),
+    books.length
+      ? h('div', { class: 'books' }, sorted.map((b) => bookRow(b, ctx, sideFor(b))))
+      : h('p', { class: 'col-empty', text: status === 'tbr' ? 'Nothing waiting.' : 'Not reading anything.' }));
+}
+
+/** The finished column, grouped however the reader last chose. */
+function finishedColumn(books, ctx) {
   const mode = getGrouping();
 
   const control = h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Group finished books by' },
@@ -212,28 +231,35 @@ function finishedSection(books, ctx) {
       onclick: () => { setGrouping(id); ctx.actions.rerender(); },
     }, label)));
 
-  const head = h('div', { class: 'section-head' },
-    h('h2', { text: STATUS_LABEL.read }),
-    h('span', { class: 'count', text: String(books.length) }),
-    h('div', { class: 'spacer' }),
-    control);
+  const head = columnHead(STATUS_LABEL.read, books.length);
 
-  if (mode === 'recent') {
+  if (!books.length) {
+    return h('section', { class: 'shelf-col' }, head,
+      h('p', { class: 'col-empty', text: 'Nothing finished yet.' }));
+  }
+
+  // Grouping one or two books is just noise.
+  if (books.length < 3 || mode === 'recent') {
     const recent = [...books].sort((a, b) =>
       String(readOnOf(b) ?? b.added ?? '').localeCompare(String(readOnOf(a) ?? a.added ?? '')));
-    return h('section', { class: 'section' }, head,
+    return h('section', { class: 'shelf-col' },
+      head,
+      books.length >= 3 ? control : null,
       h('div', { class: 'books' }, recent.map((b) => bookRow(b, ctx, sideFor(b)))));
   }
 
   const groups = mode === 'series' ? groupBySeries(books) : groupByYear(books);
 
-  return h('section', { class: 'section' }, head,
-    h('div', { class: 'groups' }, groups.map((g, i) => groupBlock(g, ctx, {
-      open: i === 0,
+  return h('section', { class: 'shelf-col' },
+    head,
+    control,
+    // Every group starts closed. Expanding the largest by default would undo
+    // the compactness that grouping is for - the overview is the feature.
+    h('div', { class: 'groups' }, groups.map((g) => groupBlock(g, ctx, {
+      open: false,
       sideFor,
-      subtitle: mode === 'series'
-        ? (g.average ? `avg ${g.average.toFixed(1)}` : null)
-        : null,
+      hideSeries: mode === 'series' && !g.standalone,
+      subtitle: mode === 'series' && g.average ? `avg ${g.average.toFixed(1)}` : null,
     }))));
 }
 

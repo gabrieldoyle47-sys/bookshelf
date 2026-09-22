@@ -401,3 +401,77 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
   margin: .2rem .35rem .6rem; font-size: .83rem; color: var(--text-dim);
   background: var(--surface-2); border-radius: 8px; padding: .55rem .7rem;
 }
+
+/* ------------------------------------------------------- three-column shelf */
+
+.shelf-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+  align-items: start;      /* columns size to their own content, not the tallest */
+}
+
+.shelf-col { min-width: 0; }
+
+.col-head {
+  display: flex; align-items: baseline; gap: .5rem;
+  padding-bottom: .5rem; margin-bottom: .6rem;
+  border-bottom: 1px solid var(--border);
+}
+.col-head h2 { font-size: 1rem; margin: 0; }
+
+.col-empty {
+  color: var(--text-dim); font-size: .85rem; margin: .2rem 0 0;
+}
+
+/* At a third of the width a book row cannot afford a side column, so the
+   rating and date move under the title instead of beside it. */
+.shelf-col .book { padding: .55rem .6rem; gap: .6rem; }
+.shelf-col .cover { width: 32px; height: 48px; flex-basis: 32px; }
+.shelf-col .book-title { font-size: .92rem; }
+.shelf-col .book-meta {
+  font-size: .76rem;
+  /* Keep rows a predictable height: a long series name should trail off
+     rather than wrap the row to four lines. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shelf-col .book-side { flex: 1 1 100%; text-align: left; margin-top: .15rem; }
+.shelf-col .read-side { grid-auto-flow: column; justify-items: start; justify-content: start; gap: .5rem; align-items: baseline; }
+.shelf-col .book { flex-wrap: wrap; }
+
+.shelf-col .seg { display: flex; width: 100%; margin-bottom: .6rem; }
+.shelf-col .seg-btn { flex: 1; text-align: center; padding: .25rem .3rem; font-size: .76rem; }
+
+.shelf-col .group-head { padding: .55rem .6rem; font-size: .92rem; gap: .4rem; }
+.shelf-col .group-sub { font-size: .72rem; }
+.shelf-col .group-body { padding: 0 .4rem .4rem; }
+.shelf-col .groups { gap: .4rem; }
+
+/* Two columns before one: at tablet width three is already too narrow for a
+   title and a cover to sit together. */
+@media (max-width: 1080px) {
+  .shelf-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  .shelf-columns { grid-template-columns: minmax(0, 1fr); gap: 1.6rem; }
+  /* Full width again, so the roomier row layout comes back. */
+  .shelf-col .book-side { flex: 0 0 auto; text-align: right; margin-top: 0; }
+  .shelf-col .read-side { grid-auto-flow: row; justify-items: end; }
+  .shelf-col .cover { width: 40px; height: 60px; flex-basis: 40px; }
+}
+
+/* Grid items default to min-width:auto, so a nowrap line inside a book row
+   pushes the card wider than its column instead of ellipsing. Both the track
+   and the item have to be told they may shrink. */
+.books { grid-template-columns: minmax(0, 1fr); }
+.book { min-width: 0; }
+.book-main { min-width: 0; }
+
+/* Keep a group heading on one line: the count and average must stay put even
+   when the series name is long. */
+.shelf-col .group-head { flex-wrap: nowrap; }
+.shelf-col .group-name {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.shelf-col .group-sub { white-space: nowrap; flex: 0 0 auto; }
+.shelf-col .group-head .count { flex: 0 0 auto; }

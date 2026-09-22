@@ -29,7 +29,10 @@ const PROFILE_TABS = [
 /* ------------------------------------------------------------------- boot */
 
 async function boot() {
-  await storage.loadSiteConfig();
+  const site = await storage.loadSiteConfig();
+  // If this browser is running code older than what is deployed, reload past
+  // the cache before rendering anything misleading.
+  if (await storage.ensureFresh(site)) return;
   await storage.adoptLocalConfig();
   state.canWrite = storage.canWrite();
   try {
