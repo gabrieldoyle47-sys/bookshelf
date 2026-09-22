@@ -27,6 +27,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:465201",
+      "hardcoverId": "465201",
+      "title": "House of Earth and Blood",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "2211",
+        "name": "Crescent City",
+        "position": 1,
+        "booksCount": 15
+      },
+      "pages": 803,
+      "released": "2020-03-03",
+      "releaseYear": 2020,
+      "cover": "https://assets.hardcover.app/external_data/37374512/a568a05f05a9f6cd37a96e14662b846b45acd29b.jpeg",
+      "slug": "house-of-earth-and-blood",
+      "status": "reading",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
