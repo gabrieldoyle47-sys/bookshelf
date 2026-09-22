@@ -419,6 +419,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:330249",
+      "hardcoverId": "330249",
+      "title": "The Alloy of Law",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "10825",
+        "name": "The Mistborn Saga : Wax & Wayne",
+        "position": 1,
+        "booksCount": 9
+      },
+      "pages": 325,
+      "released": "2011-01-01",
+      "releaseYear": 2011,
+      "cover": "https://assets.hardcover.app/book_mappings/7332580/a023478571f1bbf153f3e671c56cd0cc6c5182c3.jpeg",
+      "slug": "the-alloy-of-law",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
