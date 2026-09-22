@@ -475,6 +475,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:385491",
+      "hardcoverId": "385491",
+      "title": "Warbreaker",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "1088",
+        "name": "Warbreaker",
+        "position": 1,
+        "booksCount": 2
+      },
+      "pages": 593,
+      "released": "2009-06-09",
+      "releaseYear": 2009,
+      "cover": "https://assets.hardcover.app/edition/28188510/d2bfa4645e6a05879e663f2b72264dc150610210.jpeg",
+      "slug": "warbreaker",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
