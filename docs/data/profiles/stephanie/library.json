@@ -363,6 +363,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:459744",
+      "hardcoverId": "459744",
+      "title": "A Court of Frost and Starlight",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "1275",
+        "name": "A Court of Thorns and Roses",
+        "position": 4,
+        "booksCount": 19
+      },
+      "pages": 272,
+      "released": "2018-05-01",
+      "releaseYear": 2018,
+      "cover": "https://assets.hardcover.app/editions/9893721/29045471348594.jpeg",
+      "slug": "a-court-of-frost-and-starlight",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
