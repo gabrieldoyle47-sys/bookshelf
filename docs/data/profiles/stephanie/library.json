@@ -1,4 +1,36 @@
 {
-  "books": [],
-  "watch": { "series": {}, "authors": {} }
+  "books": [
+    {
+      "id": "hc:369692",
+      "hardcoverId": "369692",
+      "title": "Mistborn: The Final Empire",
+      "authors": [
+        {
+          "id": "204214",
+          "name": "Brandon Sanderson"
+        }
+      ],
+      "series": {
+        "id": "10001",
+        "name": "The Mistborn Saga: The Original Trilogy",
+        "position": 1,
+        "booksCount": 14
+      },
+      "pages": 541,
+      "released": "2006-07-17",
+      "releaseYear": 2006,
+      "cover": "https://assets.hardcover.app/edition/5195452/8c6af4492dd7ef9eed7c1e40abefc79f23df2d2f.jpeg",
+      "slug": "mistborn",
+      "status": "reading",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
+    }
+  ],
+  "watch": {
+    "series": {},
+    "authors": {}
+  }
 }
