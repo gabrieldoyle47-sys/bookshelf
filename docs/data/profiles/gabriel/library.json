@@ -391,6 +391,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:77104",
+      "hardcoverId": "77104",
+      "title": "The Eye of the World",
+      "authors": [
+        {
+          "id": "151072",
+          "name": "Robert Jordan"
+        }
+      ],
+      "series": {
+        "id": "1097",
+        "name": "The Wheel of Time",
+        "position": 1,
+        "booksCount": 87
+      },
+      "pages": 804,
+      "released": "1990-01-01",
+      "releaseYear": 1990,
+      "cover": "https://assets.hardcover.app/edition/30621010/97e433a0-efab-4de8-a7cc-23ad09a4df05.png",
+      "slug": "the-eye-of-the-world",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
