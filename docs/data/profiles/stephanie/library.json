@@ -83,6 +83,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:428931",
+      "hardcoverId": "428931",
+      "title": "The Assassin's Blade",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": null,
+        "booksCount": 18
+      },
+      "pages": 451,
+      "released": "2012-05-01",
+      "releaseYear": 2012,
+      "cover": "https://assets.hardcover.app/editions/31497359/3800131248933607.jpg",
+      "slug": "the-assassins-blade",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
