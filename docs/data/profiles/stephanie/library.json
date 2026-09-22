@@ -55,6 +55,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:39629",
+      "hardcoverId": "39629",
+      "title": "Throne of Glass",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 1,
+        "booksCount": 18
+      },
+      "pages": 416,
+      "released": "2012-08-07",
+      "releaseYear": 2012,
+      "cover": "https://assets.hardcover.app/edition/30501042/9052e867e43511a1f2ec7dc8ce0e33d01faf7c6e.jpeg",
+      "slug": "throne-of-glass",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
