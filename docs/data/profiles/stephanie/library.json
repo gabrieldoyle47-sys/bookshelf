@@ -307,6 +307,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:428929",
+      "hardcoverId": "428929",
+      "title": "A Court of Mist and Fury",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "1275",
+        "name": "A Court of Thorns and Roses",
+        "position": 2,
+        "booksCount": 19
+      },
+      "pages": 626,
+      "released": "2016-05-03",
+      "releaseYear": 2016,
+      "cover": "https://assets.hardcover.app/edition/30412164/93413a16-8449-4257-a936-1446e6113855.jpg",
+      "slug": "a-court-of-mist-and-fury",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
