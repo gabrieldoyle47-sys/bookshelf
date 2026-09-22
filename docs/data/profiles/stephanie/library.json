@@ -134,7 +134,7 @@
       "cover": "https://assets.hardcover.app/external_data/4249036/9b83ee15863ed09e398311073e0bde0429e3bbf6.jpeg",
       "slug": "crown-of-midnight",
       "status": "read",
-      "rating": null,
+      "rating": 4,
       "note": "",
       "added": "2026-09-21",
       "started": null,
@@ -395,7 +395,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A ÃÂÃÂ¢ÃÂÃÂÃÂÃÂCourt of Silver Flames",
+      "title": "A ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
