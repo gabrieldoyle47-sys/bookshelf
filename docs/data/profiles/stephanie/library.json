@@ -195,6 +195,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:183545",
+      "hardcoverId": "183545",
+      "title": "Empire of Storms",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 5,
+        "booksCount": 18
+      },
+      "pages": 689,
+      "released": "2016-01-01",
+      "releaseYear": 2016,
+      "cover": "https://assets.hardcover.app/edition/30825891/3c2ede158a5324ac9d331e2a29f6e5c35a073071.jpeg",
+      "slug": "empire-of-storms",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
