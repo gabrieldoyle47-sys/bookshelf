@@ -335,6 +335,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:458947",
+      "hardcoverId": "458947",
+      "title": "A Court of Wings and Ruin",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "1275",
+        "name": "A Court of Thorns and Roses",
+        "position": 3,
+        "booksCount": 19
+      },
+      "pages": 720,
+      "released": "2017-01-01",
+      "releaseYear": 2017,
+      "cover": "https://assets.hardcover.app/external_data/48240959/992e22aab5d6545b29697895c6a6494a783d4817.jpeg",
+      "slug": "a-court-of-wings-and-ruin",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
