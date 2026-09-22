@@ -442,7 +442,7 @@
       "cover": "https://assets.hardcover.app/edition/31265393/4104bc2a10d4f5b793e5134e22e0afba1209059f.jpeg",
       "slug": "iron-flame",
       "status": "read",
-      "rating": null,
+      "rating": 4,
       "note": "",
       "added": "2026-09-21",
       "started": null,
@@ -451,7 +451,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A Ã¢ÂÂCourt of Silver Flames",
+      "title": "A ÃÂ¢ÃÂÃÂCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
