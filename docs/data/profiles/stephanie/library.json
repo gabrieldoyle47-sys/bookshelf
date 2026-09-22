@@ -451,7 +451,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A ​Court of Silver Flames",
+      "title": "A âCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
@@ -470,7 +470,7 @@
       "cover": "https://assets.hardcover.app/external_data/31975800/2bbb080fea31fd0c1f457838f63210cbc3fbe3d8.jpeg",
       "slug": "a-court-of-silver-flames",
       "status": "read",
-      "rating": null,
+      "rating": 5,
       "note": "",
       "added": "2026-09-21",
       "started": null,
