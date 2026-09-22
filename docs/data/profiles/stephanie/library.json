@@ -223,6 +223,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:429015",
+      "hardcoverId": "429015",
+      "title": "Tower of Dawn",
+      "authors": [
+        {
+          "id": "187135",
+          "name": "Sarah J. Maas"
+        }
+      ],
+      "series": {
+        "id": "5509",
+        "name": "Throne of Glass",
+        "position": 6,
+        "booksCount": 18
+      },
+      "pages": 664,
+      "released": "2017-01-01",
+      "releaseYear": 2017,
+      "cover": "https://assets.hardcover.app/external_data/33691557/a705693b52b10c42bfeec287419fe5f3e30eef73.jpeg",
+      "slug": "tower-of-dawn",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
