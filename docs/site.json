@@ -1,3 +1,4 @@
 {
-  "workerUrl": "https://bookshelf-write.doyle-bookshelf.workers.dev"
+  "workerUrl": "https://bookshelf-write.doyle-bookshelf.workers.dev",
+  "version": "20260922T040448"
 }

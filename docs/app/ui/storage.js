@@ -84,11 +84,55 @@ export function writeMode() {
 export async function loadSiteConfig() {
   try {
     const res = await fetch(`./site.json?t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) return;
-    const { workerUrl } = await res.json();
-    if (workerUrl) setConfig({ worker: workerUrl.replace(/\/$/, '') });
+    if (!res.ok) return null;
+    const site = await res.json();
+    if (site.workerUrl) setConfig({ worker: site.workerUrl.replace(/\/$/, '') });
+    return site;
   } catch {
     // No site.json yet: the token path still works.
+    return null;
+  }
+}
+
+const VERSION_KEY = 'bookshelf.version';
+const MODULES = [
+  './app/ui/main.js', './app/ui/views.js', './app/ui/stats.js',
+  './app/ui/storage.js', './app/ui/dom.js', './app/ui/style.css',
+  './app/core/model.js', './app/core/watch.js', './app/core/hardcover.js',
+];
+
+/**
+ * Force a refresh when the deployed version has moved on.
+ *
+ * GitHub Pages serves this app's JavaScript with `max-age=600`, so for ten
+ * minutes after a deploy a returning browser keeps running the old code while
+ * happily reading the new data — which looks exactly like a feature silently
+ * not working. site.json is always fetched uncached, so it can be trusted to
+ * say which version is current; when it disagrees with what this browser last
+ * ran, we re-fetch the modules past the HTTP cache and reload once.
+ */
+export async function ensureFresh(site) {
+  const version = site?.version;
+  if (!version) return false;
+
+  let seen = null;
+  try { seen = localStorage.getItem(VERSION_KEY); } catch { /* private mode */ }
+  if (seen === version) return false;
+
+  // A reload that does not fix the mismatch must not loop.
+  const attempted = sessionStorage.getItem('bookshelf.refreshing');
+  try { localStorage.setItem(VERSION_KEY, version); } catch { /* ignore */ }
+  if (attempted === version) return false;
+
+  if (seen === null) return false; // first ever visit: nothing stale to clear
+
+  try {
+    sessionStorage.setItem('bookshelf.refreshing', version);
+    await Promise.all(MODULES.map((url) => fetch(url, { cache: 'reload' }).catch(() => {})));
+    location.reload();
+    return true;
+  } catch {
+    return false;
   }
 }
 
