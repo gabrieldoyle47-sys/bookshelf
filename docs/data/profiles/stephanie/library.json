@@ -395,7 +395,7 @@
     {
       "id": "hc:429046",
       "hardcoverId": "429046",
-      "title": "A âCourt of Silver Flames",
+      "title": "A Ã¢ÂÂCourt of Silver Flames",
       "authors": [
         {
           "id": "187135",
@@ -441,6 +441,34 @@
       "releaseYear": 2023,
       "cover": "https://assets.hardcover.app/editions/30707731/3559167047761380.jpeg",
       "slug": "fourth-wing",
+      "status": "read",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
+    },
+    {
+      "id": "hc:747398",
+      "hardcoverId": "747398",
+      "title": "Iron Flame",
+      "authors": [
+        {
+          "id": "252677",
+          "name": "Rebecca Yarros"
+        }
+      ],
+      "series": {
+        "id": "41764",
+        "name": "The Empyrean",
+        "position": 2,
+        "booksCount": 11
+      },
+      "pages": 623,
+      "released": "2023-01-01",
+      "releaseYear": 2023,
+      "cover": "https://assets.hardcover.app/edition/31265393/4104bc2a10d4f5b793e5134e22e0afba1209059f.jpeg",
+      "slug": "iron-flame",
       "status": "read",
       "rating": null,
       "note": "",
