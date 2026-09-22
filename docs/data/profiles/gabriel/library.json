@@ -503,6 +503,34 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:378044",
+      "hardcoverId": "378044",
+      "title": "Golden Son",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 2,
+        "booksCount": 14
+      },
+      "pages": 466,
+      "released": "2015-01-01",
+      "releaseYear": 2015,
+      "cover": "https://assets.hardcover.app/editions/30404982/b5150007-bf09-4937-8d32-ecf89f136342.jpg",
+      "slug": "golden-son",
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-21",
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
