@@ -11,7 +11,6 @@ import {
   deriveWatchlist, readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
 } from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
-// TRIAL: cover-wall layout (see covers.js) — remove this import to drop it.
 import { getLayout, layoutToggle, coverWall } from './covers.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -203,7 +202,7 @@ export function shelfView(ctx, profile) {
     const of = (status) => books.filter((b) => b.status === status);
 
     clear(columns);
-    // TRIAL: cover-wall layout — remove this branch to drop it.
+    // The covers layout (covers.js) or the default list layout.
     if (getLayout() === 'covers') {
       columns.className = 'shelf-wall';
       columns.append(coverWall(ctx, books));
@@ -257,7 +256,6 @@ export function shelfView(ctx, profile) {
       h('div', {}, h('h1', { text: profile.name }), tally),
       h('div', { class: 'spacer' }),
       addBtn),
-    // TRIAL: layoutToggle is the cover-wall switch — remove it to drop it.
     h('div', { class: 'shelf-tools' }, search, ratingFilter, layoutToggle(() => paint())),
     columns,
     extra);
