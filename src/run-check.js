@@ -9,9 +9,9 @@
  * Safe to run repeatedly: the event log dedupes, so a re-run is a no-op.
  */
 
-import { createClient, seriesById, authorBooks, rateLimit } from '../docs/app/core/hardcover.js';
-import { unionWatchlists, today } from '../docs/app/core/model.js';
-import { diffSeries, diffAuthor, snapshotSeries, snapshotAuthor, dedupe } from '../docs/app/core/watch.js';
+import { createClient, rateLimit } from '../docs/app/core/hardcover.js';
+import { today } from '../docs/app/core/model.js';
+import { runReleaseCheck } from '../docs/app/core/check.js';
 import * as store from './store.js';
 
 const DRY_RUN = process.argv.includes('--dry-run');
@@ -34,54 +34,17 @@ async function main() {
     return;
   }
 
-  const { series: watchedSeries, authors: watchedAuthors } = unionWatchlists(libraries);
-  console.log(
-    `Checking ${watchedSeries.length} series and ${watchedAuthors.length} authors ` +
-    `for ${profileIds.length} profile(s) on ${now}`,
-  );
-
   const seriesState = await store.loadSeriesState();
   const authorState = await store.loadAuthorState();
+  const bookState = await store.loadBookState();
   const seen = await store.loadEventKeys();
-  const fresh = [];
-  const failures = [];
 
-  for (const watch of watchedSeries) {
-    try {
-      const data = await seriesById(gql, watch.id);
-      if (!data) {
-        failures.push(`series ${watch.id} (${watch.name}) returned nothing`);
-        continue;
-      }
-      // Diff per watcher: two people following the same series each get their
-      // own event, so one person reading it doesn't consume the other's news.
-      for (const profile of watch.watchers) {
-        fresh.push(...dedupe(diffSeries(seriesState[watch.id] ?? null, data, profile, now), seen));
-      }
-      seriesState[watch.id] = snapshotSeries(data, now);
-      console.log(`  ✓ ${data.name} (${data.books.length} books)`);
-    } catch (err) {
-      // One bad series must not abort the run and lose every other update.
-      failures.push(`series ${watch.id} (${watch.name}): ${err.message}`);
-    }
-  }
-
-  for (const watch of watchedAuthors) {
-    try {
-      const data = await authorBooks(gql, watch.id);
-      if (!data) {
-        failures.push(`author ${watch.id} (${watch.name}) returned nothing`);
-        continue;
-      }
-      for (const profile of watch.watchers) {
-        fresh.push(...dedupe(diffAuthor(authorState[watch.id] ?? null, data, profile, now), seen));
-      }
-      authorState[watch.id] = snapshotAuthor(data, now);
-      console.log(`  ✓ ${data.name} (${data.books.length} titles)`);
-    } catch (err) {
-      failures.push(`author ${watch.id} (${watch.name}): ${err.message}`);
-    }
-  }
+  console.log(`Checking for ${profileIds.length} profile(s) on ${now}`);
+  const result = await runReleaseCheck({
+    gql, libraries, seriesState, authorState, bookState, seen, now, log: (line) => console.log(line),
+  });
+  const { events: fresh, failures } = result;
+  console.log(`${result.checkedSeries} series, ${result.checkedAuthors} authors, ${result.checkedTracked} tracked books`);
 
   if (DRY_RUN) {
     console.log(`\n[dry run] ${fresh.length} new event(s); nothing written.`);
@@ -91,6 +54,7 @@ async function main() {
 
   await store.saveSeriesState(seriesState);
   await store.saveAuthorState(authorState);
+  await store.saveBookState(bookState);
   // `detectedAt` is a plain date for display, but "unread" needs finer
   // resolution: without it, marking the feed read hides anything found later
   // the same day until the date rolls over.

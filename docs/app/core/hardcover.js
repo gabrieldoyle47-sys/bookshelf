@@ -237,7 +237,7 @@ const SERIES_BY_ID = `
         }
       ) {
         position
-        book { id title release_date release_year }
+        book { id title release_date release_year image { url } }
       }
     }
   }
@@ -263,6 +263,7 @@ export async function seriesById(gql, id) {
         title: bs.book.title,
         releaseDate: bs.book.release_date ?? null,
         releaseYear: bs.book.release_year ?? null,
+        image: bs.book.image?.url ?? null,
       })),
   };
 }
@@ -270,7 +271,7 @@ export async function seriesById(gql, id) {
 /* ------------------------------------------------------------------ author */
 
 const AUTHOR_BOOKS = `
-  query AuthorBooks($id: Int!) {
+  query AuthorBooks($id: Int!, $today: date!) {
     authors(where: { id: { _eq: $id } }, limit: 1) {
       id
       name
@@ -281,6 +282,25 @@ const AUTHOR_BOOKS = `
       ) {
         book { id title release_date release_year }
       }
+      forthcoming: contributions(
+        order_by: { book: { release_date: asc } }
+        limit: 40
+        where: {
+          book: {
+            canonical_id: { _is_null: true }
+            release_date: { _gt: $today }
+            compilation: { _eq: false }
+            is_partial_book: { _eq: false }
+          }
+        }
+      ) {
+        contribution
+        book {
+          id title release_date release_year users_count
+          image { url }
+          book_series { position series { id name } }
+        }
+      }
     }
   }
 `;
@@ -290,8 +310,8 @@ const AUTHOR_BOOKS = `
  * Hardcover not having slotted a new title into its series yet — new books
  * typically show up on the author before the series is updated.
  */
-export async function authorBooks(gql, id) {
-  const data = await gql(AUTHOR_BOOKS, { id: Number(id) });
+export async function authorBooks(gql, id, today = new Date().toISOString().slice(0, 10)) {
+  const data = await gql(AUTHOR_BOOKS, { id: Number(id), today });
   const a = data?.authors?.[0];
   if (!a) return null;
 
@@ -307,5 +327,108 @@ export async function authorBooks(gql, id) {
       releaseYear: c.book.release_year ?? null,
     });
   }
-  return { id: String(a.id), name: a.name, books };
+
+  // Forthcoming titles are queried separately rather than picked out of the
+  // list above: that list is ordered by popularity and capped, and a book
+  // announced last week has almost no readers yet, so it would fall off the
+  // end for anyone as prolific as Sanderson.
+  const forthcoming = [];
+  const seenSoon = new Set();
+  for (const c of a.forthcoming ?? []) {
+    // Narrators and illustrators are contributors too.
+    if (c.contribution && c.contribution !== 'Author') continue;
+    if (!c.book || seenSoon.has(String(c.book.id))) continue;
+    seenSoon.add(String(c.book.id));
+    const bs = c.book.book_series?.[0];
+    forthcoming.push({
+      bookId: String(c.book.id),
+      title: c.book.title,
+      releaseDate: c.book.release_date ?? null,
+      releaseYear: c.book.release_year ?? null,
+      image: c.book.image?.url ?? null,
+      usersCount: c.book.users_count ?? 0,
+      series: bs?.series
+        ? { id: String(bs.series.id), name: bs.series.name, position: bs.position == null ? null : Number(bs.position) }
+        : null,
+    });
+  }
+  return { id: String(a.id), name: a.name, books, forthcoming };
+}
+
+/* ---------------------------------------------------------- book details */
+
+const BOOKS_BY_IDS = `
+  query BooksByIds($ids: [Int!]) {
+    books(where: { id: { _in: $ids } }) {
+      id title subtitle description pages release_date release_year slug
+      users_count rating ratings_count cached_tags
+      image { url }
+      contributions { contribution author { id name } }
+      book_series { position series { id name books_count } }
+      default_physical_edition { publisher { name } }
+    }
+  }
+`;
+
+/**
+ * Everything Hardcover knows about some books, in the same shape as a search
+ * hit - so the result can go straight into bookFromHardcover() - plus the
+ * extras a detail panel wants (description, publisher, how many are waiting).
+ *
+ * Takes a list because tracked books are refreshed together in one call.
+ */
+export async function booksByIds(gql, ids) {
+  const wanted = [...new Set(ids.map(Number).filter(Number.isFinite))];
+  if (!wanted.length) return [];
+  const data = await gql(BOOKS_BY_IDS, { ids: wanted });
+  return (data?.books ?? []).map(normaliseDetail);
+}
+
+function normaliseDetail(b) {
+  const bs = b.book_series?.[0];
+  const tags = (kind) => (b.cached_tags?.[kind] ?? []).map((t) => t.tag).filter(Boolean);
+  const authors = [];
+  const seen = new Set();
+  for (const c of b.contributions ?? []) {
+    if (c.contribution && c.contribution !== 'Author') continue;
+    if (!c.author?.id || seen.has(String(c.author.id))) continue;
+    seen.add(String(c.author.id));
+    authors.push({ id: String(c.author.id), name: c.author.name });
+  }
+  return {
+    id: String(b.id),
+    title: b.title ?? '(untitled)',
+    subtitle: b.subtitle ?? null,
+    authors,
+    series: bs?.series
+      ? {
+          id: String(bs.series.id),
+          name: bs.series.name,
+          position: bs.position == null ? null : Number(bs.position),
+          booksCount: bs.series.books_count ?? null,
+        }
+      : null,
+    pages: b.pages ?? null,
+    releaseDate: normaliseDate(b.release_date),
+    releaseYear: b.release_year ?? null,
+    image: b.image?.url ?? null,
+    slug: b.slug ?? null,
+    rating: b.rating ?? null,
+    ratingsCount: b.ratings_count ?? 0,
+    usersCount: b.users_count ?? 0,
+    description: b.description ?? null,
+    publisher: b.default_physical_edition?.publisher?.name ?? null,
+    genres: tags('Genre'),
+    moods: tags('Mood'),
+  };
+}
+
+/** Book details through the Worker, which holds the Hardcover token. */
+export async function booksViaProxy(workerUrl, ids) {
+  const res = await fetch(`${workerUrl}/book?ids=${encodeURIComponent(ids.join(','))}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Could not load book details (${res.status})`);
+  }
+  return (await res.json()).books ?? [];
 }

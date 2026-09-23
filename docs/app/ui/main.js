@@ -3,15 +3,20 @@
  * every mutation goes through.
  */
 
-import { h, clear, fmtDate, fmtReadOn, authorNames, coverEl, seriesLabel, toast } from './dom.js';
+import { h, clear, fill, fmtDate, fmtReadOn, fmtRating, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
-import { createClient, searchBooks, searchViaProxy } from '../core/hardcover.js';
-import { bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO } from '../core/model.js';
-import { shelfView, upcomingView, whatsNewView, allUpcomingView, sharedView } from './views.js';
+import { createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy } from '../core/hardcover.js';
+import {
+  bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
+  normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
+} from '../core/model.js';
+import { shelfView, whatsNewView, sharedView, visibleEvents } from './views.js';
+import { upcomingView, allUpcomingView, openRelease } from './upcoming.js';
+import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
 
 const state = {
-  profiles: [], libraries: {}, seriesState: {}, events: [],
+  profiles: [], libraries: {}, seriesState: {}, authorState: {}, bookState: {}, events: [],
   route: { view: 'profile', profileId: null, tab: 'shelf' },
   canWrite: false,
 };
@@ -23,7 +28,7 @@ const ctx = { state, actions: {} };
 ctx.actions.rerender = () => render();
 
 const PROFILE_TABS = [
-  ['shelf', 'Shelf'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
+  ['shelf', 'Shelf'], ['recs', 'Recommendations'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
 ];
 
 /* ------------------------------------------------------------------- boot */
@@ -38,8 +43,7 @@ async function boot() {
   try {
     const { profiles } = await storage.loadJSON('profiles.json', { profiles: [] });
     state.profiles = profiles;
-    state.seriesState = await storage.loadJSON('series-state.json', {});
-    state.events = await storage.loadEvents();
+    await loadWatchState();
 
     for (const p of profiles) {
       state.libraries[p.id] = await storage.loadJSON(
@@ -60,6 +64,16 @@ async function boot() {
 
   readRoute();
   render();
+}
+
+/** Everything the release check writes; reloaded after "check now". */
+async function loadWatchState() {
+  [state.seriesState, state.authorState, state.bookState, state.events] = await Promise.all([
+    storage.loadJSON('series-state.json', {}),
+    storage.loadJSON('authors.json', {}),
+    storage.loadJSON('books-state.json', {}),
+    storage.loadEvents(),
+  ]);
 }
 
 function toggleMenu() {
@@ -109,24 +123,27 @@ function render() {
   main.append(profileTabs(profile, tab));
 
   const views = {
-    shelf: shelfView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
+    shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
   };
   main.append((views[tab] ?? shelfView)(ctx, profile));
 }
 
 function profileTabs(profile, current) {
+  const recs = newRecCount(state.libraries[profile.id]);
   return h('div', { class: 'tabs' }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'tab', type: 'button', role: 'tab',
       'aria-selected': String(id === current),
       onclick: () => go(`#/p/${profile.id}/${id}`),
-    }, label)));
+    }, label, id === 'recs' && recs ? h('span', { class: 'badge', text: String(recs) }) : null)));
 }
 
+/** The sidebar badge: unread release news plus unanswered recommendations. */
 function unseenCount(profile) {
   const since = profile.lastSeen;
-  return state.events.filter((e) =>
-    e.profile === profile.id && (!since || String(e.detectedAt) > since)).length;
+  return visibleEvents(state.events, profile, state.libraries[profile.id])
+    .filter((e) => !since || String(e.detectedAt) > since).length
+    + newRecCount(state.libraries[profile.id]);
 }
 
 function renderSidebar() {
@@ -190,6 +207,196 @@ async function saveLibrary(profileId, mutate, message) {
   }
 }
 
+/* -------------------------------------------------------- talking to Hardcover */
+
+/** Search, through the Worker on the live site or directly on localhost. */
+ctx.actions.searchBooks = async (query, n = 8) => {
+  const { hardcover, worker } = storage.getConfig();
+  if (worker) return searchViaProxy(worker, query, n);
+  if (hardcover) return searchBooks(createClient(hardcover), query, n);
+  throw new Error('This site is not connected to its backend yet.');
+};
+
+/** Full details for some books, in the same shape as a search hit. */
+ctx.actions.fetchBooks = async (ids) => {
+  const { hardcover, worker } = storage.getConfig();
+  if (worker) return booksViaProxy(worker, ids);
+  if (hardcover) return booksByIds(createClient(hardcover), ids);
+  throw new Error('This site is not connected to its backend yet.');
+};
+
+/* ------------------------------------------------ adding from suggestions */
+
+/** Put a search hit (or a fetched book) on someone's to-read pile. */
+ctx.actions.addHit = async (profile, hit) => {
+  const book = bookFromHardcover(hit, { status: 'tbr' });
+  const ok = await saveLibrary(profile.id, (lib) => {
+    if (lib.books.some((b) => b.id === book.id)) throw new Error('That book is already on this shelf.');
+    lib.books.push(book);
+    // Something you mean to read is no longer something you are waiting for.
+    untrackBook(lib, hit.id);
+    return lib;
+  }, `Add ${book.title} for ${profile.name}`);
+  if (ok) toast(`Added ${book.title} to ${profile.name}'s want-to-read pile`);
+  return ok;
+};
+
+/**
+ * Add a book known only by its Hardcover id - a next-in-series suggestion or
+ * an upcoming release. The watcher's snapshot is too thin to shelve (no
+ * authors, genres or page count), so fetch the real record first.
+ */
+ctx.actions.addById = async (profile, bookId, title) => {
+  try {
+    const [hit] = await ctx.actions.fetchBooks([bookId]);
+    if (!hit) throw new Error(`Hardcover could not find “${title}”.`);
+    return await ctx.actions.addHit(profile, hit);
+  } catch (err) {
+    toast(err.message, true);
+    return false;
+  }
+};
+
+ctx.actions.hide = async (profile, bookId, title) => {
+  const ok = await saveLibrary(profile.id, (lib) => hideBook(lib, bookId, title), `Hide ${title} for ${profile.name}`);
+  if (ok) toast(`Hidden “${title}” — bring it back from the bottom of Upcoming`);
+};
+
+ctx.actions.unhide = async (profile, bookId, title) => {
+  const ok = await saveLibrary(profile.id, (lib) => unhideBook(lib, bookId), `Show ${title} again for ${profile.name}`);
+  if (ok) toast(`“${title}” is back`);
+};
+
+ctx.actions.track = async (profile, hit) => {
+  const ok = await saveLibrary(profile.id, (lib) => trackBook(lib, hit), `Track ${hit.title} for ${profile.name}`);
+  if (ok) toast(`Tracking ${hit.title} — date changes will show in What's new`);
+};
+
+ctx.actions.untrack = async (profile, bookId, title) => {
+  const ok = await saveLibrary(profile.id, (lib) => untrackBook(lib, bookId), `Stop tracking ${title} for ${profile.name}`);
+  if (ok) toast(`Stopped tracking ${title}`);
+};
+
+ctx.actions.setGoal = async (profile, year, target) => {
+  const n = Number(target);
+  if (n !== 0 && (!Number.isFinite(n) || n < 1)) return toast('A goal needs to be at least one book.', true);
+  const ok = await saveLibrary(profile.id, (lib) => setGoal(lib, year, n), `Set ${profile.name}'s ${year} reading goal`);
+  if (ok) toast(n ? `Goal set: ${n} books in ${year}` : `Removed the ${year} goal`);
+};
+
+/** A read-only look at a book that is not on this shelf yet. */
+ctx.actions.openBookPreview = (book) => openRelease(ctx, {
+  bookId: String(book.hardcoverId ?? book.id).replace(/^hc:/, ''),
+  title: book.title,
+  image: book.cover ?? book.image ?? null,
+  seriesName: book.series?.name ?? null,
+  position: book.series?.position ?? null,
+  authorName: authorNames(book),
+  releaseDate: book.released ?? book.releaseDate ?? null,
+}, null, { preview: true });
+
+/* ---------------------------------------------------------- recommendations */
+
+ctx.actions.answerRec = async (profile, rec, answer) => {
+  const ok = await saveLibrary(profile.id, (lib) => answerRecommendation(lib, rec.id, answer),
+    `${answer === 'added' ? 'Accept' : 'Pass on'} ${rec.book.title} for ${profile.name}`);
+  if (ok) toast(answer === 'added' ? `Added ${rec.book.title} to your want-to-read pile` : 'Passed — it moves to Earlier');
+};
+
+/**
+ * Recommend a book to someone else. Given a book it goes straight to the
+ * note; without one it starts with a search.
+ */
+ctx.actions.openRecommend = (from, book = null) => {
+  const others = state.profiles.filter((p) => p.id !== from.id);
+  if (!others.length) return toast('There is nobody else to recommend to yet.', true);
+  const dialog = document.getElementById('rec-dialog');
+  const body = clear(document.getElementById('rec-body'));
+  const title = document.getElementById('rec-title');
+  let to = others[0];
+  title.textContent = others.length === 1 ? `Recommend a book to ${to.name}` : 'Recommend a book';
+
+  const compose = (record) => {
+    clear(body);
+    const theirs = () => (state.libraries[to.id]?.books ?? []).find((b) => b.hardcoverId === record.hardcoverId);
+    const warn = h('p', { class: 'hint error' });
+    let note = '';
+    const send = h('button', { class: 'btn', type: 'button', onclick: async () => {
+      send.disabled = true;
+      const ok = await saveLibrary(to.id,
+        (lib) => addRecommendation(lib, { book: record, from: from.id, note }),
+        `${from.name} recommends ${record.title} to ${to.name}`);
+      if (ok) { dialog.close(); toast(`Sent ${record.title} to ${to.name}`); } else send.disabled = false;
+    } });
+    // Recommending something they already have is a wasted message - say so
+    // before it is sent rather than after.
+    const check = () => {
+      const t = theirs();
+      warn.textContent = t
+        ? `Already on ${to.name}'s shelf${t.status === 'read' ? ` — finished${t.rating ? `, ${fmtRating(t.rating)}★` : ''}` : ''}.`
+        : '';
+      send.disabled = Boolean(t);
+      send.textContent = `Send to ${to.name}`;
+    };
+    fill(body,
+      h('div', { class: 'row rec-pick' }, coverEl(record),
+        h('div', { class: 'book-main' },
+          h('div', { class: 'book-title', text: record.title }),
+          h('div', { class: 'book-meta', text: [authorNames(record), seriesLabel(record)].filter(Boolean).join(' · ') }))),
+      others.length > 1 ? h('label', { class: 'field' }, h('span', { text: 'To' }),
+        h('select', { onchange: (e) => { to = others.find((p) => p.id === e.target.value); check(); } },
+          others.map((p) => h('option', { value: p.id }, p.name)))) : null,
+      h('label', { class: 'field' }, h('span', { text: 'Why they’d like it (optional)' }),
+        h('textarea', { maxlength: '400', placeholder: 'What made you think of them?',
+          oninput: (e) => { note = e.target.value; } })),
+      warn,
+      h('div', { class: 'row end' }, send));
+    check();
+  };
+
+  if (book) {
+    compose(book);
+  } else {
+    const results = h('div', { class: 'results' });
+    const hint = h('p', { class: 'hint', text: 'Search for the book you want to recommend.' });
+    let timer = null;
+    let seq = 0;
+    const input = h('input', {
+      type: 'search', placeholder: 'Start typing a title…', autocomplete: 'off', spellcheck: 'false',
+      oninput: (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const q = e.target.value.trim();
+          clear(results);
+          if (q.length < 3) { hint.textContent = 'Keep typing…'; return; }
+          const mine = ++seq;
+          hint.textContent = 'Searching…';
+          try {
+            const hits = await ctx.actions.searchBooks(q, 8);
+            if (mine !== seq) return;
+            hint.textContent = hits.length ? 'Pick the right book.' : `Hardcover has nothing for “${q}”.`;
+            for (const hit of hits) {
+              results.append(h('button', {
+                class: 'result', type: 'button',
+                onclick: () => compose(bookFromHardcover(hit, { status: 'tbr' })),
+              },
+                coverEl({ cover: hit.image }),
+                h('div', { class: 'book-main' },
+                  h('div', { class: 'book-title', text: hit.title }),
+                  h('div', { class: 'book-meta', text: [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean).join(' · ') }))));
+            }
+          } catch (err) {
+            if (mine === seq) hint.textContent = err.message;
+          }
+        }, 350);
+      },
+    });
+    body.append(h('label', { class: 'field' }, h('span', { text: 'Title' }), input), hint, results);
+    setTimeout(() => input.focus(), 0);
+  }
+  dialog.showModal();
+};
+
 /* -------------------------------------------------------------- add dialog */
 
 let searchTimer = null;
@@ -229,18 +436,13 @@ async function runSearch() {
   const results = clear(document.getElementById('add-results'));
   if (query.length < 3) return setHint('Keep typing…');
 
-  const { hardcover, worker } = storage.getConfig();
-  if (!worker && !hardcover) return setHint('This site is not connected to its backend yet.', true);
-
   // Responses can land out of order — a slow "harry" arriving after a fast
   // "potter" would repaint stale results. Only the newest request may draw.
   const seq = ++searchSeq;
   setHint('Searching…');
 
   try {
-    const hits = worker
-      ? await searchViaProxy(worker, query, 8)
-      : await searchBooks(createClient(hardcover), query, 8);
+    const hits = await ctx.actions.searchBooks(query, 8);
     if (seq !== searchSeq) return;
     if (!hits.length) return setHint(`Hardcover has nothing for “${query}”.`, true);
     setHint('Pick the right edition — everything else is filled in for you.');
@@ -336,6 +538,12 @@ ctx.actions.openBook = (book, owner) => {
           h('input', { type: 'date', value: draft.finished, onchange: (e) => { draft.finished = e.target.value; } })))),
 
     h('div', { class: 'row end', style: 'margin-top:1rem' },
+      book.recommendedBy ? h('span', { class: 'count rec-origin',
+        text: `Recommended by ${state.profiles.find((p) => p.id === book.recommendedBy)?.name ?? book.recommendedBy}` }) : null,
+      state.profiles.length > 1 && state.canWrite ? h('button', { class: 'btn secondary', type: 'button',
+        onclick: () => { dialog.close(); ctx.actions.openRecommend(profile, book); } },
+        state.profiles.length === 2 ? `Recommend to ${state.profiles.find((p) => p.id !== profile.id).name}` : 'Recommend…') : null,
+      h('div', { class: 'spacer' }),
       h('button', { class: 'btn danger', type: 'button', disabled: !state.canWrite,
         onclick: () => removeBook(profile, book) }, 'Remove'),
       h('button', { class: 'btn', type: 'button', disabled: !state.canWrite,
@@ -433,18 +641,36 @@ function readOnPicker(draft) {
   return h('div', {}, wrap, summary);
 }
 
+/**
+ * Five stars, each split into a left and a right half: a click on the left
+ * of the fourth star is 3.5, on its right 4. Clicking the current rating
+ * again clears it. Ten plain buttons rather than one clever control, so it
+ * works by keyboard and screen reader like anything else.
+ */
 function ratingPicker(draft) {
-  const wrap = h('div', { class: 'rating-pick' });
-  const paint = () => [...wrap.children].forEach((btn, i) =>
-    btn.classList.toggle('on', draft.rating != null && i < draft.rating));
+  const wrap = h('div', { class: 'rating-pick', role: 'group', 'aria-label': 'Rating' });
+  const label = h('span', { class: 'rating-label' });
+  const slots = [];
+  const paint = () => {
+    const r = draft.rating ?? 0;
+    slots.forEach((slot, i) => {
+      slot.classList.toggle('full', r >= i + 1);
+      slot.classList.toggle('half', r === i + 0.5);
+    });
+    label.textContent = draft.rating ? `${fmtRating(draft.rating)} / 5` : 'Not rated';
+  };
   for (let i = 1; i <= 5; i++) {
-    wrap.append(h('button', {
-      type: 'button', 'aria-label': `${i} stars`,
-      onclick: () => { draft.rating = draft.rating === i ? null : i; paint(); },
-    }, '★'));
+    const pick = (value) => { draft.rating = draft.rating === value ? null : normaliseRating(value); paint(); };
+    const slot = h('span', { class: 'star-slot' },
+      h('span', { class: 'star-base', 'aria-hidden': 'true', text: '★' }),
+      h('span', { class: 'star-fill', 'aria-hidden': 'true', text: '★' }),
+      h('button', { type: 'button', class: 'star-half left', 'aria-label': `${i - 0.5} stars`, onclick: () => pick(i - 0.5) }),
+      h('button', { type: 'button', class: 'star-half right', 'aria-label': `${i} stars`, onclick: () => pick(i) }));
+    slots.push(slot);
+    wrap.append(slot);
   }
   paint();
-  return wrap;
+  return h('div', { class: 'row rating-row' }, wrap, label);
 }
 
 async function applyEdit(profile, book, draft) {
@@ -454,7 +680,7 @@ async function applyEdit(profile, book, draft) {
     const previous = target.status;
     Object.assign(target, {
       status: draft.status,
-      rating: draft.rating,
+      rating: normaliseRating(draft.rating),
       note: draft.note,
       readOn: isValidReadOn(draft.readOn) ? draft.readOn : null,
       started: draft.started || null,
@@ -659,9 +885,8 @@ ctx.actions.checkNow = async (button) => {
   try {
     const result = await storage.runCheckNow();
 
-    // The check rewrote series state and the event log; pull both back in.
-    state.seriesState = await storage.loadJSON('series-state.json', {});
-    state.events = await storage.loadEvents();
+    // The check rewrote the watch state and the event log; pull them back in.
+    await loadWatchState();
     render();
 
     // A first look at a series is deliberately silent (it would otherwise

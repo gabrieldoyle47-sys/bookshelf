@@ -12,6 +12,18 @@ export const DISLIKE_AT_OR_BELOW = 2;
 /** Ratings at or above this start watching the author, not just the series. */
 export const AUTHOR_WATCH_AT_OR_ABOVE = 4;
 
+/**
+ * Ratings go in half stars. Anything else - a CLI typo, an old record - is
+ * snapped to the nearest half and clamped, so every rating on disk is one of
+ * 0.5, 1, 1.5 ... 5 and the display never has to cope with 3.27.
+ */
+export function normaliseRating(value) {
+  if (value == null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.min(5, Math.max(0.5, Math.round(n * 2) / 2));
+}
+
 /* --------------------------------------------------------------- text --- */
 
 // Zero-width and formatting characters that carry no meaning in a title but
@@ -359,11 +371,182 @@ export function setWatchOverride(library, kind, id, name, watching) {
 
 /* ------------------------------------------------------------------ misc */
 
+/**
+ * Everyone whose books you are reading or have read, plus anyone on the
+ * author watchlist.
+ *
+ * Broader than the watchlist on purpose. The watchlist decides what is worth
+ * interrupting you for (authors you rated 4+); this decides what is worth
+ * *showing* - the Upcoming page's "from authors you read" column, where a
+ * forthcoming book by someone you rated 3 is still interesting to see.
+ * An explicit unwatch removes an author from both.
+ */
+export function readAuthors(library) {
+  const out = new Map();
+  for (const book of library.books ?? []) {
+    if (book.status !== 'read' && book.status !== 'reading') continue;
+    for (const a of book.authors ?? []) {
+      if (a.id && !out.has(a.id)) out.set(a.id, { id: a.id, name: a.name });
+    }
+  }
+  for (const [id, a] of Object.entries(deriveWatchlist(library).authors)) {
+    if (!out.has(id)) out.set(id, { id, name: a.name });
+  }
+  for (const [id, o] of Object.entries(library.watch?.authors ?? {})) {
+    if (o.watching === false) out.delete(id);
+  }
+  return Object.fromEntries(out);
+}
+
+/** Hardcover ids of every book on a shelf, whatever its status. */
+export function onShelfIds(library) {
+  return new Set((library.books ?? []).map((b) => String(b.hardcoverId ?? String(b.id).replace(/^hc:/, ''))));
+}
+
+/* ------------------------------------------------ hidden and tracked books */
+
+/**
+ * Books someone has said they do not care about. One list serves every place
+ * that suggests a book - Upcoming, "next in series", author releases - because
+ * "not interested" means the same thing wherever you said it.
+ */
+export function hiddenIds(library) {
+  return new Set(Object.keys(library.hidden ?? {}));
+}
+
+export function hideBook(library, bookId, title, now = today()) {
+  library.hidden ??= {};
+  library.hidden[String(bookId)] = { title, at: now };
+  return library;
+}
+
+export function unhideBook(library, bookId) {
+  if (library.hidden) delete library.hidden[String(bookId)];
+  return library;
+}
+
+/** Follow one specific book's release, whoever wrote it. */
+export function trackBook(library, hit, now = today()) {
+  library.tracked ??= [];
+  const bookId = String(hit.id ?? hit.bookId);
+  if (library.tracked.some((t) => String(t.bookId) === bookId)) return library;
+  library.tracked.push({
+    bookId,
+    title: cleanText(hit.title),
+    authors: (hit.authors ?? []).map((a) => (typeof a === 'string' ? { id: null, name: a } : a)),
+    series: hit.series ? { id: hit.series.id, name: cleanText(hit.series.name), position: hit.series.position ?? null } : null,
+    releaseDate: hit.releaseDate ?? null,
+    releaseYear: hit.releaseYear ?? null,
+    image: hit.image ?? null,
+    slug: hit.slug ?? null,
+    added: now,
+  });
+  unhideBook(library, bookId);
+  return library;
+}
+
+export function untrackBook(library, bookId) {
+  library.tracked = (library.tracked ?? []).filter((t) => String(t.bookId) !== String(bookId));
+  return library;
+}
+
+/* --------------------------------------------------------- recommendations */
+
+/**
+ * A recommendation lives in the *recipient's* library, so it arrives with
+ * their shelf and needs no file of its own. It carries a complete book record,
+ * so accepting it is one click with no second trip to Hardcover.
+ */
+export function addRecommendation(library, { book, from, note = '', now = today() }) {
+  library.recommendations ??= [];
+  const bookId = String(book.hardcoverId ?? book.id).replace(/^hc:/, '');
+  const open = library.recommendations.find((r) => r.bookId === bookId && r.from === from && r.status === 'new');
+  if (open) throw new Error('You have already recommended that one.');
+  if (onShelfIds(library).has(bookId)) throw new Error('That book is already on their shelf.');
+  const record = {
+    ...book,
+    status: 'tbr', rating: null, note: '',
+    readOn: null, started: null, finished: null,
+  };
+  library.recommendations.push({
+    id: `${from}:${bookId}:${now}`,
+    bookId,
+    from,
+    note: cleanText(note) ?? '',
+    at: now,
+    status: 'new',
+    book: record,
+  });
+  return library;
+}
+
+/** Accept (onto the to-read pile) or dismiss a recommendation. */
+export function answerRecommendation(library, recId, answer, now = today()) {
+  const rec = (library.recommendations ?? []).find((r) => r.id === recId);
+  if (!rec) throw new Error('That recommendation is no longer there.');
+  rec.status = answer;
+  rec.answeredAt = now;
+  if (answer === 'added' && !onShelfIds(library).has(rec.bookId)) {
+    library.books.push({ ...rec.book, status: 'tbr', added: now, recommendedBy: rec.from });
+  }
+  return library;
+}
+
+/* ------------------------------------------------------------------ goals */
+
+export function setGoal(library, year, target) {
+  library.goals ??= {};
+  const n = Math.round(Number(target));
+  if (!Number.isFinite(n) || n <= 0) delete library.goals[String(year)];
+  else library.goals[String(year)] = n;
+  return library;
+}
+
+/**
+ * How a yearly goal is going. "Expected" is where a steady pace would have
+ * you by today, so being two books ahead in March says something real.
+ */
+export function goalProgress(library, year, now = today()) {
+  const target = library.goals?.[String(year)] ?? null;
+  const done = (library.books ?? []).filter((b) => b.status === 'read' && readYearOf(b) === Number(year)).length;
+  if (!target) return { target: null, done };
+
+  const thisYear = Number(now.slice(0, 4));
+  let fraction;
+  if (Number(year) < thisYear) fraction = 1;
+  else if (Number(year) > thisYear) fraction = 0;
+  else {
+    const start = Date.parse(`${year}-01-01T00:00:00Z`);
+    const end = Date.parse(`${Number(year) + 1}-01-01T00:00:00Z`);
+    fraction = (Date.parse(`${now}T00:00:00Z`) - start) / (end - start);
+  }
+  const expected = target * fraction;
+  return {
+    target, done,
+    expected,
+    ahead: Math.round(done - expected),
+    percent: Math.min(100, (done / target) * 100),
+    met: done >= target,
+    finished: fraction >= 1,
+  };
+}
+
 /** Union of every profile's watchlist, so each series is fetched only once. */
 export function unionWatchlists(profiles) {
   const series = new Map();
   const authors = new Map();
+  const readers = new Map();
+  const tracked = new Map();
   for (const [profileId, library] of Object.entries(profiles)) {
+    for (const [id, a] of Object.entries(readAuthors(library))) {
+      if (!readers.has(id)) readers.set(id, { ...a, watchers: [] });
+      readers.get(id).watchers.push(profileId);
+    }
+    for (const t of library.tracked ?? []) {
+      const id = String(t.bookId);
+      if (!tracked.has(id)) tracked.set(id, { id, title: t.title, watchers: [] });
+      tracked.get(id).watchers.push(profileId);
+    }
     const w = deriveWatchlist(library);
     for (const [id, s] of Object.entries(w.series)) {
       if (!series.has(id)) series.set(id, { ...s, watchers: [] });
@@ -374,7 +557,13 @@ export function unionWatchlists(profiles) {
       authors.get(id).watchers.push(profileId);
     }
   }
-  return { series: [...series.values()], authors: [...authors.values()] };
+  return {
+    series: [...series.values()],
+    authors: [...authors.values()],
+    // Fetched for display; only `authors` above produce news.
+    readAuthors: [...readers.values()],
+    tracked: [...tracked.values()],
+  };
 }
 
 /* ------------------------------------------------------------ read dates */

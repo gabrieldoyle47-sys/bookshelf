@@ -96,9 +96,11 @@ export async function loadSiteConfig() {
 
 const VERSION_KEY = 'bookshelf.version';
 const MODULES = [
-  './app/ui/main.js', './app/ui/views.js', './app/ui/stats.js',
+  './app/ui/main.js', './app/ui/views.js', './app/ui/stats.js', './app/ui/covers.js',
+  './app/ui/upcoming.js', './app/ui/recs.js', './app/ui/recap.js',
   './app/ui/storage.js', './app/ui/dom.js', './app/ui/style.css',
   './app/core/model.js', './app/core/watch.js', './app/core/hardcover.js',
+  './app/core/recap.js', './app/core/check.js',
 ];
 
 /**

@@ -19,6 +19,7 @@ const paths = {
   profiles: join(DATA, 'profiles.json'),
   seriesState: join(DATA, 'series-state.json'),
   authors: join(DATA, 'authors.json'),
+  books: join(DATA, 'books-state.json'),
   events: join(DATA, 'events.jsonl'),
   library: (id) => join(DATA, 'profiles', id, 'library.json'),
 };
@@ -79,6 +80,12 @@ export async function loadAuthorState() {
 }
 export async function saveAuthorState(value) {
   await writeJSON(paths.authors, value);
+}
+export async function loadBookState() {
+  return readJSON(paths.books, {});
+}
+export async function saveBookState(value) {
+  await writeJSON(paths.books, value);
 }
 
 /* ------------------------------------------------------------------ events */

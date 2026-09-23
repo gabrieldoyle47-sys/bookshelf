@@ -7,7 +7,7 @@
  * shelfView's paint).
  */
 
-import { h, stars, authorNames, seriesLabel, fmtReadOnShort } from './dom.js';
+import { h, starsEl, authorNames, seriesLabel, fmtReadOnShort } from './dom.js';
 import { readOnOf } from '../core/model.js';
 
 const LAYOUT_KEY = 'bookshelf.layout';
@@ -62,7 +62,7 @@ const SECTIONS = [
 function tile(book, ctx) {
   const caption = [];
   if (book.status === 'read') {
-    if (book.rating) caption.push(h('span', { class: 'stars', text: stars(book.rating) }));
+    if (book.rating) caption.push(starsEl(book.rating));
     const when = fmtReadOnShort(readOnOf(book));
     if (when) caption.push(h('span', { class: 'tile-when', text: when }));
   }
