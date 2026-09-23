@@ -11,6 +11,8 @@ import {
   deriveWatchlist, readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
 } from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
+// TRIAL: cover-wall layout (see covers.js) — remove this import to drop it.
+import { getLayout, layoutToggle, coverWall } from './covers.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -200,12 +202,20 @@ export function shelfView(ctx, profile) {
     const books = visible();
     const of = (status) => books.filter((b) => b.status === status);
 
-    // Three columns, left to right: what you mean to read, what you are
-    // reading, what you have read.
-    clear(columns).append(
-      plainColumn('tbr', of('tbr'), ctx),
-      plainColumn('reading', of('reading'), ctx),
-      finishedColumn(of('read'), ctx, filters));
+    clear(columns);
+    // TRIAL: cover-wall layout — remove this branch to drop it.
+    if (getLayout() === 'covers') {
+      columns.className = 'shelf-wall';
+      columns.append(coverWall(ctx, books));
+    } else {
+      // Three columns, left to right: what you mean to read, what you are
+      // reading, what you have read.
+      columns.className = 'shelf-columns';
+      columns.append(
+        plainColumn('tbr', of('tbr'), ctx),
+        plainColumn('reading', of('reading'), ctx),
+        finishedColumn(of('read'), ctx, filters));
+    }
 
     const filtering = filters.query || filters.rating !== 'all';
     tally.textContent = filtering
@@ -247,7 +257,8 @@ export function shelfView(ctx, profile) {
       h('div', {}, h('h1', { text: profile.name }), tally),
       h('div', { class: 'spacer' }),
       addBtn),
-    h('div', { class: 'shelf-tools' }, search, ratingFilter),
+    // TRIAL: layoutToggle is the cover-wall switch — remove it to drop it.
+    h('div', { class: 'shelf-tools' }, search, ratingFilter, layoutToggle(() => paint())),
     columns,
     extra);
 }
