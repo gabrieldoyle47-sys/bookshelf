@@ -7,7 +7,7 @@
  * without touching the network.
  */
 
-import { today } from './model.js';
+import { today, deriveWatchlist, readAuthors, hiddenIds, onShelfIds } from './model.js';
 
 export const PREORDER_WINDOW_DAYS = 30;
 
@@ -141,6 +141,7 @@ export function snapshotSeries(fresh, now = today()) {
       title: b.title,
       releaseDate: b.releaseDate,
       releaseYear: b.releaseYear ?? null,
+      image: b.image ?? null,
     };
   }
   return { id: fresh.id, name: fresh.name, checkedAt: now, books };
@@ -151,7 +152,48 @@ export function snapshotAuthor(fresh, now = today()) {
   for (const b of fresh.books) {
     books[b.bookId] = { title: b.title, releaseDate: b.releaseDate };
   }
-  return { id: fresh.id, name: fresh.name, checkedAt: now, books };
+  // Forthcoming titles carry enough to be shown on their own (cover, series),
+  // since they are exactly the books nobody has on a shelf yet.
+  const forthcoming = (fresh.forthcoming ?? []).map((b) => ({ ...b }));
+  return { id: fresh.id, name: fresh.name, checkedAt: now, books, forthcoming };
+}
+
+/**
+ * Diff books someone chose to track by hand.
+ *
+ * Reuses the series rules by treating each book as a series of one: the first
+ * sighting is silent (you only just asked for it), and after that a date
+ * appearing, moving or arriving is news exactly as it would be in a series.
+ *
+ * @param {object|null} prev  this book's entry in books-state.json
+ * @param {object} fresh      one result of hardcover.booksByIds()
+ */
+export function diffTracked(prev, fresh, profile, now = today()) {
+  const asSeries = (b, checkedAt) => ({
+    id: 'tracked',
+    name: b.series?.name ?? b.title,
+    checkedAt,
+    books: [{ bookId: String(b.id ?? b.bookId), title: b.title, position: b.series?.position ?? null, releaseDate: b.releaseDate ?? null }],
+  });
+  if (!prev) return [];
+  const before = asSeries(prev, prev.checkedAt);
+  const prevSnap = { checkedAt: prev.checkedAt, books: { [before.books[0].bookId]: before.books[0] } };
+  return diffSeries(prevSnap, asSeries(fresh, now), profile, now)
+    .map((e) => ({ ...e, tracked: true }));
+}
+
+/** What books-state.json keeps for a tracked book. */
+export function snapshotTracked(fresh, now = today()) {
+  return {
+    id: String(fresh.id),
+    title: fresh.title,
+    authors: fresh.authors ?? [],
+    series: fresh.series ?? null,
+    releaseDate: fresh.releaseDate ?? null,
+    releaseYear: fresh.releaseYear ?? null,
+    image: fresh.image ?? null,
+    checkedAt: now,
+  };
 }
 
 /**
@@ -169,6 +211,116 @@ export function dedupe(events, seen) {
   return fresh;
 }
 
+/* ------------------------------------------------------ building the lists */
+
+const UNTITLED = /^untitled\b/i;
+
+/**
+ * Released books in the series you read that are nowhere on your shelf.
+ *
+ * The watcher already knows every book in each watched series; this is the
+ * half of that knowledge that is not about the future. "Released" includes a
+ * year-only date in the past - Hardcover's Jan 1st placeholder - because a
+ * book dated "2019" is out, whatever day it was.
+ *
+ * Extras (a 2.5 novella, a 0.1 "Prime" draft) are kept but flagged, so the
+ * main-numbered books can lead.
+ */
+export function nextInSeries(seriesState, library, now = today()) {
+  const watched = deriveWatchlist(library).series;
+  const have = onShelfIds(library);
+  const hidden = hiddenIds(library);
+  const groups = [];
+
+  for (const id of Object.keys(watched)) {
+    const s = seriesState[id];
+    if (!s) continue;
+    // Where you are is what you have read or are reading - a book waiting on
+    // the to-read pile is not progress.
+    const mine = library.books.filter((b) => b.series?.id === id && (b.status === 'read' || b.status === 'reading'));
+    const reached = Math.max(0, ...mine.map((b) => b.series?.position ?? 0));
+    const books = [];
+    for (const [bookId, b] of Object.entries(s.books ?? {})) {
+      if (have.has(bookId) || hidden.has(bookId)) continue;
+      if (!b.releaseDate || b.releaseDate > now) continue;
+      if (UNTITLED.test(b.title ?? '')) continue;
+      const extra = b.position == null || !Number.isInteger(b.position) || b.position <= 0;
+      books.push({ ...b, bookId, seriesId: id, seriesName: s.name, extra });
+    }
+    if (!books.length) continue;
+    books.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+    // The first main book past where you are is the one to read next.
+    const next = books.find((b) => !b.extra && b.position > reached) ?? books.find((b) => !b.extra) ?? null;
+    groups.push({ id, name: s.name, books, next, reached });
+  }
+
+  // Series with a main book waiting come first; within that, alphabetical.
+  return groups.sort((a, b) => Number(!a.next) - Number(!b.next) || a.name.localeCompare(b.name));
+}
+
+/**
+ * Forthcoming books by authors you read, that are not already covered by a
+ * series you watch, a book you track, or your shelf.
+ */
+export function authorUpcoming(authorState, library, seriesState = {}, now = today()) {
+  const authors = readAuthors(library);
+  const watchedSeries = new Set(Object.keys(deriveWatchlist(library).series));
+  const have = onShelfIds(library);
+  const hidden = hiddenIds(library);
+  const tracked = new Set((library.tracked ?? []).map((t) => String(t.bookId)));
+  const inWatchedSeries = new Set();
+  for (const id of watchedSeries) {
+    for (const bookId of Object.keys(seriesState[id]?.books ?? {})) inWatchedSeries.add(bookId);
+  }
+
+  // Hardcover sometimes holds the same forthcoming book twice (two editions
+  // not yet merged by its librarians), so one title per author, keeping the
+  // record with a cover and the most readers.
+  const quality = (b) => (b.image ? 1e9 : 0) + (b.usersCount ?? 0);
+  const out = new Map();
+  for (const author of Object.values(authors)) {
+    for (const b of authorState[author.id]?.forthcoming ?? []) {
+      if (!b.releaseDate || b.releaseDate <= now) continue;
+      if (have.has(b.bookId) || hidden.has(b.bookId) || tracked.has(b.bookId)) continue;
+      if (inWatchedSeries.has(b.bookId) || (b.series && watchedSeries.has(b.series.id))) continue;
+      const key = `${author.id}|${String(b.title).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()}`;
+      if (out.has(key) && quality(out.get(key)) >= quality(b)) continue;
+      out.set(key, {
+        ...b,
+        seriesId: b.series?.id ?? null,
+        seriesName: b.series?.name ?? null,
+        position: b.series?.position ?? null,
+        authorId: author.id,
+        authorName: author.name,
+        daysUntil: daysBetween(now, b.releaseDate),
+        source: 'author',
+      });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
+/** Books tracked by hand, with the freshest date the watcher has for each. */
+export function trackedUpcoming(bookState, library, now = today()) {
+  return (library.tracked ?? []).map((t) => {
+    const fresh = bookState[t.bookId] ?? {};
+    const releaseDate = fresh.releaseDate ?? t.releaseDate ?? null;
+    return {
+      ...t,
+      ...fresh,
+      bookId: String(t.bookId),
+      releaseDate,
+      image: fresh.image ?? t.image ?? null,
+      seriesId: (fresh.series ?? t.series)?.id ?? null,
+      seriesName: (fresh.series ?? t.series)?.name ?? null,
+      position: (fresh.series ?? t.series)?.position ?? null,
+      authorName: (fresh.authors ?? t.authors ?? []).map((a) => a.name).join(', '),
+      daysUntil: releaseDate ? daysBetween(now, releaseDate) : null,
+      source: 'tracked',
+    };
+  }).sort((a, b) => (a.daysUntil ?? 1e9) - (b.daysUntil ?? 1e9));
+}
+
 /** Books across all watched series that haven't come out yet, soonest first. */
 export function upcomingFrom(seriesState, watchedIds, now = today()) {
   const out = [];
@@ -179,7 +331,7 @@ export function upcomingFrom(seriesState, watchedIds, now = today()) {
       if (!b.releaseDate) continue;
       const days = daysBetween(now, b.releaseDate);
       if (days === null || days < 0) continue;
-      out.push({ ...b, bookId, seriesId: id, seriesName: s.name, daysUntil: days });
+      out.push({ ...b, bookId, seriesId: id, seriesName: s.name, daysUntil: days, source: 'series' });
     }
   }
   return out.sort((a, b) => a.daysUntil - b.daysUntil);

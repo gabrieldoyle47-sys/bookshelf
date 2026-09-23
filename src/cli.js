@@ -11,7 +11,7 @@ import { stdin, stdout } from 'node:process';
 import { createClient, searchBooks } from '../docs/app/core/hardcover.js';
 import {
   bookFromHardcover, findBook, matchBooks, setStatus,
-  deriveWatchlist, setWatchOverride, today, STATUSES,
+  deriveWatchlist, setWatchOverride, today, STATUSES, normaliseRating,
 } from '../docs/app/core/model.js';
 import { upcomingFrom } from '../docs/app/core/watch.js';
 import * as store from './store.js';
@@ -43,7 +43,12 @@ const c = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
 };
 
-const stars = (n) => (typeof n === 'number' ? '★'.repeat(n) + '☆'.repeat(5 - n) : c.dim('unrated'));
+const stars = (n) => {
+  if (typeof n !== 'number') return c.dim('unrated');
+  const whole = Math.floor(n);
+  const half = n % 1 >= 0.5;
+  return '★'.repeat(whole) + (half ? '½' : '') + '☆'.repeat(5 - whole - (half ? 1 : 0));
+};
 
 function describe(hit) {
   const who = hit.authors?.map((a) => (typeof a === 'string' ? a : a.name)).join(', ') || 'unknown';
@@ -143,7 +148,8 @@ async function cmdAdd(args, flags, status) {
     return console.log(c.yellow(`Already on ${profile.name}'s shelf: ${chosen.title}`));
   }
 
-  const rating = flags.rating != null && flags.rating !== true ? Number(flags.rating) : null;
+  // Half stars are fine (--rating 3.5); anything else snaps to the nearest half.
+  const rating = flags.rating != null && flags.rating !== true ? normaliseRating(flags.rating) : null;
   const book = bookFromHardcover(chosen, {
     status,
     rating,
@@ -165,14 +171,14 @@ async function cmdStatus(args, flags, status) {
   const library = await store.loadLibrary(profile.id);
   const book = resolveOwned(library, query);
 
-  let rating = flags.rating != null && flags.rating !== true ? Number(flags.rating) : undefined;
+  let rating = flags.rating != null && flags.rating !== true ? normaliseRating(flags.rating) : undefined;
   let note = typeof flags.note === 'string' ? flags.note : undefined;
 
   // Finishing is the one moment worth asking a question — and only about the
   // two things we can't derive. Dates are never asked for.
   if (status === 'read' && rating === undefined && stdin.isTTY && !flags.yes) {
-    const answer = await ask(`Rating for ${c.bold(book.title)} 1-5 ${c.dim('(enter to skip)')} `);
-    if (answer) rating = Number(answer);
+    const answer = await ask(`Rating for ${c.bold(book.title)} 0.5-5 ${c.dim('(halves ok, enter to skip)')} `);
+    if (answer) rating = normaliseRating(answer);
     if (note === undefined) {
       const n = await ask(`A note? ${c.dim('(enter to skip)')} `);
       if (n) note = n;

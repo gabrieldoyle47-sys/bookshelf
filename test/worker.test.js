@@ -137,3 +137,35 @@ test('CORS preflight is answered', async () => {
   assert.equal(res.status, 204);
   assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*');
 });
+
+test('book details come back in the search-hit shape, ready to shelve', async () => {
+  stub({ hardcover: { data: { books: [{
+    id: 430559, title: 'A Court of Splintered Harmony', release_date: '2026-10-27', pages: 352,
+    image: { url: 'https://x/c.jpg' }, cached_tags: { Genre: [{ tag: 'Fantasy' }], Mood: [] },
+    contributions: [{ contribution: 'Author', author: { id: 187135, name: 'Sarah J. Maas' } }],
+    book_series: [{ position: 6, series: { id: 1275, name: 'A Court of Thorns and Roses' } }],
+    default_physical_edition: { publisher: { name: 'Bloomsbury' } },
+  }] } } });
+  const res = await worker.fetch(new Request('https://w.dev/book?ids=430559'), ENV);
+  assert.equal(res.status, 200);
+  const [b] = (await res.json()).books;
+  assert.equal(b.id, '430559');
+  assert.equal(b.image, 'https://x/c.jpg');
+  assert.deepEqual(b.series, { id: '1275', name: 'A Court of Thorns and Roses', position: 6, booksCount: null });
+  assert.deepEqual(b.genres, ['Fantasy']);
+  assert.equal(b.publisher, 'Bloomsbury');
+  restore();
+});
+
+test('book details refuse a request with no usable ids before calling Hardcover', async () => {
+  stub();
+  assert.equal((await worker.fetch(new Request('https://w.dev/book?ids=abc'), ENV)).status, 400);
+  assert.equal(calls.length, 0);
+  restore();
+});
+
+test('the tracked-books state file is readable', async () => {
+  stub();
+  assert.equal((await worker.fetch(new Request('https://w.dev/read?path=books-state.json'), ENV)).status, 200);
+  restore();
+});

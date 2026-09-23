@@ -11,9 +11,10 @@
  * the heading names the measure.
  */
 
-import { h, stars } from './dom.js';
+import { h, fmtRating } from './dom.js';
 import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
 import { frag, pageHead, emptyState } from './views.js';
+import { goalSection, yearSection } from './recap.js';
 
 const MIN_POINTS = 3; // below this a chart misleads more than it informs
 
@@ -45,6 +46,8 @@ export function statsView(ctx, profile) {
       tile(Object.keys(watch.series).length, 'series watched'),
       tile(books.filter((b) => b.status === 'tbr').length, 'on the to-read pile')),
 
+    goalSection(ctx, profile),
+    yearSection(ctx, profile),
     ratingSection(rated),
     tasteSection(books),
     paceSection(read, dated, ctx, profile),
@@ -67,8 +70,12 @@ function ratingSection(rated) {
       h('p', { class: 'empty', text: `Rate ${MIN_POINTS - rated.length} more book${MIN_POINTS - rated.length === 1 ? '' : 's'} and the spread will show up here.` }));
   }
 
-  const buckets = [1, 2, 3, 4, 5].map((score) => ({
-    key: stars(score),
+  // Half-star columns only once someone actually uses half stars; until then
+  // ten columns would be five empty ones.
+  const halves = rated.some((b) => b.rating % 1);
+  const scores = halves ? [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] : [1, 2, 3, 4, 5];
+  const buckets = scores.map((score) => ({
+    key: `${fmtRating(score)}★`,
     label: String(score),
     value: rated.filter((b) => b.rating === score).length,
     tip: (n) => `${n} book${n === 1 ? '' : 's'} rated ${score}`,

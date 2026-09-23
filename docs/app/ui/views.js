@@ -5,13 +5,13 @@
  */
 
 import {
-  h, clear, stars, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
+  h, clear, starsEl, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
 import {
-  deriveWatchlist, readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
+  readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, hiddenIds, RATING_FILTERS,
 } from '../core/model.js';
-import { upcomingFrom } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
+import { togetherYear } from './recap.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -330,7 +330,7 @@ function sideFor(book) {
     const when = fmtReadOnShort(readOnOf(book));
     if (!book.rating && !when) return null;
     return h('div', { class: 'read-side' },
-      book.rating ? h('span', { class: 'stars', text: stars(book.rating) }) : null,
+      book.rating ? starsEl(book.rating) : null,
       when ? h('span', { class: 'when', text: when }) : null);
   }
   if (book.status === 'tbr' && book.series) return h('span', { class: 'pill', text: 'series' });
@@ -342,79 +342,6 @@ function sideFor(book) {
       : h('span', { class: 'pill', text: 'reading' });
   }
   return null;
-}
-
-/* --------------------------------------------------------------- upcoming */
-
-function releaseRow(item, ctx, extra) {
-  const soon = item.daysUntil <= 30;
-  return h('div', { class: 'card release' },
-    h('div', { class: 'release-when' },
-      h('strong', { text: fmtDays(item.daysUntil) }),
-      fmtDate(item.releaseDate)),
-    h('div', { class: 'book-main' },
-      h('div', { class: 'book-title', text: item.title }),
-      h('div', { class: 'book-meta', text: item.seriesName + (item.position != null ? ` #${item.position}` : '') })),
-    extra ?? (soon ? h('span', { class: `pill ${item.daysUntil === 0 ? 'today' : 'soon'}`, text: item.daysUntil === 0 ? 'out now' : 'soon' }) : null));
-}
-
-export function upcomingView(ctx, profile) {
-  const library = ctx.state.libraries[profile.id] ?? { books: [] };
-  const watch = deriveWatchlist(library);
-  const items = upcomingFrom(ctx.state.seriesState, Object.keys(watch.series));
-  const watched = Object.values(watch.series);
-
-  // How many watched series the watcher has actually looked at yet. A series
-  // added since the last run has no data, which otherwise looks like "nothing
-  // upcoming" when it really means "not checked yet".
-  const known = watched.filter((s) => ctx.state.seriesState[s.id]).length;
-  const unchecked = watched.length - known;
-
-  const refresh = h('button', {
-    class: 'btn', type: 'button', id: 'refresh-btn',
-    disabled: !ctx.state.canWrite,
-    onclick: (e) => ctx.actions.checkNow(e.currentTarget),
-  }, 'Check for new releases');
-
-  return frag(
-    pageHead(`Upcoming · ${profile.name}`,
-      `${watched.length} series watched automatically`, refresh),
-    unchecked > 0 ? h('p', { class: 'notice',
-      text: `${unchecked} of these series ${unchecked === 1 ? 'has' : 'have'} not been checked yet — press “Check for new releases”.` }) : null,
-    items.length
-      ? h('div', { class: 'books' }, items.map((i) => releaseRow(i, ctx)))
-      : emptyState(watched.length
-          ? 'No dated releases yet. The watcher checks daily — announced dates will appear here.'
-          : 'No series watched yet. Start or finish a book in a series and it is watched from then on.'),
-    watched.length ? h('details', { class: 'optional' },
-      h('summary', { text: `Watching ${watched.length} series` }),
-      h('ul', {}, watched.map((s) => h('li', { text: s.name })))) : null);
-}
-
-export function allUpcomingView(ctx) {
-  const byBook = new Map();
-
-  for (const profile of ctx.state.profiles) {
-    const library = ctx.state.libraries[profile.id] ?? { books: [] };
-    const watch = deriveWatchlist(library);
-    for (const item of upcomingFrom(ctx.state.seriesState, Object.keys(watch.series))) {
-      // One row per book, tagged with everyone waiting on it, rather than a
-      // duplicate row per person.
-      const key = `${item.seriesId}:${item.bookId}`;
-      if (!byBook.has(key)) byBook.set(key, { ...item, who: [] });
-      byBook.get(key).who.push(profile);
-    }
-  }
-
-  const items = [...byBook.values()].sort((a, b) => a.daysUntil - b.daysUntil);
-
-  return frag(
-    pageHead('All upcoming', 'Every watched series, everyone'),
-    items.length
-      ? h('div', { class: 'books' }, items.map((item) => releaseRow(item, ctx,
-          h('div', { class: 'row' }, item.who.map((p) =>
-            h('span', { class: 'pill person', style: `background:${p.colour}`, text: p.name }))))))
-      : emptyState('Nothing dated yet across any profile.'));
 }
 
 /* ------------------------------------------------------------- what's new */
@@ -438,10 +365,15 @@ const EVENT_TEXT = {
   author_new_book: (e) => `New from ${e.authorName}`,
 };
 
+/** Events about books someone hid are no longer news to them. */
+export function visibleEvents(events, profile, library) {
+  const hidden = hiddenIds(library ?? {});
+  return events.filter((e) => e.profile === profile.id && !hidden.has(String(e.bookId)));
+}
+
 export function whatsNewView(ctx, profile) {
   const stamp = (e) => String(e.at ?? e.detectedAt ?? '');
-  const mine = ctx.state.events
-    .filter((e) => e.profile === profile.id)
+  const mine = visibleEvents(ctx.state.events, profile, ctx.state.libraries[profile.id])
     .sort((a, b) => stamp(b).localeCompare(stamp(a)));
 
   const since = profile.lastSeen;
@@ -502,7 +434,7 @@ export function sharedView(ctx) {
   // guesswork for the reader.
   const rating = (person, value) => h('div', { class: 'rating-line' },
     h('span', { class: 'who', text: person.name }),
-    h('span', { class: 'stars', text: stars(value) || '—' }));
+    starsEl(value, { empty: '—' }));
   const ratingPair = (p) => h('div', { class: 'rating-pair' },
     rating(a, p.mine.rating), rating(b, p.theirs.rating));
 
@@ -529,7 +461,8 @@ export function sharedView(ctx) {
       h('div', { class: 'section-head' }, h('h2', { text: 'On their shelf, not yours' })),
       recommendations(libA, libB, a, b, ctx)),
 
-    tasteOverlap(libA, libB, a, b));
+    tasteOverlap(libA, libB, a, b),
+    togetherYear(ctx, a, b));
 }
 
 /**
@@ -593,7 +526,7 @@ function recommendations(libA, libB, a, b, ctx) {
 
   if (!picks.length) return h('p', { class: 'empty', text: `Nothing ${b.name} has rated 4+ that ${a.name} is missing.` });
   return h('div', { class: 'books' }, picks.map((x) => bookRow(x, ctx,
-    h('span', { class: 'stars', text: stars(x.rating) }), b)));
+    starsEl(x.rating), b)));
 }
 
 export { frag, pageHead, emptyState, bookRow };

@@ -33,10 +33,29 @@ token is read from `.env` — nothing else to configure.
 
 - Start or finish a book in a series → that series is watched.
 - Rate a book 2 stars or below, or give up on it → that series is dropped.
+- Hide a book → it stops appearing in Upcoming, Recommendations and What's new.
 - Rate a book 4 or 5 → that author is watched too, which catches standalones and new
   series before they exist as a series on Hardcover.
 
 You can override any of it with `books watch` / `books unwatch`.
+
+## What else it does
+
+- **Recommendations.** One tab, two columns. On the left, books that are already
+  out in series you read but aren't anywhere on your shelf, with the next one to
+  read marked and novellas folded away. On the right, books the other person sent
+  you with a note; add one to your pile in a click, or pass. Send one from any
+  book on your shelf (*Recommend to …*) or by searching.
+- **Upcoming.** What you're waiting for (your series, plus any book you track) and,
+  separately, forthcoming books by every author you read, outside the series you
+  already follow. Click any of them for everything known so far: description,
+  publisher, how many Hardcover readers want it, and every date change the watcher
+  has seen. Hide anything you don't care about; bring it back from the bottom of
+  the page. Search there to track a book nothing on your shelf would lead to.
+- **Goals and Year in books.** An optional yearly target on Stats, with where a
+  steady pace would have you today, and a recap of each year: covers, longest,
+  shortest, favourites, most-read author and series, and busiest month.
+- **Half stars.** Click the left half of a star for .5.
 
 ## Reading dates
 
@@ -103,7 +122,7 @@ doesn't have.
 ## Running the tests
 
 ```bash
-node --test test/watch.test.js
+node --test test/*.test.js
 ```
 
 The diff engine decides what you get told about, so it's the part worth testing. The
