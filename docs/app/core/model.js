@@ -72,6 +72,59 @@ export function cleanText(text) {
     .trim();
 }
 
+/* --------------------------------------------------------------- tags --- */
+
+/**
+ * Hardcover's genre and mood lists are crowd-sourced, so they are a mix of
+ * real genres, reading-shelf names ("did-not-finish"), formats ("audiobook")
+ * and occasionally several genres joined with semicolons. Filter the noise out
+ * rather than charting it.
+ */
+const TAG_NOISE = new Set([
+  // shelf names people use as tags
+  'did-not-finish', 'dnf', 'to-read', 'currently-reading', 'read', 'owned', 'own',
+  'favorites', 'favourites', 'wishlist', 'wish-list', 'abandoned', 're-read', 'reread',
+  'tbr', 'series', 'default', 'all', 'books', 'book',
+  // formats
+  'audiobook', 'audible', 'ebook', 'e-book', 'kindle', 'paperback', 'hardcover',
+  'hardback', 'library', 'physical',
+  // too broad to say anything
+  'fiction', 'non-fiction', 'nonfiction', 'novel', 'novels', 'general', 'literature',
+  'adult', 'books-i-own',
+]);
+
+/** Split, trim, de-duplicate and drop the noise. Order is preserved. */
+export function cleanTags(list, limit = 6) {
+  const out = [];
+  const seen = new Set();
+  for (const raw of list ?? []) {
+    // A single entry is sometimes "Epic; Action & Adventure; Historical".
+    for (const part of String(raw).split(/[;,]/)) {
+      const value = cleanText(part);
+      if (!value || value.length > 40) continue;
+      const key = value.toLowerCase();
+      if (TAG_NOISE.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      out.push(value);
+      if (out.length >= limit) return out;
+    }
+  }
+  return out;
+}
+
+/** Count tag frequency across books, most common first. */
+export function tagCounts(books, field = 'genres') {
+  const counts = new Map();
+  for (const book of books) {
+    for (const tag of book[field] ?? []) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+}
+
 /** ISO date (YYYY-MM-DD) for "today", in local time rather than UTC. */
 export function today(now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
@@ -107,6 +160,8 @@ export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '
     releaseYear: hit.releaseYear ?? null,
     cover: hit.image ?? null,
     slug: hit.slug ?? null,
+    genres: cleanTags(hit.genres, 6),
+    moods: cleanTags(hit.moods, 5),
 
     status,
     rating,
