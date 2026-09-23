@@ -26,7 +26,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": "2026-09-13",
-      "finished": "2026-09-25"
+      "finished": "2026-09-25",
+      "genres": [
+        "Fantasy",
+        "High Fantasy",
+        "Science Fiction & Fantasy",
+        "Epic",
+        "Action & Adventure",
+        "Military"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "inspiring",
+        "hopeful"
+      ]
     },
     {
       "id": "hc:427473",
@@ -54,7 +69,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": "2026-09-21",
-      "finished": "2026-09-21"
+      "finished": "2026-09-21",
+      "genres": [
+        "Science Fiction",
+        "Dystopian",
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Young Adult",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "dark",
+        "tense",
+        "emotional",
+        "challenging"
+      ]
     },
     {
       "id": "hc:427522",
@@ -82,7 +112,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": "2026-08-28",
-      "finished": "2026-09-09"
+      "finished": "2026-09-09",
+      "genres": [
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Adventure",
+        "Military",
+        "Action & Adventure",
+        "Science Fiction"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "inspiring",
+        "dark"
+      ]
     },
     {
       "id": "hc:459452",
@@ -111,7 +156,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-08"
+      "readOn": "2026-08",
+      "genres": [
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Science Fiction",
+        "War",
+        "Fiction / Fantasy / Action & Adventure",
+        "Fiction / Fantasy / Epic"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "inspiring",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:374131",
@@ -140,7 +200,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-05"
+      "readOn": "2026-05",
+      "genres": [
+        "Fantasy",
+        "Epic Fantasy",
+        "Science Fiction & Fantasy",
+        "War",
+        "Science Fiction",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "emotional",
+        "inspiring"
+      ]
     },
     {
       "id": "hc:386446",
@@ -169,7 +244,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-04"
+      "readOn": "2026-04",
+      "genres": [
+        "Fantasy",
+        "High Fantasy",
+        "Science Fiction & Fantasy",
+        "Epic Fantasy",
+        "War",
+        "Coming of Age"
+      ],
+      "moods": [
+        "Adventurous",
+        "tense",
+        "mysterious",
+        "emotional",
+        "inspiring"
+      ]
     },
     {
       "id": "hc:369692",
@@ -198,7 +288,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-03"
+      "readOn": "2026-03",
+      "genres": [
+        "Fantasy",
+        "Adventure",
+        "Young Adult",
+        "Epic Fantasy",
+        "Magic",
+        "Science Fiction & Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "dark",
+        "tense",
+        "emotional"
+      ]
     },
     {
       "id": "hc:427383",
@@ -227,7 +332,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-03"
+      "readOn": "2026-03",
+      "genres": [
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Young Adult",
+        "Magic",
+        "Epic Fantasy",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "dark",
+        "emotional"
+      ]
     },
     {
       "id": "hc:103241",
@@ -256,7 +376,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-03"
+      "readOn": "2026-03",
+      "genres": [
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Young Adult",
+        "Magic",
+        "Adventure",
+        "Epic Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "hopeful",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:445584",
@@ -285,7 +420,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-01"
+      "readOn": "2026-01",
+      "genres": [
+        "Fantasy",
+        "Adventure",
+        "Science Fiction",
+        "Epic Fantasy",
+        "Science Fiction & Fantasy",
+        "Epic"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "dark",
+        "tense",
+        "emotional"
+      ]
     },
     {
       "id": "hc:441081",
@@ -314,7 +464,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-01"
+      "readOn": "2026-01",
+      "genres": [
+        "Fantasy",
+        "Adventure",
+        "Science Fiction & Fantasy",
+        "Epic",
+        "Action & Adventure",
+        "Epic Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "dark",
+        "emotional"
+      ]
     },
     {
       "id": "hc:441085",
@@ -343,7 +508,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-01"
+      "readOn": "2026-01",
+      "genres": [
+        "Fantasy",
+        "Science Fiction",
+        "Adventure",
+        "Dragons & Mythical Creatures",
+        "Epic",
+        "Action & Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "dark",
+        "mysterious",
+        "tense"
+      ]
     },
     {
       "id": "hc:594985",
@@ -372,7 +552,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-02"
+      "readOn": "2026-02",
+      "genres": [
+        "Fantasy",
+        "Science Fiction",
+        "Adventure",
+        "Science Fiction & Fantasy",
+        "Mystery",
+        "Epic Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "dark",
+        "emotional"
+      ]
     },
     {
       "id": "hc:824777",
@@ -401,7 +596,22 @@
       "added": "2026-09-21",
       "started": null,
       "finished": null,
-      "readOn": "2026-02"
+      "readOn": "2026-02",
+      "genres": [
+        "Fantasy",
+        "Science Fiction",
+        "Dystopian",
+        "Fiction / Fantasy / Epic",
+        "Fiction / Fantasy / Action & Adventure",
+        "Fiction / Fantasy / General"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "dark",
+        "emotional"
+      ]
     },
     {
       "id": "hc:77104",
@@ -457,7 +667,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Science Fiction & Fantasy",
+        "Science Fiction",
+        "Retail",
+        "Adventure",
+        "Young Adult"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "funny",
+        "tense",
+        "lighthearted"
+      ]
     },
     {
       "id": "hc:80765",
@@ -485,7 +710,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Science Fiction",
+        "Science Fiction & Fantasy",
+        "Short stories",
+        "Adventure",
+        "Epic Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "reflective",
+        "sad"
+      ]
     },
     {
       "id": "hc:385491",
@@ -513,7 +753,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Adventure",
+        "Science Fiction & Fantasy",
+        "Young Adult",
+        "War",
+        "Classics"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "emotional",
+        "funny"
+      ]
     },
     {
       "id": "hc:378044",
@@ -542,7 +797,22 @@
       "added": "2026-09-21",
       "started": "2026-09-22",
       "finished": null,
-      "readOn": null
+      "readOn": null,
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Dystopian",
+        "Adventure",
+        "Young Adult",
+        "Science Fiction & Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "tense",
+        "dark",
+        "emotional",
+        "challenging"
+      ]
     },
     {
       "id": "hc:427456",
@@ -571,7 +841,22 @@
       "added": "2026-09-22",
       "readOn": null,
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Young Adult",
+        "science-fiction",
+        "Space",
+        "Dystopian"
+      ],
+      "moods": [
+        "Adventurous",
+        "dark",
+        "tense",
+        "emotional",
+        "sad"
+      ]
     }
   ],
   "watch": {
