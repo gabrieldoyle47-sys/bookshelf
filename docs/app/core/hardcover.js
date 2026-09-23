@@ -141,6 +141,9 @@ function normaliseHit(d) {
     rating: d.rating ?? null,
     usersCount: d.users_count ?? 0,
     description: d.description ?? null,
+    // Crowd-sourced and messy; model.cleanTags() does the filtering.
+    genres: d.genres ?? [],
+    moods: d.moods ?? [],
   };
 }
 

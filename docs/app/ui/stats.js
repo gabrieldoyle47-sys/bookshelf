@@ -12,7 +12,7 @@
  */
 
 import { h, stars } from './dom.js';
-import { deriveWatchlist, readOnOf, readYearOf } from '../core/model.js';
+import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
 import { frag, pageHead, emptyState } from './views.js';
 
 const MIN_POINTS = 3; // below this a chart misleads more than it informs
@@ -46,6 +46,7 @@ export function statsView(ctx, profile) {
       tile(books.filter((b) => b.status === 'tbr').length, 'on the to-read pile')),
 
     ratingSection(rated),
+    tasteSection(books),
     paceSection(read, dated),
   );
 }
@@ -78,6 +79,56 @@ function ratingSection(rated) {
       h('h2', { text: 'How you rate' }),
       h('span', { class: 'count', text: `${rated.length} rated` })),
     h('div', { class: 'chart-wrap' }, barChart(buckets)));
+}
+
+/* ----------------------------------------------------------- taste profile */
+
+function tasteSection(books) {
+  // Judge taste on what was actually finished or is being read; a to-read pile
+  // is aspiration, not evidence.
+  const counted = books.filter((b) => b.status === 'read' || b.status === 'reading');
+  const genres = tagCounts(counted, 'genres');
+  const moods = tagCounts(counted, 'moods');
+  const tagged = counted.filter((b) => b.genres?.length).length;
+
+  if (genres.length < 3) {
+    return h('section', { class: 'section' },
+      h('h2', { text: 'What you read' }),
+      h('p', { class: 'empty',
+        text: 'Genres are recorded when a book is added. Add a few more and your taste will show up here.' }));
+  }
+
+  return h('section', { class: 'section' },
+    h('div', { class: 'section-head' },
+      h('h2', { text: 'What you read' }),
+      h('span', { class: 'count', text: `${tagged} books` })),
+    hBars(genres.slice(0, 8), tagged),
+    moods.length >= 3 ? h('div', { class: 'moods' },
+      h('div', { class: 'k', text: 'How they feel' }),
+      h('div', { class: 'row' }, moods.slice(0, 8).map((m) =>
+        h('span', { class: 'pill', text: `${m.tag} ${m.count}` })))) : null,
+    h('p', { class: 'hint',
+      text: 'Genres come from Hardcover readers, so they are opinions rather than a catalogue.' }));
+}
+
+/**
+ * Horizontal bars.
+ *
+ * Genre names are long ("Science Fiction & Fantasy"), and under a vertical bar
+ * they would have to be rotated or truncated. Reading down a list of labels is
+ * also the natural way to compare a ranking.
+ */
+function hBars(data, total) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  return h('div', { class: 'hbars' }, data.map((d) => h('div', { class: 'hbar-row' },
+    h('span', { class: 'hbar-label', title: d.tag, text: d.tag }),
+    h('span', { class: 'hbar-track' },
+      h('span', {
+        class: 'hbar-fill',
+        style: `width:${Math.max(2, (d.count / max) * 100)}%`,
+        title: `${d.count} of ${total} books`,
+      })),
+    h('span', { class: 'hbar-value', text: String(d.count) }))));
 }
 
 /* ------------------------------------------------------------ reading pace */

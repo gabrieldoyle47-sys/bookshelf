@@ -5,9 +5,9 @@
  */
 
 import {
-  h, stars, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
+  h, clear, stars, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
-import { deriveWatchlist, readOnOf, readYearOf } from '../core/model.js';
+import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -52,6 +52,38 @@ function bookRow(book, ctx, side, owner, opts = {}) {
       h('div', { class: 'book-meta', text: bits.join(' · ') }),
       book.note && h('div', { class: 'book-meta', text: `“${book.note}”` })),
     side && h('div', { class: 'book-side' }, side));
+}
+
+/* ----------------------------------------------------------------- search */
+
+/**
+ * Match a book against a typed query.
+ *
+ * Every word must match something - title, author or series - so "maas court"
+ * narrows rather than widening, which is what people expect from a search box
+ * even though it is technically an AND of ORs.
+ */
+export function matchesQuery(book, query) {
+  const needles = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!needles.length) return true;
+  const hay = [
+    book.title,
+    ...(book.authors ?? []).map((a) => a.name),
+    book.series?.name,
+  ].filter(Boolean).join(' ').toLowerCase();
+  return needles.every((n) => hay.includes(n));
+}
+
+export const RATING_FILTERS = [
+  ['all', 'All'],
+  ['4plus', '4★ and up'],
+  ['unrated', 'Unrated'],
+];
+
+export function matchesRating(book, filter) {
+  if (filter === '4plus') return typeof book.rating === 'number' && book.rating >= 4;
+  if (filter === 'unrated') return !book.rating;
+  return true;
 }
 
 /* --------------------------------------------------------------- grouping */
@@ -182,23 +214,68 @@ export function shelfView(ctx, profile) {
         : 'This shelf is empty, and this browser is in read-only mode.'));
   }
 
-  const of = (status) => library.books.filter((b) => b.status === status);
+  const filters = { query: '', rating: 'all', repaint: () => paint() };
+  const columns = h('div', { class: 'shelf-columns' });
+  const tally = h('span', { class: 'sub' });
+  const extra = h('div', { class: 'shelf-extra' });
 
-  // Three columns, past to present to future reading left to right: what you
-  // mean to read, what you are reading, what you have read.
-  const columns = h('div', { class: 'shelf-columns' },
-    plainColumn('tbr', of('tbr'), ctx),
-    plainColumn('reading', of('reading'), ctx),
-    finishedColumn(of('read'), ctx));
+  const visible = () => library.books.filter((b) =>
+    matchesQuery(b, filters.query) && matchesRating(b, filters.rating));
 
-  const abandoned = of('abandoned');
+  function paint() {
+    const books = visible();
+    const of = (status) => books.filter((b) => b.status === status);
+
+    // Three columns, left to right: what you mean to read, what you are
+    // reading, what you have read.
+    clear(columns).append(
+      plainColumn('tbr', of('tbr'), ctx),
+      plainColumn('reading', of('reading'), ctx),
+      finishedColumn(of('read'), ctx, filters));
+
+    const filtering = filters.query || filters.rating !== 'all';
+    tally.textContent = filtering
+      ? `${books.length} of ${library.books.length} books`
+      : plural(library.books.length, 'book');
+
+    const abandoned = of('abandoned');
+    clear(extra).append(abandoned.length ? h('details', { class: 'optional' },
+      h('summary', { text: plural(abandoned.length, 'book') + ' you gave up on' }),
+      h('div', { class: 'books' }, abandoned.map((b) => bookRow(b, ctx, sideFor(b))))) : '');
+
+    if (filtering && !books.length) {
+      columns.append(h('p', { class: 'empty', text: `Nothing matches “${filters.query}”.` }));
+    }
+  }
+
+  const search = h('input', {
+    type: 'search', class: 'shelf-search', placeholder: 'Search title, author or series…',
+    'aria-label': 'Search this shelf', autocomplete: 'off', spellcheck: 'false',
+    oninput: (e) => { filters.query = e.target.value.trim(); paint(); },
+  });
+
+  const ratingFilter = h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Filter by rating' },
+    RATING_FILTERS.map(([id, label]) => h('button', {
+      class: 'seg-btn', type: 'button', role: 'tab',
+      'aria-selected': String(id === filters.rating),
+      onclick: (e) => {
+        filters.rating = id;
+        [...e.currentTarget.parentElement.children]
+          .forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
+        paint();
+      },
+    }, label)));
+
+  paint();
 
   return frag(
-    pageHead(profile.name, plural(library.books.length, 'book'), addBtn),
+    h('div', { class: 'page-head' },
+      h('div', {}, h('h1', { text: profile.name }), tally),
+      h('div', { class: 'spacer' }),
+      addBtn),
+    h('div', { class: 'shelf-tools' }, search, ratingFilter),
     columns,
-    abandoned.length ? h('details', { class: 'optional' },
-      h('summary', { text: plural(abandoned.length, 'book') + ' you gave up on' }),
-      h('div', { class: 'books' }, abandoned.map((b) => bookRow(b, ctx, sideFor(b))))) : null);
+    extra);
 }
 
 function columnHead(label, count, extra) {
@@ -221,14 +298,16 @@ function plainColumn(status, books, ctx) {
 }
 
 /** The finished column, grouped however the reader last chose. */
-function finishedColumn(books, ctx) {
+function finishedColumn(books, ctx, filters) {
   const mode = getGrouping();
 
   const control = h('div', { class: 'seg', role: 'tablist', 'aria-label': 'Group finished books by' },
     GROUPINGS.map(([id, label]) => h('button', {
       class: 'seg-btn', type: 'button', role: 'tab',
       'aria-selected': String(id === mode),
-      onclick: () => { setGrouping(id); ctx.actions.rerender(); },
+      // Repaint just the columns: a full re-render would discard whatever is
+      // typed in the search box.
+      onclick: () => { setGrouping(id); (filters?.repaint ?? ctx.actions.rerender)(); },
     }, label)));
 
   const head = columnHead(STATUS_LABEL.read, books.length);
@@ -256,7 +335,7 @@ function finishedColumn(books, ctx) {
     // Every group starts closed. Expanding the largest by default would undo
     // the compactness that grouping is for - the overview is the feature.
     h('div', { class: 'groups' }, groups.map((g) => groupBlock(g, ctx, {
-      open: false,
+      open: Boolean(filters?.query),
       sideFor,
       hideSeries: mode === 'series' && !g.standalone,
       subtitle: mode === 'series' && g.average ? `avg ${g.average.toFixed(1)}` : null,
@@ -465,7 +544,60 @@ export function sharedView(ctx) {
 
     h('section', { class: 'section' },
       h('div', { class: 'section-head' }, h('h2', { text: 'On their shelf, not yours' })),
-      recommendations(libA, libB, a, b, ctx)));
+      recommendations(libA, libB, a, b, ctx)),
+
+    tasteOverlap(libA, libB, a, b));
+}
+
+/**
+ * Where two readers' tastes meet and where they diverge.
+ *
+ * Shared genres are ranked by the smaller of the two counts, so a genre one
+ * person has read twenty of and the other once does not masquerade as common
+ * ground.
+ */
+function tasteOverlap(libA, libB, a, b) {
+  const engaged = (books) => books.filter((x) => x.status === 'read' || x.status === 'reading');
+  const countsA = new Map(tagCounts(engaged(libA)).map((g) => [g.tag, g.count]));
+  const countsB = new Map(tagCounts(engaged(libB)).map((g) => [g.tag, g.count]));
+
+  if (countsA.size < 3 || countsB.size < 3) return null;
+
+  const shared = [...countsA.entries()]
+    .filter(([tag]) => countsB.has(tag))
+    .map(([tag, count]) => ({ tag, a: count, b: countsB.get(tag), min: Math.min(count, countsB.get(tag)) }))
+    .sort((x, y) => y.min - x.min || y.a + y.b - (x.a + x.b));
+
+  const only = (mine, theirs, limit = 5) =>
+    [...mine.entries()].filter(([tag]) => !theirs.has(tag))
+      .sort((x, y) => y[1] - x[1]).slice(0, limit).map(([tag]) => tag);
+
+  const onlyA = only(countsA, countsB);
+  const onlyB = only(countsB, countsA);
+
+  return h('section', { class: 'section' },
+    h('div', { class: 'section-head' },
+      h('h2', { text: 'Where your tastes meet' }),
+      h('span', { class: 'count', text: `${shared.length} shared genres` })),
+
+    shared.length ? h('div', { class: 'hbars' }, shared.slice(0, 6).map((g) => h('div', { class: 'hbar-row' },
+      h('span', { class: 'hbar-label', title: g.tag, text: g.tag }),
+      h('span', { class: 'hbar-track split' },
+        h('span', { class: 'hbar-fill', style: `width:${(g.a / (g.a + g.b)) * 100}%; background:${a.colour}` }),
+        h('span', { class: 'hbar-fill', style: `width:${(g.b / (g.a + g.b)) * 100}%; background:${b.colour}` })),
+      h('span', { class: 'hbar-value', text: `${g.a}/${g.b}` })))) : null,
+
+    h('div', { class: 'grid-2', style: 'margin-top:1.1rem' },
+      h('div', {},
+        h('div', { class: 'k', text: `Only ${a.name}` }),
+        h('div', { class: 'row' }, onlyA.length
+          ? onlyA.map((t) => h('span', { class: 'pill', text: t }))
+          : h('span', { class: 'count', text: 'nothing unique' }))),
+      h('div', {},
+        h('div', { class: 'k', text: `Only ${b.name}` }),
+        h('div', { class: 'row' }, onlyB.length
+          ? onlyB.map((t) => h('span', { class: 'pill', text: t }))
+          : h('span', { class: 'count', text: 'nothing unique' })))));
 }
 
 function recommendations(libA, libB, a, b, ctx) {
