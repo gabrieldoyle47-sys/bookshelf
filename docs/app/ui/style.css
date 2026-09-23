@@ -560,9 +560,8 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
   .date-row + .date-row { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--border); }
 }
 
-/* === TRIAL: cover wall ===================================================
-   Self-contained styles for the covers layout (docs/app/ui/covers.js).
-   Delete this whole block to remove the feature.                          */
+/* === Cover wall ==========================================================
+   Styles for the covers layout (docs/app/ui/covers.js).                    */
 
 .shelf-wall { display: block; }
 .wall-section + .wall-section { margin-top: 2rem; }
@@ -616,4 +615,4 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
 @media (max-width: 560px) {
   .tiles { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: .9rem .7rem; }
 }
-/* === end TRIAL: cover wall =============================================== */
+/* === end cover wall ====================================================== */

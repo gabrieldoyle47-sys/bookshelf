@@ -2,10 +2,9 @@
  * Cover wall — an alternative shelf layout that shows book covers as a grid
  * instead of rows of text.
  *
- * TRIAL FEATURE. Deliberately self-contained so it can be removed cleanly:
- * everything lives in this file plus one clearly-marked CSS block, and
- * views.js touches it in exactly two places (the layout toggle and one branch
- * in shelfView's paint). Reverting the commit that added it removes it whole.
+ * Self-contained: everything lives in this file plus one marked CSS block,
+ * and views.js touches it in two places (the layout toggle and one branch in
+ * shelfView's paint).
  */
 
 import { h, stars, authorNames, seriesLabel, fmtReadOnShort } from './dom.js';
