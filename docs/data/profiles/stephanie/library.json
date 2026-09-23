@@ -26,7 +26,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Adventure",
+        "Young Adult",
+        "Epic Fantasy",
+        "Magic",
+        "Science Fiction & Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "dark",
+        "tense",
+        "emotional"
+      ]
     },
     {
       "id": "hc:465201",
@@ -54,7 +69,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Urban Fantasy",
+        "Angels",
+        "Grief",
+        "Fantasy romance"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "mysterious",
+        "tense",
+        "dark"
+      ]
     },
     {
       "id": "hc:39629",
@@ -82,7 +112,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Adventure",
+        "Paranormal"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "tense",
+        "emotional",
+        "dark"
+      ]
     },
     {
       "id": "hc:428931",
@@ -110,7 +155,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Adventure",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Taschenbücher"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "dark",
+        "sad",
+        "tense"
+      ]
     },
     {
       "id": "hc:283659",
@@ -138,7 +198,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Juvenile Fiction",
+        "Science Fiction & Fantasy",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "mysterious",
+        "emotional",
+        "dark",
+        "tense"
+      ]
     },
     {
       "id": "hc:1363844",
@@ -166,7 +241,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Adventure",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "High Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "dark",
+        "tense",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:153090",
@@ -194,7 +284,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Teen & Young Adult",
+        "Adventure",
+        "High Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "hopeful"
+      ]
     },
     {
       "id": "hc:183545",
@@ -222,7 +327,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Teen & Young Adult",
+        "Epic Fantasy",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:429015",
@@ -250,7 +370,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Teen & Young Adult",
+        "Epic",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "hopeful",
+        "dark",
+        "tense"
+      ]
     },
     {
       "id": "hc:429018",
@@ -278,7 +413,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Epic",
+        "Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "hopeful",
+        "tense",
+        "sad"
+      ]
     },
     {
       "id": "hc:428290",
@@ -306,7 +456,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Romantasy",
+        "Fantasy romance",
+        "Science Fiction & Fantasy"
+      ],
+      "moods": [
+        "Adventurous",
+        "dark",
+        "emotional",
+        "tense",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:428929",
@@ -334,7 +499,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Romantasy",
+        "Young Adult",
+        "Epic",
+        "Magic"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:458947",
@@ -362,7 +542,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Romantasy",
+        "Science Fiction & Fantasy",
+        "Folklore"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "challenging"
+      ]
     },
     {
       "id": "hc:459744",
@@ -390,7 +585,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Romantasy",
+        "Arts & Entertainment"
+      ],
+      "moods": [
+        "lighthearted",
+        "hopeful",
+        "emotional",
+        "relaxing",
+        "funny"
+      ]
     },
     {
       "id": "hc:714600",
@@ -418,7 +628,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romantasy",
+        "Romance",
+        "Adventure",
+        "Young Adult",
+        "Fantasy romance"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:747398",
@@ -446,7 +671,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romantasy",
+        "Romance",
+        "Fantasy romance",
+        "Young Adult",
+        "Magic"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "tense",
+        "dark",
+        "mysterious"
+      ]
     },
     {
       "id": "hc:429046",
@@ -474,7 +714,22 @@
       "note": "",
       "added": "2026-09-21",
       "started": null,
-      "finished": null
+      "finished": null,
+      "genres": [
+        "Fantasy",
+        "Romance",
+        "Romantasy",
+        "Fantasy romance",
+        "Science Fiction & Fantasy",
+        "Young Adult"
+      ],
+      "moods": [
+        "Adventurous",
+        "emotional",
+        "dark",
+        "tense",
+        "challenging"
+      ]
     }
   ],
   "watch": {
