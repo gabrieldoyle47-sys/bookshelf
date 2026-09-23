@@ -105,6 +105,7 @@ function render() {
   if (view === 'shared') return void main.append(sharedView(ctx));
 
   const profile = state.profiles.find((p) => p.id === profileId) ?? state.profiles[0];
+  ctx.currentProfile = profile;
   main.append(profileTabs(profile, tab));
 
   const views = {
@@ -494,6 +495,152 @@ async function removeBook(profile, book) {
   if (ok) {
     document.getElementById('book-dialog').close();
     toast(`Removed ${book.title}`);
+  }
+}
+
+/* ------------------------------------------------------ bulk read dates */
+
+const YEAR_OPTIONS = (() => {
+  const now = new Date().getFullYear();
+  const years = [];
+  for (let y = now; y >= 1990; y--) years.push(String(y));
+  return years;
+})();
+
+/**
+ * Set read dates for a whole shelf at once.
+ *
+ * Doing this one book at a time means opening, picking and saving thirty
+ * times. Books are grouped by series because a series is usually read in a
+ * burst, so one choice can cover eight books - which is the difference between
+ * this being worth doing and not.
+ */
+ctx.actions.openDates = (profile) => {
+  const library = state.libraries[profile.id] ?? { books: [] };
+  const undated = library.books.filter(
+    (b) => (b.status === 'read' || b.status === 'abandoned') && !readOnOf(b));
+
+  const dialog = document.getElementById('dates-dialog');
+  document.getElementById('dates-title').textContent =
+    `When did ${profile.name} read these?`;
+  const body = clear(document.getElementById('dates-body'));
+
+  if (!undated.length) {
+    body.append(h('p', { class: 'hint', text: 'Every finished book already has a read date.' }));
+    dialog.showModal();
+    return;
+  }
+
+  // book id -> chosen "YYYY" or "YYYY-MM"
+  const picked = new Map();
+
+  // Group by series; standalones last, as one pseudo-group.
+  const groups = new Map();
+  for (const b of undated) {
+    const key = b.series?.id ?? '__standalone';
+    if (!groups.has(key)) {
+      groups.set(key, { name: b.series?.name ?? 'Standalones', books: [], standalone: !b.series?.id });
+    }
+    groups.get(key).books.push(b);
+  }
+  const ordered = [...groups.values()].sort((a, b) =>
+    Number(a.standalone) - Number(b.standalone) || b.books.length - a.books.length);
+
+  const rows = new Map(); // book id -> its two selects, so "set all" can update them
+
+  const select = (options, placeholder, onChange) => {
+    const el = h('select', { onchange: (e) => onChange(e.target.value) },
+      h('option', { value: '' }, placeholder),
+      options.map(([value, label]) => h('option', { value }, label)));
+    return el;
+  };
+
+  const monthOptions = MONTHS.map((name, i) => [String(i + 1).padStart(2, '0'), name]);
+
+  const setFor = (book, year, month) => {
+    picked.set(book.id, !year ? null : month ? `${year}-${month}` : year);
+    const pair = rows.get(book.id);
+    if (pair) { pair.year.value = year ?? ''; pair.month.value = month ?? ''; }
+    count();
+  };
+
+  body.append(h('p', { class: 'hint',
+    text: `${undated.length} finished book${undated.length === 1 ? '' : 's'} with no read date. A year on its own is enough — set a whole series at once with the dropdown beside its name.` }));
+
+  for (const group of ordered) {
+    const applyAll = h('select', {
+      'aria-label': `Set the year for all of ${group.name}`,
+      onchange: (e) => {
+        const year = e.target.value;
+        for (const b of group.books) setFor(b, year || null, null);
+        e.target.value = '';
+      },
+    },
+      h('option', { value: '' }, 'Set all…'),
+      YEAR_OPTIONS.map((y) => h('option', { value: y }, y)));
+
+    const list = h('div', { class: 'date-rows' });
+    for (const b of group.books) {
+      let year = '';
+      let month = '';
+      const yearSel = select(YEAR_OPTIONS.map((y) => [y, y]), 'Year…', (v) => {
+        year = v; if (!v) month = '';
+        setFor(b, year || null, month || null);
+      });
+      const monthSel = select(monthOptions, 'Month', (v) => {
+        month = v;
+        setFor(b, year || null, month || null);
+      });
+      rows.set(b.id, { year: yearSel, month: monthSel });
+
+      list.append(h('div', { class: 'date-row' },
+        h('span', { class: 'date-title', title: b.title },
+          b.title,
+          b.series?.position != null ? h('span', { class: 'count', text: ` #${b.series.position}` }) : null),
+        yearSel, monthSel));
+    }
+
+    body.append(h('div', { class: 'date-group' },
+      h('div', { class: 'date-group-head' },
+        h('strong', { text: group.name }),
+        h('span', { class: 'count', text: String(group.books.length) }),
+        h('div', { class: 'spacer' }),
+        applyAll),
+      list));
+  }
+
+  const status = h('span', { class: 'count' });
+  const saveBtn = h('button', { class: 'btn', type: 'button', disabled: true,
+    onclick: () => applyDates(profile, picked) }, 'Save dates');
+
+  function count() {
+    const n = [...picked.values()].filter(Boolean).length;
+    status.textContent = n ? `${n} of ${undated.length} set` : 'nothing set yet';
+    saveBtn.disabled = n === 0;
+  }
+  count();
+
+  body.append(h('div', { class: 'row end dates-foot' }, status, saveBtn));
+  dialog.showModal();
+};
+
+async function applyDates(profile, picked) {
+  const chosen = [...picked.entries()].filter(([, v]) => v);
+  if (!chosen.length) return;
+
+  const ok = await saveLibrary(profile.id, (lib) => {
+    for (const [id, readOn] of chosen) {
+      const book = lib.books.find((b) => b.id === id);
+      // Only fills the simplified read date; exact started/finished are left
+      // alone, since this screen never claimed to know them.
+      if (book) book.readOn = readOn;
+    }
+    return lib;
+  }, `Set read dates for ${profile.name}`);
+
+  if (ok) {
+    document.getElementById('dates-dialog').close();
+    toast(`Read ${chosen.length === 1 ? 'date' : 'dates'} saved for ${chosen.length} book${chosen.length === 1 ? '' : 's'}`);
   }
 }
 

@@ -523,3 +523,39 @@ details.optional summary { cursor: pointer; color: var(--text-dim); font-size: .
 .hbar-track.split { display: flex; overflow: hidden; }
 .hbar-track.split .hbar-fill { border-radius: 0; }
 .moods .k, .grid-2 .k { font-size: .78rem; color: var(--text-dim); margin-bottom: .4rem; }
+
+/* ------------------------------------------------------- bulk read dates */
+
+.dialog.wide { width: min(680px, calc(100vw - 2rem)); }
+
+.date-group { margin-bottom: 1.1rem; }
+.date-group-head {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem 0 .5rem; border-bottom: 1px solid var(--border); margin-bottom: .4rem;
+}
+.date-group-head select { width: auto; flex: 0 0 auto; padding: .3rem .5rem; font-size: .8rem; }
+
+.date-rows { display: grid; gap: .3rem; }
+.date-row {
+  display: grid; grid-template-columns: 1fr 7rem 8rem; gap: .5rem; align-items: center;
+}
+.date-title {
+  font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.date-row select { padding: .35rem .5rem; font-size: .82rem; }
+
+.dates-foot {
+  position: sticky; bottom: 0; background: var(--surface);
+  padding-top: .8rem; margin-top: .5rem; border-top: 1px solid var(--border);
+  align-items: center;
+}
+.dates-foot .count { margin-right: auto; }
+
+.group-hint { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; }
+.group-hint .btn { flex: 0 0 auto; }
+
+@media (max-width: 560px) {
+  .date-row { grid-template-columns: 1fr; gap: .25rem; }
+  .date-row select { width: 100%; }
+  .date-row + .date-row { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--border); }
+}

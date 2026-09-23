@@ -7,7 +7,9 @@
 import {
   h, clear, stars, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
-import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
+import {
+  deriveWatchlist, readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
+} from '../core/model.js';
 import { upcomingFrom } from '../core/watch.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -52,38 +54,6 @@ function bookRow(book, ctx, side, owner, opts = {}) {
       h('div', { class: 'book-meta', text: bits.join(' · ') }),
       book.note && h('div', { class: 'book-meta', text: `“${book.note}”` })),
     side && h('div', { class: 'book-side' }, side));
-}
-
-/* ----------------------------------------------------------------- search */
-
-/**
- * Match a book against a typed query.
- *
- * Every word must match something - title, author or series - so "maas court"
- * narrows rather than widening, which is what people expect from a search box
- * even though it is technically an AND of ORs.
- */
-export function matchesQuery(book, query) {
-  const needles = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (!needles.length) return true;
-  const hay = [
-    book.title,
-    ...(book.authors ?? []).map((a) => a.name),
-    book.series?.name,
-  ].filter(Boolean).join(' ').toLowerCase();
-  return needles.every((n) => hay.includes(n));
-}
-
-export const RATING_FILTERS = [
-  ['all', 'All'],
-  ['4plus', '4★ and up'],
-  ['unrated', 'Unrated'],
-];
-
-export function matchesRating(book, filter) {
-  if (filter === '4plus') return typeof book.rating === 'number' && book.rating >= 4;
-  if (filter === 'unrated') return !book.rating;
-  return true;
 }
 
 /* --------------------------------------------------------------- grouping */
@@ -180,8 +150,12 @@ function groupBlock(group, ctx, { open, sideFor: side, subtitle, hideSeries }) {
   const body = h('div', { class: 'books group-body' },
     // A bucket of undated books is otherwise a dead end - say how to fix it.
     group.unknown
-      ? h('p', { class: 'group-hint',
-          text: 'Open a book and set when you read it. A year on its own is enough — you do not need the exact date.' })
+      ? h('div', { class: 'group-hint' },
+          h('span', { text: 'No read date on these. A year on its own is enough.' }),
+          ctx.state.canWrite ? h('button', {
+            class: 'btn secondary small', type: 'button',
+            onclick: (e) => { e.stopPropagation(); ctx.actions.openDates(ctx.currentProfile); },
+          }, 'Set them all') : null)
       : null,
     group.books.map((b) => bookRow(b, ctx, side(b), undefined, { hideSeries })));
 
