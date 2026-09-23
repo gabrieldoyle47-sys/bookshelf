@@ -72,6 +72,38 @@ export function cleanText(text) {
     .trim();
 }
 
+/* ------------------------------------------------------- searching a shelf */
+
+/**
+ * Match a book against a typed query.
+ *
+ * Every word must match something - title, author or series - so "maas court"
+ * narrows rather than widening, which is what people expect from a search box
+ * even though it is technically an AND of ORs.
+ */
+export function matchesQuery(book, query) {
+  const needles = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!needles.length) return true;
+  const hay = [
+    book.title,
+    ...(book.authors ?? []).map((a) => a.name),
+    book.series?.name,
+  ].filter(Boolean).join(' ').toLowerCase();
+  return needles.every((n) => hay.includes(n));
+}
+
+export const RATING_FILTERS = [
+  ['all', 'All'],
+  ['4plus', '4★ and up'],
+  ['unrated', 'Unrated'],
+];
+
+export function matchesRating(book, filter) {
+  if (filter === '4plus') return typeof book.rating === 'number' && book.rating >= 4;
+  if (filter === 'unrated') return !book.rating;
+  return true;
+}
+
 /* --------------------------------------------------------------- tags --- */
 
 /**

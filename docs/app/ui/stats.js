@@ -47,7 +47,7 @@ export function statsView(ctx, profile) {
 
     ratingSection(rated),
     tasteSection(books),
-    paceSection(read, dated),
+    paceSection(read, dated, ctx, profile),
   );
 }
 
@@ -133,14 +133,18 @@ function hBars(data, total) {
 
 /* ------------------------------------------------------------ reading pace */
 
-function paceSection(read, dated) {
+function paceSection(read, dated, ctx, profile) {
   const coverage = h('p', { class: 'hint',
     text: `Based on the ${dated.length} of ${read.length} finished book${read.length === 1 ? '' : 's'} with a read date recorded. Dates are optional — set one from a book's panel, where a year on its own counts.` });
 
   if (dated.length < MIN_POINTS) {
     return h('section', { class: 'section' },
       h('h2', { text: 'Reading pace' }),
-      h('p', { class: 'empty', text: 'Reading dates are optional and there are too few recorded to plot a pace yet.' }),
+      h('p', { class: 'empty', text: 'Too few read dates recorded to plot a pace yet.' }),
+      read.length && ctx.state.canWrite ? h('button', {
+        class: 'btn secondary', type: 'button',
+        onclick: () => ctx.actions.openDates(profile),
+      }, `Set read dates for ${read.length - dated.length} books`) : null,
       read.length ? coverage : null);
   }
 
