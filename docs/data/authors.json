@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-09-22",
+    "checkedAt": "2026-09-23",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -299,8 +299,76 @@
       "2982139": {
         "title": "Das Reich der sieben Höfe - Frost und Mondlicht",
         "releaseDate": null
+      },
+      "2993662": {
+        "title": "Kit Cidade da Lua Crescente",
+        "releaseDate": null
+      },
+      "2993692": {
+        "title": "Box Corte de Espinhos e Rosas",
+        "releaseDate": "2018-01-01"
+      },
+      "2996329": {
+        "title": "Tuhkan valtiatar - osa 2",
+        "releaseDate": "2018-01-01"
+      },
+      "2996332": {
+        "title": "Tuhkan valtiatar - osa 1",
+        "releaseDate": "2018-01-01"
+      },
+      "2996336": {
+        "title": "Aamunkoiton torni",
+        "releaseDate": "2017-01-01"
+      },
+      "2996337": {
+        "title": "Keskiyön kruunu",
+        "releaseDate": "2013-01-01"
+      },
+      "2996339": {
+        "title": "Tulen Perillinen",
+        "releaseDate": "2014-01-01"
+      },
+      "2996342": {
+        "title": "Taistelun myrskyt",
+        "releaseDate": "2016-01-01"
+      },
+      "2996343": {
+        "title": "Lasipalatsi",
+        "releaseDate": "2012-01-01"
+      },
+      "2996346": {
+        "title": "Varjojen kuningatar",
+        "releaseDate": "2015-01-01"
       }
-    }
+    },
+    "forthcoming": [
+      {
+        "bookId": "430559",
+        "title": "A Court of Splintered Harmony",
+        "releaseDate": "2026-10-27",
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
+        "usersCount": 385,
+        "series": {
+          "id": "1275",
+          "name": "A Court of Thorns and Roses",
+          "position": 6
+        }
+      },
+      {
+        "bookId": "2472931",
+        "title": "A Court of Forgotten Melody",
+        "releaseDate": "2027-01-12",
+        "releaseYear": 2027,
+        "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
+        "usersCount": 225,
+        "series": {
+          "id": "1275",
+          "name": "A Court of Thorns and Roses",
+          "position": 7
+        }
+      }
+    ]
   },
   "204214": {
     "id": "204214",
@@ -707,7 +775,152 @@
         "title": "Legion: The Many Lives of Stephen Leeds",
         "releaseDate": "2018-01-01"
       }
-    }
+    },
+    "forthcoming": [
+      {
+        "bookId": "2973377",
+        "title": "Chasmfriends",
+        "releaseDate": "2026-12-01",
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/33314138/ade9d597-c8d7-4e6c-9416-09409365b590.jpg",
+        "usersCount": 2,
+        "series": {
+          "id": "304605",
+          "name": "Hoid's Storybook Collection",
+          "position": null
+        }
+      },
+      {
+        "bookId": "1233347",
+        "title": "Horneater",
+        "releaseDate": "2026-12-01",
+        "releaseYear": 2026,
+        "image": null,
+        "usersCount": 150,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 4.5
+        }
+      },
+      {
+        "bookId": "1898121",
+        "title": "Book of Nails",
+        "releaseDate": "2027-12-31",
+        "releaseYear": 2027,
+        "image": null,
+        "usersCount": 40,
+        "series": {
+          "id": "5452",
+          "name": "The Mistborn Saga",
+          "position": null
+        }
+      },
+      {
+        "bookId": "1878844",
+        "title": "Ghostbloods 1",
+        "releaseDate": "2028-12-01",
+        "releaseYear": 2028,
+        "image": null,
+        "usersCount": 140,
+        "series": {
+          "id": "5452",
+          "name": "The Mistborn Saga",
+          "position": 8
+        }
+      },
+      {
+        "bookId": "1821546",
+        "title": "Ghostbloods 2",
+        "releaseDate": "2029-12-01",
+        "releaseYear": 2029,
+        "image": null,
+        "usersCount": 95,
+        "series": {
+          "id": "5452",
+          "name": "The Mistborn Saga",
+          "position": 9
+        }
+      },
+      {
+        "bookId": "1821547",
+        "title": "Ghostbloods 3",
+        "releaseDate": "2030-12-01",
+        "releaseYear": 2030,
+        "image": null,
+        "usersCount": 86,
+        "series": {
+          "id": "5452",
+          "name": "The Mistborn Saga",
+          "position": 10
+        }
+      },
+      {
+        "bookId": "460907",
+        "title": "Untitled Stormlight Archive #6",
+        "releaseDate": "2031-12-01",
+        "releaseYear": 2031,
+        "image": null,
+        "usersCount": 227,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 6
+        }
+      },
+      {
+        "bookId": "460976",
+        "title": "Untitled Stormlight Archive #7",
+        "releaseDate": "2032-01-01",
+        "releaseYear": 2032,
+        "image": null,
+        "usersCount": 181,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 7
+        }
+      },
+      {
+        "bookId": "460975",
+        "title": "Untitled Stormlight Archive #8",
+        "releaseDate": "2033-01-01",
+        "releaseYear": 2033,
+        "image": null,
+        "usersCount": 84,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 8
+        }
+      },
+      {
+        "bookId": "460974",
+        "title": "Untitled Stormlight Archive #9",
+        "releaseDate": "2034-01-01",
+        "releaseYear": 2034,
+        "image": null,
+        "usersCount": 173,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 9
+        }
+      },
+      {
+        "bookId": "460908",
+        "title": "Untitled Stormlight Archive #10",
+        "releaseDate": "2035-01-01",
+        "releaseYear": 2035,
+        "image": null,
+        "usersCount": 174,
+        "series": {
+          "id": "997",
+          "name": "The Stormlight Archive",
+          "position": 10
+        }
+      }
+    ]
   },
   "232665": {
     "id": "232665",
@@ -882,12 +1095,13 @@
         "title": "Pierce Brown Red Rising Series – Complete 5-Book Science Fiction Collection Set",
         "releaseDate": null
       }
-    }
+    },
+    "forthcoming": []
   },
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-09-22",
+    "checkedAt": "2026-09-23",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -924,13 +1138,36 @@
       "2460032": {
         "title": "Scion",
         "releaseDate": "2026-09-01"
+      },
+      "2992155": {
+        "title": "Vôľa väčšiny",
+        "releaseDate": "2023-01-01"
+      },
+      "2996026": {
+        "title": "The Strength of the Few. La forza dei pochi",
+        "releaseDate": null
       }
-    }
+    },
+    "forthcoming": [
+      {
+        "bookId": "2333013",
+        "title": "The Justice of One",
+        "releaseDate": "2027-01-01",
+        "releaseYear": 2027,
+        "image": null,
+        "usersCount": 268,
+        "series": {
+          "id": "35077",
+          "name": "Hierarchy",
+          "position": 3
+        }
+      }
+    ]
   },
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-09-22",
+    "checkedAt": "2026-09-23",
     "books": {
       "355758": {
         "title": "Australia",
@@ -1140,6 +1377,39 @@
         "title": "Um caso improvável",
         "releaseDate": null
       }
-    }
+    },
+    "forthcoming": [
+      {
+        "bookId": "2769384",
+        "title": "Threshing Day",
+        "releaseDate": "2026-09-29",
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/33089282/bab991f2-9488-40a2-97e5-e01ef962fe90.jpg",
+        "usersCount": 143,
+        "series": {
+          "id": "41764",
+          "name": "The Empyrean",
+          "position": 3.5
+        }
+      },
+      {
+        "bookId": "2578431",
+        "title": "Peculiar Stars",
+        "releaseDate": "2026-11-17",
+        "releaseYear": 2026,
+        "image": null,
+        "usersCount": 1,
+        "series": null
+      },
+      {
+        "bookId": "2606339",
+        "title": "Peculiar Stars",
+        "releaseDate": "2026-11-17",
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
+        "usersCount": 15,
+        "series": null
+      }
+    ]
   }
 }

@@ -8,97 +8,113 @@
         "position": 2,
         "title": "Words of Radiance",
         "releaseDate": "2014-03-04",
-        "releaseYear": 2014
+        "releaseYear": 2014,
+        "image": "https://assets.hardcover.app/edition/419923/7428154-L.jpg"
       },
       "386446": {
         "position": 1,
         "title": "The Way of Kings",
         "releaseDate": "2010-01-01",
-        "releaseYear": 2010
+        "releaseYear": 2010,
+        "image": "https://assets.hardcover.app/edition/3134360/a18d937805a28e3214a556442c8d33f41c02f2cb.jpeg"
       },
       "427522": {
         "position": 4,
         "title": "Rhythm of War",
         "releaseDate": "2020-01-01",
-        "releaseYear": 2020
+        "releaseYear": 2020,
+        "image": "https://assets.hardcover.app/edition/26332868/ca7c2f58-409f-4dbf-8d69-7d94cf302d5f.jpg"
       },
       "427544": {
         "position": 2.5,
         "title": "Edgedancer",
         "releaseDate": "2016-11-08",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/book_mappings/7333293/897b29378e456c460dd2e965e1d4c58203863197.jpeg"
       },
       "427945": {
         "position": 3.5,
         "title": "Dawnshard",
         "releaseDate": "2020-11-05",
-        "releaseYear": 2020
+        "releaseYear": 2020,
+        "image": "https://assets.hardcover.app/editions/30399386/5228262192790232.jpg"
       },
       "459452": {
         "position": 3,
         "title": "Oathbringer",
         "releaseDate": "2017-01-01",
-        "releaseYear": 2017
+        "releaseYear": 2017,
+        "image": "https://assets.hardcover.app/edition/30455612/1deeb21c2576843fe4556815fea2eb784e406908.jpeg"
       },
       "460907": {
         "position": 6,
         "title": "Untitled Stormlight Archive #6",
         "releaseDate": "2031-12-01",
-        "releaseYear": 2031
+        "releaseYear": 2031,
+        "image": null
       },
       "460908": {
         "position": 10,
         "title": "Untitled Stormlight Archive #10",
         "releaseDate": "2035-01-01",
-        "releaseYear": 2035
+        "releaseYear": 2035,
+        "image": null
       },
       "460974": {
         "position": 9,
         "title": "Untitled Stormlight Archive #9",
         "releaseDate": "2034-01-01",
-        "releaseYear": 2034
+        "releaseYear": 2034,
+        "image": null
       },
       "460975": {
         "position": 8,
         "title": "Untitled Stormlight Archive #8",
         "releaseDate": "2033-01-01",
-        "releaseYear": 2033
+        "releaseYear": 2033,
+        "image": null
       },
       "460976": {
         "position": 7,
         "title": "Untitled Stormlight Archive #7",
         "releaseDate": "2032-01-01",
-        "releaseYear": 2032
+        "releaseYear": 2032,
+        "image": null
       },
       "463080": {
         "position": null,
         "title": "The Stormlight Archive - A Pocket Companion to The Way of Kings and Words of Radiance",
         "releaseDate": "2016-01-01",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/editions/30413311/05f5fcd7-fa2f-4a8c-8e8b-6e670040253e.jpg"
       },
       "484948": {
         "position": 0.1,
         "title": "The Way of Kings Prime",
         "releaseDate": "2020-01-01",
-        "releaseYear": 2020
+        "releaseYear": 2020,
+        "image": "https://assets.hardcover.app/external_data/59626799/872471b30635535257d40acc5d68316498a723d0.jpeg"
       },
       "665261": {
         "position": 5,
         "title": "Wind and Truth",
         "releaseDate": "2024-12-06",
-        "releaseYear": 2024
+        "releaseYear": 2024,
+        "image": "https://assets.hardcover.app/editions/30395755/5517573796567974.jpg"
       },
       "1233347": {
         "position": 4.5,
         "title": "Horneater",
         "releaseDate": "2026-12-01",
-        "releaseYear": 2026
+        "releaseYear": 2026,
+        "image": null
       },
       "2270949": {
         "position": 2.1,
         "title": "Elsecaller and King Lopen the First of Alethkar",
         "releaseDate": "2025-12-01",
-        "releaseYear": 2025
+        "releaseYear": 2025,
+        "image": "https://assets.hardcover.app/edition/33103434/67f46c84-df0e-4222-91a4-92e4824594ca.jpg"
       }
     }
   },
@@ -111,43 +127,50 @@
         "position": 2,
         "title": "Golden Son",
         "releaseDate": "2015-01-01",
-        "releaseYear": 2015
+        "releaseYear": 2015,
+        "image": "https://assets.hardcover.app/editions/30404982/b5150007-bf09-4937-8d32-ecf89f136342.jpg"
       },
       "427456": {
         "position": 3,
         "title": "Morning Star",
         "releaseDate": "2016-09-27",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/book_mappings/7332844/702879986b75f035349c34acad3d94f88bb737ed.jpeg"
       },
       "427473": {
         "position": 1,
         "title": "Red Rising",
         "releaseDate": "2014-01-28",
-        "releaseYear": 2014
+        "releaseYear": 2014,
+        "image": "https://assets.hardcover.app/editions/26096001/3897005112280259.jpg"
       },
       "427678": {
         "position": 4,
         "title": "Iron Gold",
         "releaseDate": "2018-01-01",
-        "releaseYear": 2018
+        "releaseYear": 2018,
+        "image": "https://assets.hardcover.app/edition/17101586/fc907b5ac7e2ad5cbed835a3ba21ec56b342407e.jpeg"
       },
       "427876": {
         "position": 5,
         "title": "Dark Age",
         "releaseDate": "2019-01-01",
-        "releaseYear": 2019
+        "releaseYear": 2019,
+        "image": "https://assets.hardcover.app/editions/30399300/3644584410675518.jpg"
       },
       "507636": {
         "position": 7,
         "title": "Red God",
         "releaseDate": null,
-        "releaseYear": null
+        "releaseYear": null,
+        "image": null
       },
       "620124": {
         "position": 6,
         "title": "Light Bringer",
         "releaseDate": "2023-01-01",
-        "releaseYear": 2023
+        "releaseYear": 2023,
+        "image": "https://assets.hardcover.app/edition/30411196/22b4dc2f6745ce1341d52bbd3dbc0555a4d8ffe3.jpeg"
       }
     }
   },
@@ -160,67 +183,78 @@
         "position": 1,
         "title": "A Court of Thorns and Roses",
         "releaseDate": "2015-05-05",
-        "releaseYear": 2015
+        "releaseYear": 2015,
+        "image": "https://assets.hardcover.app/edition/32497531/b26901b270b7655187f754b410551754df5a91b4.jpeg"
       },
       "428929": {
         "position": 2,
         "title": "A Court of Mist and Fury",
         "releaseDate": "2016-05-03",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/edition/30412164/93413a16-8449-4257-a936-1446e6113855.jpg"
       },
       "429046": {
         "position": 5,
         "title": "A ​Court of Silver Flames",
         "releaseDate": "2021-01-01",
-        "releaseYear": 2021
+        "releaseYear": 2021,
+        "image": "https://assets.hardcover.app/external_data/31975800/2bbb080fea31fd0c1f457838f63210cbc3fbe3d8.jpeg"
       },
       "430559": {
         "position": 6,
         "title": "A Court of Splintered Harmony",
         "releaseDate": "2026-10-27",
-        "releaseYear": 2026
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg"
       },
       "458947": {
         "position": 3,
         "title": "A Court of Wings and Ruin",
         "releaseDate": "2017-01-01",
-        "releaseYear": 2017
+        "releaseYear": 2017,
+        "image": "https://assets.hardcover.app/external_data/48240959/992e22aab5d6545b29697895c6a6494a783d4817.jpeg"
       },
       "459744": {
         "position": 4,
         "title": "A Court of Frost and Starlight",
         "releaseDate": "2018-05-01",
-        "releaseYear": 2018
+        "releaseYear": 2018,
+        "image": "https://assets.hardcover.app/editions/9893721/29045471348594.jpeg"
       },
       "1269372": {
         "position": 2.1,
         "title": "Wings and Embers",
         "releaseDate": "2016-05-03",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/edition/31294433/afe81386-af78-4b74-b1ef-bf436f24e843.webp"
       },
       "1290276": {
         "position": null,
         "title": "A Court of Thorns and Roses Colouring Book",
         "releaseDate": "2017-01-01",
-        "releaseYear": 2017
+        "releaseYear": 2017,
+        "image": "https://assets.hardcover.app/edition/31315383/ccc1b6a36c2a9069fa21f1e401156a3631eab298.jpeg"
       },
       "1295502": {
         "position": 5.2,
         "title": "A Court of Silver Flames - Azriel Bonus Chapter",
         "releaseDate": null,
-        "releaseYear": null
+        "releaseYear": null,
+        "image": null
       },
       "1389522": {
         "position": 5.1,
         "title": "A Court of Silver Flames - Feyre Bonus Chapter",
         "releaseDate": null,
-        "releaseYear": null
+        "releaseYear": null,
+        "image": null
       },
       "2472931": {
         "position": 7,
         "title": "A Court of Forgotten Melody",
         "releaseDate": "2027-01-12",
-        "releaseYear": 2027
+        "releaseYear": 2027,
+        "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg"
       }
     }
   },
@@ -233,19 +267,22 @@
         "position": 2,
         "title": "House of Sky and Breath",
         "releaseDate": "2023-09-26",
-        "releaseYear": 2023
+        "releaseYear": 2023,
+        "image": "https://assets.hardcover.app/edition/30401166/81e0ff30-188a-467d-848b-443ecde71394.jpg"
       },
       "465201": {
         "position": 1,
         "title": "House of Earth and Blood",
         "releaseDate": "2020-03-03",
-        "releaseYear": 2020
+        "releaseYear": 2020,
+        "image": "https://assets.hardcover.app/external_data/37374512/a568a05f05a9f6cd37a96e14662b846b45acd29b.jpeg"
       },
       "746152": {
         "position": 3,
         "title": "House of Flame and Shadow",
         "releaseDate": "2024-01-01",
-        "releaseYear": 2024
+        "releaseYear": 2024,
+        "image": "https://assets.hardcover.app/edition/30743751/c64638218349a262dae7fba4e8cde8a0444629f7.jpeg"
       }
     }
   },
@@ -258,49 +295,57 @@
         "position": 1,
         "title": "Throne of Glass",
         "releaseDate": "2012-08-07",
-        "releaseYear": 2012
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/edition/30501042/9052e867e43511a1f2ec7dc8ce0e33d01faf7c6e.jpeg"
       },
       "153090": {
         "position": 4,
         "title": "Queen of Shadows",
         "releaseDate": "2015-01-01",
-        "releaseYear": 2015
+        "releaseYear": 2015,
+        "image": "https://assets.hardcover.app/external_data/60670456/1876238af5e412691576aea3dd52f14d12025e19.jpeg"
       },
       "183545": {
         "position": 5,
         "title": "Empire of Storms",
         "releaseDate": "2016-01-01",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/edition/30825891/3c2ede158a5324ac9d331e2a29f6e5c35a073071.jpeg"
       },
       "283659": {
         "position": 2,
         "title": "Crown of Midnight",
         "releaseDate": "2013-08-15",
-        "releaseYear": 2013
+        "releaseYear": 2013,
+        "image": "https://assets.hardcover.app/external_data/4249036/9b83ee15863ed09e398311073e0bde0429e3bbf6.jpeg"
       },
       "429015": {
         "position": 6,
         "title": "Tower of Dawn",
         "releaseDate": "2017-01-01",
-        "releaseYear": 2017
+        "releaseYear": 2017,
+        "image": "https://assets.hardcover.app/external_data/33691557/a705693b52b10c42bfeec287419fe5f3e30eef73.jpeg"
       },
       "429018": {
         "position": 7,
         "title": "Kingdom of Ash",
         "releaseDate": "2018-01-01",
-        "releaseYear": 2018
+        "releaseYear": 2018,
+        "image": "https://assets.hardcover.app/external_data/61236994/977131bd833b4a4de2424de518adbbb74dec2570.jpeg"
       },
       "531378": {
         "position": null,
         "title": "The Assassin and the Pirate Lord",
         "releaseDate": "2012-01-13",
-        "releaseYear": 2012
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/external_data/4287953/13defbf372c84c872a7042718693eddd000b2637.jpeg"
       },
       "1363844": {
         "position": 3,
         "title": "Heir of Fire",
         "releaseDate": "2014-09-02",
-        "releaseYear": 2014
+        "releaseYear": 2014,
+        "image": "https://assets.hardcover.app/edition/30432118/7be2fd1c-ec1f-482b-872e-a88ede019c74.jpg"
       }
     }
   },
@@ -313,19 +358,22 @@
         "position": 2,
         "title": "An Echo of Things to Come",
         "releaseDate": "2017-01-01",
-        "releaseYear": 2017
+        "releaseYear": 2017,
+        "image": "https://assets.hardcover.app/edition/30407510/cd4c3265730d541a2fe1d93d298d8d3c2d3fa6ab.jpeg"
       },
       "441085": {
         "position": 3,
         "title": "The Light of All That Falls",
         "releaseDate": "2019-01-01",
-        "releaseYear": 2019
+        "releaseYear": 2019,
+        "image": "https://assets.hardcover.app/edition/30405513/6cfa324e11cecd1e730e3fefd28007de17a688a9.jpeg"
       },
       "445584": {
         "position": 1,
         "title": "The Shadow of What Was Lost",
         "releaseDate": "2014-01-01",
-        "releaseYear": 2014
+        "releaseYear": 2014,
+        "image": "https://assets.hardcover.app/edition/22194126/e8ed24b048e641f5562f48be628928e2ca2f1811.jpeg"
       }
     }
   },
@@ -338,31 +386,36 @@
         "position": 3,
         "title": "The Hero of Ages",
         "releaseDate": "2008-01-01",
-        "releaseYear": 2008
+        "releaseYear": 2008,
+        "image": "https://assets.hardcover.app/book_mappings/7332415/e3dcf34cb6632d5de4f946fbbd5d20558f3d69d6.jpeg"
       },
       "369692": {
         "position": 1,
         "title": "Mistborn: The Final Empire",
         "releaseDate": "2006-07-17",
-        "releaseYear": 2006
+        "releaseYear": 2006,
+        "image": "https://assets.hardcover.app/edition/5195452/8c6af4492dd7ef9eed7c1e40abefc79f23df2d2f.jpeg"
       },
       "427383": {
         "position": 2,
         "title": "The Well of Ascension",
         "releaseDate": "2007-08-21",
-        "releaseYear": 2007
+        "releaseYear": 2007,
+        "image": "https://assets.hardcover.app/external_data/4306769/4070292d7523bcd11cd5494948564d38044c1d2a.jpeg"
       },
       "427844": {
         "position": 0.5,
         "title": "The Eleventh Metal",
         "releaseDate": "2012-04-10",
-        "releaseYear": 2012
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/editions/30399261/48ddf400-36a3-47c6-963e-539c8e0875a5.jpg"
       },
       "427881": {
         "position": 3.5,
         "title": "Mistborn: Secret History",
         "releaseDate": "2016-01-01",
-        "releaseYear": 2016
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/editions/30399304/9d841b1c-40c4-4a52-96bc-221d34dbfe7e-71ISjS3nFsL._AC_UF1000,1000_QL80_.jpg"
       }
     }
   },
@@ -375,19 +428,22 @@
         "position": 1,
         "title": "The Will of the Many",
         "releaseDate": "2023-05-23",
-        "releaseYear": 2023
+        "releaseYear": 2023,
+        "image": "https://assets.hardcover.app/edition/30615590/1fe836a2-7004-4378-add0-dc78b96b2d17.jpg"
       },
       "824777": {
         "position": 2,
         "title": "The Strength of the Few",
         "releaseDate": "2025-01-01",
-        "releaseYear": 2025
+        "releaseYear": 2025,
+        "image": "https://assets.hardcover.app/edition/30836340/6923cac7-42de-42ce-994c-c5eaf8d5c586.jpg"
       },
       "2333013": {
         "position": 3,
         "title": "The Justice of One",
         "releaseDate": "2027-01-01",
-        "releaseYear": 2027
+        "releaseYear": 2027,
+        "image": null
       }
     }
   },
@@ -400,31 +456,36 @@
         "position": 1,
         "title": "Fourth Wing",
         "releaseDate": "2023-05-02",
-        "releaseYear": 2023
+        "releaseYear": 2023,
+        "image": "https://assets.hardcover.app/editions/30707731/3559167047761380.jpeg"
       },
       "747398": {
         "position": 2,
         "title": "Iron Flame",
         "releaseDate": "2023-01-01",
-        "releaseYear": 2023
+        "releaseYear": 2023,
+        "image": "https://assets.hardcover.app/edition/31265393/4104bc2a10d4f5b793e5134e22e0afba1209059f.jpeg"
       },
       "1061079": {
         "position": 4,
         "title": "Untitled",
         "releaseDate": null,
-        "releaseYear": null
+        "releaseYear": null,
+        "image": null
       },
       "1197328": {
         "position": 3,
         "title": "Onyx Storm",
         "releaseDate": "2025-01-21",
-        "releaseYear": 2025
+        "releaseYear": 2025,
+        "image": "https://assets.hardcover.app/edition/31924195/ae56c549dc746e14273905b3a7ee11d0e1f199a1.jpeg"
       },
       "2769384": {
         "position": 3.5,
         "title": "Threshing Day",
         "releaseDate": "2026-09-29",
-        "releaseYear": 2026
+        "releaseYear": 2026,
+        "image": "https://assets.hardcover.app/edition/33089282/bab991f2-9488-40a2-97e5-e01ef962fe90.jpg"
       }
     }
   }
