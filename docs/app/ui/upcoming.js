@@ -210,7 +210,7 @@ const subline = (item) => [
 ].filter(Boolean).join(' · ');
 
 const people = (who) => h('div', { class: 'row who' }, who.map((p) =>
-  h('span', { class: 'pill person', style: `background:${p.colour}`, text: p.name })));
+  h('span', { class: 'pill person', style: `--who:${p.colour}`, text: p.name })));
 
 /** One release. The hide button is its own control, not nested in the card's. */
 function releaseCard(item, ctx, profile) {

@@ -5,12 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bookshelf</title>
 <meta name="description" content="Shared reading tracker with automatic series-release watching">
+<!-- Newsreader for titles and headings; everything else uses the system font. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500..700;1,6..72,400..500&display=swap">
 <link rel="stylesheet" href="./app/ui/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>📚</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23a2461f'/><path d='M7 6.5A1.2 1.2 0 0 1 8.2 5.3H17v11H8.2A1.2 1.2 0 0 0 7 17.5zM7 17.5a1.2 1.2 0 0 0 1.2 1.2H17v-2.4' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/></svg>">
 
 <!-- Match the browser chrome to the page in both themes. -->
-<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#171512" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13110f" media="(prefers-color-scheme: dark)">
 <!-- Behave like an app when added to a phone's home screen. -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,17 +24,23 @@
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
-  <button id="menu-toggle" class="menu-toggle" aria-label="Menu" aria-expanded="false">☰</button>
+  <!-- Phone only: an app bar holding the menu button. -->
+  <header class="topbar">
+    <button id="menu-toggle" class="menu-toggle" aria-label="Menu" aria-expanded="false" aria-controls="sidebar"><span class="ico ico-menu" aria-hidden="true"></span></button>
+    <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6"/></svg></span> Bookshelf</div>
+  </header>
 
   <div class="layout">
     <nav id="sidebar" class="sidebar" aria-label="Profiles and views">
-      <div class="brand"><span class="brand-mark">📚</span> Bookshelf</div>
+      <div class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6"/></svg></span> Bookshelf</div>
       <div id="nav" class="nav"></div>
       <div class="sidebar-foot">
-        <button id="open-settings" class="link-btn">Settings</button>
+        <button id="open-settings" class="link-btn"><span class="ico ico-settings" aria-hidden="true"></span>Settings</button>
         <span id="sync-state" class="sync" aria-live="polite"></span>
       </div>
     </nav>
+    <!-- Phone only: tapping outside the open menu closes it. -->
+    <button id="nav-scrim" class="scrim" type="button" tabindex="-1" aria-label="Close menu"></button>
 
     <main id="main" class="main" tabindex="-1">
       <div class="loading">Loading…</div>
