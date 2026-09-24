@@ -860,6 +860,50 @@
         "emotional",
         "sad"
       ]
+    },
+    {
+      "id": "hc:427678",
+      "hardcoverId": "427678",
+      "title": "Iron Gold",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 4,
+        "booksCount": 13
+      },
+      "pages": 624,
+      "released": "2018-01-01",
+      "releaseYear": 2018,
+      "cover": "https://assets.hardcover.app/edition/17101586/fc907b5ac7e2ad5cbed835a3ba21ec56b342407e.jpeg",
+      "slug": "iron-gold",
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Dystopia",
+        "Space"
+      ],
+      "moods": [
+        "dark",
+        "tense",
+        "Adventurous",
+        "emotional",
+        "challenging"
+      ],
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-09-23",
+      "readOn": null,
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
@@ -879,5 +923,6 @@
       "title": "Chasmfriends",
       "at": "2026-09-23"
     }
-  }
+  },
+  "tracked": []
 }
