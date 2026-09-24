@@ -10,6 +10,7 @@ import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl } from './dom.js';
 import { onShelfIds, today } from '../core/model.js';
 import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
+import { openRelease } from './upcoming.js';
 
 /** New recommendations waiting for an answer - the tab's badge. */
 export const newRecCount = (library) =>
@@ -68,14 +69,20 @@ function seriesColumn(ctx, profile, library) {
 
 function seriesRow(ctx, profile, b, isNext) {
   const year = b.releaseDate ? fmtRelease(b.releaseDate).date.replace('Sometime in ', '') : '';
+  // The book itself opens the same panel as Upcoming, with its description.
+  const open = () => openRelease(ctx, {
+    bookId: b.bookId, title: b.title, image: b.image, releaseDate: b.releaseDate,
+    seriesName: b.seriesName, position: b.position,
+  }, null, { preview: true });
   return h('div', { class: `rec-row${isNext ? ' next' : ''}` },
-    coverEl({ cover: b.image }),
-    h('div', { class: 'book-main' },
-      h('div', { class: 'book-title', text: b.title }),
-      h('div', { class: 'book-meta', text: [
-        b.position != null ? `Book ${b.position}` : null, year ? `out ${year}` : null,
-      ].filter(Boolean).join(' · ') }),
-      isNext ? h('span', { class: 'pill soon', text: 'read next' }) : null),
+    h('button', { class: 'rec-open', type: 'button', onclick: open, title: `About ${b.title}` },
+      coverEl({ cover: b.image }),
+      h('div', { class: 'book-main' },
+        h('div', { class: 'book-title', text: b.title }),
+        h('div', { class: 'book-meta', text: [
+          b.position != null ? `Book ${b.position}` : null, year ? `out ${year}` : null,
+        ].filter(Boolean).join(' · ') }),
+        isNext ? h('span', { class: 'pill soon', text: 'read next' }) : null)),
     ctx.state.canWrite ? h('div', { class: 'rec-actions' },
       h('button', {
         class: 'btn small', type: 'button',

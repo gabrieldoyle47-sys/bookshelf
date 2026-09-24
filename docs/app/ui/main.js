@@ -11,7 +11,7 @@ import {
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
 } from '../core/model.js';
 import { shelfView, whatsNewView, sharedView, visibleEvents } from './views.js';
-import { upcomingView, allUpcomingView, openRelease } from './upcoming.js';
+import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
 
@@ -338,11 +338,18 @@ ctx.actions.openRecommend = (from, book = null) => {
       send.disabled = Boolean(t);
       send.textContent = `Send to ${to.name}`;
     };
+    const about = aboutPanel(record);
     fill(body,
-      h('div', { class: 'row rec-pick' }, coverEl(record),
+      h('button', {
+        class: 'rec-pick', type: 'button', 'aria-expanded': 'false',
+        onclick: (e) => e.currentTarget.setAttribute('aria-expanded', String(about.toggle())),
+      },
+        coverEl(record),
         h('div', { class: 'book-main' },
           h('div', { class: 'book-title', text: record.title }),
-          h('div', { class: 'book-meta', text: [authorNames(record), seriesLabel(record)].filter(Boolean).join(' · ') }))),
+          h('div', { class: 'book-meta', text: [authorNames(record), seriesLabel(record)].filter(Boolean).join(' · ') }),
+          h('span', { class: 'rec-pick-more', text: 'About this book' }))),
+      about.el,
       others.length > 1 ? h('label', { class: 'field' }, h('span', { text: 'To' }),
         h('select', { onchange: (e) => { to = others.find((p) => p.id === e.target.value); check(); } },
           others.map((p) => h('option', { value: p.id }, p.name)))) : null,
@@ -396,6 +403,44 @@ ctx.actions.openRecommend = (from, book = null) => {
   }
   dialog.showModal();
 };
+
+/**
+ * The description of a book being recommended, opened by clicking the book.
+ * Loaded on first open - most people already know the book they are sending,
+ * so there is no point spending a request on it up front.
+ */
+function aboutPanel(record) {
+  const el = h('div', { class: 'rec-about', hidden: true });
+  let loaded = false;
+  const load = async () => {
+    loaded = true;
+    fill(el, h('p', { class: 'hint', text: 'Loading the description…' }));
+    try {
+      const d = await loadDetails(ctx, record.hardcoverId ?? record.id);
+      const desc = d?.description ? h('p', { class: 'release-desc clamp', text: d.description }) : null;
+      fill(el,
+        d?.genres?.length ? h('div', { class: 'row' }, d.genres.slice(0, 5).map((g) => h('span', { class: 'pill', text: g }))) : null,
+        desc ?? h('p', { class: 'hint', text: 'Hardcover has no description for this book.' }),
+        desc ? h('button', { class: 'link-btn more', type: 'button', onclick: (e) => {
+          desc.classList.toggle('clamp');
+          e.currentTarget.textContent = desc.classList.contains('clamp') ? 'Show more' : 'Show less';
+        } }, 'Show more') : null,
+        [d?.pages ? `${d.pages} pages` : null, d?.publisher].filter(Boolean).length
+          ? h('p', { class: 'hint', text: [d.pages ? `${d.pages} pages` : null, d.publisher].filter(Boolean).join(' · ') }) : null);
+    } catch (err) {
+      loaded = false;
+      fill(el, h('p', { class: 'hint error', text: err.message }));
+    }
+  };
+  return {
+    el,
+    toggle() {
+      el.hidden = !el.hidden;
+      if (!el.hidden && !loaded) load();
+      return !el.hidden;
+    },
+  };
+}
 
 /* -------------------------------------------------------------- add dialog */
 

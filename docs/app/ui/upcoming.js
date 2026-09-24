@@ -321,6 +321,22 @@ const isOut = (hit, now) =>
 const detailCache = new Map();
 
 /**
+ * Hardcover's full record for one book, fetched once per page load. Shared
+ * by the detail panel and the recommend dialog, so opening a book in one and
+ * then the other costs a single request.
+ */
+export function loadDetails(ctx, bookId) {
+  const id = String(bookId).replace(/^hc:/, '');
+  if (!detailCache.has(id)) {
+    const pending = ctx.actions.fetchBooks([id]).then(([d]) => d ?? null);
+    // A failed request should be retried next time, not remembered.
+    pending.catch(() => detailCache.delete(id));
+    detailCache.set(id, pending);
+  }
+  return detailCache.get(id);
+}
+
+/**
  * Everything known about a forthcoming book.
  *
  * Opens at once with what the watcher already has, then fills in the
@@ -374,7 +390,7 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
             } }, 'Add to want to read'));
   }
 
-  body.append(
+  fill(body,
     h('div', { class: 'release-top' }, coverSlot, metaSlot),
     preview ? null : history(ctx, item, profile),
     extra,
@@ -388,7 +404,9 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
     const desc = d.description ? h('p', { class: 'release-desc clamp', text: d.description }) : null;
     fill(extra,
       d.genres?.length ? h('div', { class: 'row' }, d.genres.slice(0, 5).map((g) => h('span', { class: 'pill', text: g }))) : null,
-      desc ?? h('p', { class: 'hint', text: 'No description yet — that usually comes nearer release.' }),
+      desc ?? h('p', { class: 'hint', text: preview || (item.daysUntil ?? 1) <= 0
+        ? 'Hardcover has no description for this book.'
+        : 'No description yet — that usually comes nearer release.' }),
       desc ? h('button', { class: 'link-btn more', type: 'button', onclick: (e) => {
         desc.classList.toggle('clamp');
         e.currentTarget.textContent = desc.classList.contains('clamp') ? 'Show more' : 'Show less';
@@ -397,9 +415,8 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
       d.slug ? h('a', { href: `https://hardcover.app/books/${d.slug}`, target: '_blank', rel: 'noopener', class: 'hint' }, 'View on Hardcover ↗') : null);
   };
 
-  if (detailCache.has(item.bookId)) return void showDetails(detailCache.get(item.bookId));
-  ctx.actions.fetchBooks([item.bookId])
-    .then(([d]) => { detailCache.set(item.bookId, d ?? null); if (dialog.open) showDetails(d); })
+  loadDetails(ctx, item.bookId)
+    .then((d) => { if (dialog.open) showDetails(d); })
     .catch((err) => clear(extra).append(h('p', { class: 'hint error', text: err.message })));
 }
 
