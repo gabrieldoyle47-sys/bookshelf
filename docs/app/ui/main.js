@@ -60,6 +60,11 @@ async function boot() {
   window.addEventListener('hashchange', () => { readRoute(); render(); });
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
+  // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
+  document.getElementById('nav-scrim').addEventListener('click', () => toggleMenu(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('sidebar').classList.contains('open')) toggleMenu(false);
+  });
   wireAddDialog();
 
   readRoute();
@@ -76,10 +81,10 @@ async function loadWatchState() {
   ]);
 }
 
-function toggleMenu() {
+function toggleMenu(force) {
   const bar = document.getElementById('sidebar');
   const btn = document.getElementById('menu-toggle');
-  const open = bar.classList.toggle('open');
+  const open = bar.classList.toggle('open', typeof force === 'boolean' ? force : undefined);
   btn.setAttribute('aria-expanded', String(open));
 }
 
@@ -104,7 +109,7 @@ const go = (hash) => { location.hash = hash; };
 function render() {
   renderSidebar();
   const main = clear(document.getElementById('main'));
-  document.getElementById('sidebar').classList.remove('open');
+  toggleMenu(false);
 
   if (!state.profiles.length) {
     main.append(h('div', { class: 'card' },
@@ -120,7 +125,9 @@ function render() {
 
   const profile = state.profiles.find((p) => p.id === profileId) ?? state.profiles[0];
   ctx.currentProfile = profile;
-  main.append(profileTabs(profile, tab));
+  const tabs = main.appendChild(profileTabs(profile, tab));
+  // On a phone the tab strip scrolls sideways; keep the current tab in view.
+  tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 
   const views = {
     shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
@@ -130,7 +137,7 @@ function render() {
 
 function profileTabs(profile, current) {
   const recs = newRecCount(state.libraries[profile.id]);
-  return h('div', { class: 'tabs' }, PROFILE_TABS.map(([id, label]) =>
+  return h('div', { class: 'tabs', role: 'tablist', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'tab', type: 'button', role: 'tab',
       'aria-selected': String(id === current),
@@ -158,7 +165,7 @@ function renderSidebar() {
       'aria-current': view === 'profile' && p.id === profileId ? 'page' : null,
       onclick: () => go(`#/p/${p.id}`),
     },
-      h('span', { class: 'dot', style: `background:${p.colour ?? 'var(--accent)'}` }),
+      h('span', { class: 'dot avatar', 'aria-hidden': 'true', style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase() }),
       p.name,
       n ? h('span', { class: 'badge', text: String(n) }) : null));
   }
@@ -170,12 +177,12 @@ function renderSidebar() {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'all-upcoming' ? 'page' : null,
       onclick: () => go('#/upcoming'),
-    }, h('span', { text: '📅' }), 'All upcoming'),
+    }, h('span', { class: 'ico ico-calendar', 'aria-hidden': 'true' }), 'All upcoming'),
     h('button', {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'shared' ? 'page' : null,
       onclick: () => go('#/shared'),
-    }, h('span', { text: '👥' }), 'Both of us')));
+    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), 'Both of us')));
 
   const sync = document.getElementById('sync-state');
   sync.textContent = {
@@ -553,7 +560,7 @@ ctx.actions.openBook = (book, owner) => {
   };
 
   body.append(
-    h('div', { class: 'row' },
+    h('div', { class: 'row book-hero' },
       coverEl(book),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-meta', text: authorNames(book) }),
@@ -563,7 +570,7 @@ ctx.actions.openBook = (book, owner) => {
 
     h('label', { class: 'field' }, h('span', { text: 'Shelf' }),
       h('select', { onchange: (e) => { draft.status = e.target.value; } },
-        STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, s)))),
+        STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, SHELF_LABEL[s] ?? s)))),
 
     h('div', { class: 'field' }, h('span', { text: 'Rating' }), ratingPicker(draft)),
 
@@ -596,6 +603,9 @@ ctx.actions.openBook = (book, owner) => {
 
   dialog.showModal();
 };
+
+/** Shelf names as people say them; the stored values stay as they are. */
+const SHELF_LABEL = { tbr: 'Want to read', reading: 'Reading now', read: 'Finished', abandoned: 'Gave up on' };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
