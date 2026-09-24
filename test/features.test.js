@@ -274,3 +274,17 @@ test('tied busiest months are all named', () => {
   ] };
   assert.deepEqual(yearInBooks(lib, 2026).busiest, { count: 2, months: [1, 3] });
 });
+
+test('series and author lookups only count books with an English edition', async () => {
+  const { seriesById, authorBooks } = await import('../docs/app/core/hardcover.js');
+  const sent = [];
+  const gql = async (query) => { sent.push(query); return { series: [], authors: [] }; };
+  await seriesById(gql, 1);
+  await authorBooks(gql, 1, NOW);
+  for (const q of sent) {
+    assert.match(q, /editions: \{ language: \{ code2: \{ _eq: "en" \} \} \}/,
+      'translations are separate books on Hardcover and would otherwise look like new titles');
+  }
+  // The author query filters both the full catalogue and the forthcoming list.
+  assert.equal(sent[1].match(/_eq: "en"/g).length, 2);
+});
