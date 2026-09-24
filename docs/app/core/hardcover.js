@@ -72,7 +72,7 @@ const SEARCH = `
 export async function searchBooks(gql, query, perPage = 8) {
   const data = await gql(SEARCH, { q: query, perPage });
   const hits = data?.search?.results?.hits ?? [];
-  return hits.map((hit) => normaliseHit(hit.document));
+  return rankHits(hits.map((hit) => normaliseHit(hit.document)));
 }
 
 /**
@@ -86,7 +86,33 @@ export async function searchViaProxy(workerUrl, query, perPage = 8) {
     throw new Error(body.error ?? `Search failed (${res.status})`);
   }
   const data = await res.json();
-  return (data?.search?.results?.hits ?? []).map((hit) => normaliseHit(hit.document));
+  return rankHits((data?.search?.results?.hits ?? []).map((hit) => normaliseHit(hit.document)));
+}
+
+// Records that are almost never the book someone means: box sets, split
+// audio dramatisations, and the study guides and summaries that borrow the
+// title ("Piranesi by Susanna Clarke", credited to someone else).
+const NOT_THE_BOOK = /\b(box(ed)? set|collection set|books? collection|\d+[- ]book|omnibus|bundle|dramati[sz]ed adaptation|study guide|summary of|summary & analysis|workbook)\b|\(\d+ of \d+\)/i;
+
+/**
+ * Search order, with the likely-wrong records moved to the end. Nothing is
+ * dropped - sometimes the box set is exactly what you own - and the search
+ * engine's order is kept within each half.
+ */
+export function rankHits(hits) {
+  // Every author the results credit, so "Piranesi by Susanna Clarke" can be
+  // recognised as a title naming a real author found elsewhere in the list -
+  // while "Stand by Me" or "Death by Chocolate" name nobody and are left be.
+  const credited = hits.flatMap((h) => (h.authors ?? []).map((a) => String(a.name ?? '').toLowerCase())).filter(Boolean);
+  const byOthers = (h) => {
+    const m = /\sby\s+(.+)$/i.exec(h.title ?? '');
+    if (!m) return false;
+    const named = m[1].toLowerCase().trim();
+    const own = (h.authors ?? []).some((a) => named.includes(String(a.name ?? '').toLowerCase()));
+    return !own && credited.some((name) => named === name || named.includes(name));
+  };
+  const suspect = (h) => NOT_THE_BOOK.test(h.title ?? '') || byOthers(h);
+  return [...hits.filter((h) => !suspect(h)), ...hits.filter(suspect)];
 }
 
 /**

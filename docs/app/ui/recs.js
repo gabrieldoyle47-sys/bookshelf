@@ -59,15 +59,16 @@ function seriesColumn(ctx, profile, library) {
       return h('div', { class: 'series-rec' },
         h('div', { class: 'series-rec-head' },
           h('strong', { text: g.name }),
-          g.reached ? h('span', { class: 'count', text: `you’re at book ${g.reached}` }) : null),
-        main.length ? h('div', { class: 'rec-rows' }, main.map((b) => seriesRow(ctx, profile, b, b === g.next))) : null,
+          g.reached ? h('span', { class: 'count', text: `you’re at book ${g.reached}` }) : null,
+          g.queued ? h('span', { class: 'count', text: `· book ${g.queued.position} is on your pile` }) : null),
+        main.length ? h('div', { class: 'rec-rows' }, main.map((b) => seriesRow(ctx, profile, b, b === g.next, g.queued))) : null,
         extras.length ? h('details', { class: 'extras' },
           h('summary', { text: `${plural(extras.length, 'extra')} — novellas and companions` }),
           h('div', { class: 'rec-rows' }, extras.map((b) => seriesRow(ctx, profile, b, false)))) : null);
     })));
 }
 
-function seriesRow(ctx, profile, b, isNext) {
+function seriesRow(ctx, profile, b, isNext, queued = null) {
   const year = b.releaseDate ? fmtRelease(b.releaseDate).date.replace('Sometime in ', '') : '';
   // The book itself opens the same panel as Upcoming, with its description.
   const open = () => openRelease(ctx, {
@@ -82,7 +83,9 @@ function seriesRow(ctx, profile, b, isNext) {
         h('div', { class: 'book-meta', text: [
           b.position != null ? `Book ${b.position}` : null, year ? `out ${year}` : null,
         ].filter(Boolean).join(' · ') }),
-        isNext ? h('span', { class: 'pill soon', text: 'read next' }) : null)),
+        // With an earlier book already waiting on the pile, this one is not
+        // what to read next - it is what to get once that one is done.
+        isNext ? h('span', { class: 'pill soon', text: queued ? `after ${queued.title}` : 'read next' }) : null)),
     ctx.state.canWrite ? h('div', { class: 'rec-actions' },
       h('button', {
         class: 'btn small', type: 'button',
@@ -167,6 +170,7 @@ function outcome(rec, onShelf, who = 'you') {
 
 function recCard(ctx, profile, r, fromName) {
   const book = r.book;
+  const have = onShelfIds(ctx.state.libraries[profile.id]).has(r.bookId);
   return h('div', { class: 'rec-card' },
     h('button', { class: 'rec-card-main', type: 'button', onclick: () => ctx.actions.openBookPreview(book) },
       coverEl(book),
@@ -176,9 +180,12 @@ function recCard(ctx, profile, r, fromName) {
         h('div', { class: 'rec-from', text: `From ${fromName} · ${fmtAgo(r.at)}` }),
         r.note ? h('blockquote', { class: 'rec-note', text: r.note }) : null)),
     ctx.state.canWrite ? h('div', { class: 'row end' },
+      // Added some other way since it was sent: a disabled button with no
+      // reason was a puzzle, so say it and let "Got it" file it away.
+      have ? h('span', { class: 'count', text: 'Already on your shelf' }) : null,
       h('button', { class: 'btn secondary small', type: 'button',
-        onclick: () => ctx.actions.answerRec(profile, r, 'dismissed') }, 'No thanks'),
-      h('button', { class: 'btn small', type: 'button',
-        disabled: onShelfIds(ctx.state.libraries[profile.id]).has(r.bookId),
-        onclick: () => ctx.actions.answerRec(profile, r, 'added') }, '+ Want to read')) : null);
+        onclick: (e) => { e.currentTarget.disabled = true; ctx.actions.answerRec(profile, r, have ? 'added' : 'dismissed'); } },
+        have ? 'Got it' : 'No thanks'),
+      have ? null : h('button', { class: 'btn small', type: 'button',
+        onclick: (e) => { e.currentTarget.disabled = true; ctx.actions.answerRec(profile, r, 'added'); } }, '+ Want to read')) : null);
 }

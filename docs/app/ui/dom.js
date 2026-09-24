@@ -149,12 +149,42 @@ export function seriesLabel(book) {
     : book.series.name;
 }
 
-export function toast(message, isError = false) {
+/**
+ * A short message at the bottom of the screen, optionally with one action
+ * ("Undo", "Rate it").
+ *
+ * The toast is a popover where the browser supports it. A modal dialog lives
+ * in the top layer, above every z-index, so a plain fixed element shown while
+ * a dialog was open - "Could not save", say - sat hidden under the dialog's
+ * backdrop exactly when it mattered. Showing a popover after the dialog puts
+ * it on top.
+ */
+export function toast(message, isError = false, action = null) {
   const el = document.getElementById('toast');
-  el.textContent = message;
+  const popover = typeof el.showPopover === 'function';
+  const isOpen = () => { try { return el.matches(':popover-open'); } catch { return false; } };
+
+  function hide() {
+    el.className = 'toast';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { if (popover && isOpen()) el.hidePopover(); }, 300);
+  }
+
+  fill(el, h('span', { text: message }), action ? h('button', {
+    class: 'toast-action', type: 'button',
+    onclick: () => { hide(); action.run(); },
+  }, action.label) : null);
   el.className = `toast show${isError ? ' error' : ''}`;
+  // Errors interrupt; everything else waits its turn.
+  el.setAttribute('role', isError ? 'alert' : 'status');
+  if (popover) {
+    // Re-opening moves it above any dialog opened since it was last shown.
+    if (isOpen()) el.hidePopover();
+    el.showPopover();
+  }
   clearTimeout(toast._timer);
-  toast._timer = setTimeout(() => { el.className = 'toast'; }, isError ? 5200 : 2600);
+  // Long enough to reach an action button, short enough not to linger.
+  toast._timer = setTimeout(hide, action ? 7000 : isError ? 5200 : 2600);
 }
 
 export const todayISO = () => {

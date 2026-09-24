@@ -5,7 +5,7 @@
  * recap only counts books with a read date in that year, and says so.
  */
 
-import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, starsEl, fmtRating } from './dom.js';
+import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, starsEl, fmtRating, toast } from './dom.js';
 import { goalProgress, today } from '../core/model.js';
 import { recapYears, yearInBooks } from '../core/recap.js';
 import { plural } from './views.js';
@@ -26,7 +26,11 @@ export function goalSection(ctx, profile) {
       type: 'number', min: '1', max: '500', inputmode: 'numeric', value: initial ?? '',
       placeholder: 'e.g. 25', 'aria-label': `Books to read in ${year}`, class: 'goal-input',
     });
-    const save = () => ctx.actions.setGoal(profile, year, input.value);
+    // An empty box is not "remove my goal": pressing Set goal with nothing
+    // typed used to save a commit and announce the goal was removed.
+    const save = () => (input.value.trim() === ''
+      ? (input.focus(), toast('Type how many books you want to read first.', true))
+      : ctx.actions.setGoal(profile, year, input.value));
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
     return h('div', { class: 'row goal-edit' },
       input,

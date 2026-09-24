@@ -186,8 +186,8 @@ async function ghFetch(url, options = {}) {
  * static file: Pages caches hard and lags a commit by up to a minute, so the
  * static copy can easily be older than something we wrote ten seconds ago.
  */
-export async function loadJSON(rel, fallback) {
-  const text = await loadText(rel);
+export async function loadJSON(rel, fallback, options = {}) {
+  const text = await loadText(rel, options);
   if (text === null) return structuredClone(fallback);
   try {
     return JSON.parse(text);
@@ -197,8 +197,15 @@ export async function loadJSON(rel, fallback) {
   }
 }
 
-export async function loadText(rel) {
+/**
+ * `forWrite` is set when the text is about to be edited and saved back. Then
+ * a failed fresh read is an error rather than a cue to use the static copy:
+ * that copy can be a minute or more behind, and saving an edit made to it
+ * would quietly undo whatever was committed in between.
+ */
+export async function loadText(rel, { forWrite = false } = {}) {
   const { repo, token, worker } = getConfig();
+  const unreadable = () => new Error('Could not fetch the latest copy to save to, so nothing was saved. Try again in a moment.');
 
   // Pages serves a cached copy for up to a minute after a commit, so someone
   // could add a book and reload straight into a version that predates it.
@@ -212,7 +219,9 @@ export async function loadText(rel) {
         if (body.sha) shas.set(rel, body.sha);
         return body.content;
       }
-    } catch {
+      if (forWrite) throw unreadable();
+    } catch (err) {
+      if (forWrite) throw err instanceof TypeError ? unreadable() : err;
       // Fall through to the static copy rather than showing nothing.
     }
   }
@@ -225,6 +234,7 @@ export async function loadText(rel) {
       shas.set(rel, body.sha);
       return fromBase64(body.content ?? '');
     }
+    if (forWrite) throw unreadable();
     // Fall through to the static copy rather than failing outright — a bad
     // token should degrade to read-only, not to a broken site.
     console.warn(`GitHub read failed for ${rel} (${res.status}); falling back to static copy`);
@@ -256,7 +266,10 @@ export async function saveJSON(rel, value, message) {
     const res = await fetch(`${worker}/write`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: rel, content: text, message: message ?? `Update ${rel}` }),
+      // The sha of the copy this change was made to. A Worker that knows it
+      // refuses the write if the file has moved on since, and mutateJSON then
+      // replays the change on the fresh copy instead of overwriting it.
+      body: JSON.stringify({ path: rel, content: text, message: message ?? `Update ${rel}`, ...(shas.has(rel) ? { sha: shas.get(rel) } : {}) }),
     });
     if (res.status === 409) throw new ConflictError(`${rel} changed underneath us`);
     if (!res.ok) {
@@ -294,7 +307,7 @@ export async function saveJSON(rel, value, message) {
 export class ConflictError extends Error {}
 
 /**
- * Read-modify-write with one automatic retry.
+ * Read-modify-write, retried when someone else saved in between.
  *
  * Two people editing at the same time is the whole reason this exists. Each
  * profile writes to its own file so collisions are rare, but a shared file
@@ -302,14 +315,14 @@ export class ConflictError extends Error {}
  * beats silently overwriting whatever the other person just did.
  */
 export async function mutateJSON(rel, fallback, mutate, message) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const current = await loadJSON(rel, fallback);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await loadJSON(rel, fallback, { forWrite: true });
     const next = mutate(structuredClone(current));
     try {
       await saveJSON(rel, next, message);
       return next;
     } catch (err) {
-      if (err instanceof ConflictError && attempt === 0) {
+      if (err instanceof ConflictError && attempt < 2) {
         shas.delete(rel);
         continue;
       }

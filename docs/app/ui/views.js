@@ -8,8 +8,9 @@ import {
   h, clear, starsEl, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
 import {
-  readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, hiddenIds, RATING_FILTERS,
+  readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
 } from '../core/model.js';
+import { visibleEvents, unseenEvents, eventStamp } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
 import { togetherYear } from './recap.js';
 
@@ -147,7 +148,7 @@ function groupByYear(books) {
  * A collapsible group. Open by default only for the first one, so a long shelf
  * opens as a scannable list of series or years rather than a wall of books.
  */
-function groupBlock(group, ctx, { open, sideFor: side, subtitle, hideSeries }) {
+function groupBlock(group, ctx, { open, onToggle, sideFor: side, subtitle, hideSeries }) {
   const body = h('div', { class: 'books group-body' },
     // A bucket of undated books is otherwise a dead end - say how to fix it.
     group.unknown
@@ -165,10 +166,21 @@ function groupBlock(group, ctx, { open, sideFor: side, subtitle, hideSeries }) {
     h('span', { class: 'count', text: String(group.books.length) }),
     subtitle ? h('span', { class: 'group-sub', text: subtitle }) : null);
 
-  return h('details', { class: 'group', ...(open ? { open: true } : {}) }, summary, body);
+  return h('details', {
+    class: 'group', ...(open ? { open: true } : {}),
+    ontoggle: (e) => onToggle?.(e.currentTarget.open),
+  }, summary, body);
 }
 
 /* ------------------------------------------------------------------ shelf */
+
+// Per shelf, for this page load only: the search text, rating filter and
+// which groups are open.
+const filterMemory = new Map();
+function shelfFilters(profileId) {
+  if (!filterMemory.has(profileId)) filterMemory.set(profileId, { query: '', rating: 'all', open: new Set() });
+  return filterMemory.get(profileId);
+}
 
 export function shelfView(ctx, profile) {
   const library = ctx.state.libraries[profile.id] ?? { books: [] };
@@ -189,7 +201,11 @@ export function shelfView(ctx, profile) {
         : 'This shelf is empty, and this browser is in read-only mode.'));
   }
 
-  const filters = { query: '', rating: 'all', repaint: () => paint() };
+  // Filters outlive a redraw. Every save re-renders the page, so rating a
+  // book found by searching used to clear the search and fold every group
+  // shut, leaving you hunting for your place.
+  const filters = shelfFilters(profile.id);
+  filters.repaint = () => paint();
   const columns = h('div', { class: 'shelf-columns' });
   const tally = h('span', { class: 'sub' });
   const extra = h('div', { class: 'shelf-extra' });
@@ -227,12 +243,15 @@ export function shelfView(ctx, profile) {
       h('div', { class: 'books' }, abandoned.map((b) => bookRow(b, ctx, sideFor(b))))) : '');
 
     if (filtering && !books.length) {
-      columns.append(h('p', { class: 'empty', text: `Nothing matches “${filters.query}”.` }));
+      // The covers layout already says "Nothing to show"; one message is enough.
+      clear(columns).append(h('p', { class: 'empty', text: filters.query
+        ? `Nothing matches “${filters.query}”${filters.rating !== 'all' ? ' with that rating filter' : ''}.`
+        : 'No books match that rating filter.' }));
     }
   }
 
   const search = h('input', {
-    type: 'search', class: 'shelf-search', placeholder: 'Search title, author or series…',
+    type: 'search', class: 'shelf-search', placeholder: 'Search title, author or series…', value: filters.query,
     'aria-label': 'Search this shelf', autocomplete: 'off', spellcheck: 'false',
     oninput: (e) => { filters.query = e.target.value.trim(); paint(); },
   });
@@ -318,7 +337,9 @@ function finishedColumn(books, ctx, filters) {
     // Every group starts closed. Expanding the largest by default would undo
     // the compactness that grouping is for - the overview is the feature.
     h('div', { class: 'groups' }, groups.map((g) => groupBlock(g, ctx, {
-      open: Boolean(filters?.query),
+      open: Boolean(filters?.query) || Boolean(filters?.open.has(`${mode}:${g.id}`)),
+      // While searching every group is forced open; that is not a choice to remember.
+      onToggle: (isOpen) => { if (filters && !filters.query) filters.open[isOpen ? 'add' : 'delete'](`${mode}:${g.id}`); },
       sideFor,
       hideSeries: mode === 'series' && !g.standalone,
       subtitle: mode === 'series' && g.average ? `avg ${g.average.toFixed(1)}` : null,
@@ -360,25 +381,24 @@ const EVENT_TEXT = {
   new_book: (e) => `New book in ${e.seriesName}`,
   date_set: (e) => `Release date announced — ${fmtDate(e.releaseDate)}`,
   date_moved: (e) => `Moved from ${fmtDate(e.previousDate)} to ${fmtDate(e.releaseDate)}`,
-  preorder: (e) => `Out in ${fmtDays(e.daysUntil ?? daysUntil(e.releaseDate))}`,
+  // Counted from today, not from the day the event was logged - a week-old
+  // "out in 7 days" was already wrong the next morning.
+  preorder: (e) => {
+    const days = daysUntil(e.releaseDate) ?? e.daysUntil;
+    return days == null ? 'Coming soon' : days <= 0 ? `Out ${fmtDate(e.releaseDate)}` : `Out ${fmtDate(e.releaseDate)} · in ${fmtDays(days)}`;
+  },
   released: () => 'Out now',
   author_new_book: (e) => `New from ${e.authorName}`,
 };
 
-/** Events about books someone hid are no longer news to them. */
-export function visibleEvents(events, profile, library) {
-  const hidden = hiddenIds(library ?? {});
-  return events.filter((e) => e.profile === profile.id && !hidden.has(String(e.bookId)));
-}
+const FEED_PAGE = 60;
 
 export function whatsNewView(ctx, profile) {
-  const stamp = (e) => String(e.at ?? e.detectedAt ?? '');
-  const mine = visibleEvents(ctx.state.events, profile, ctx.state.libraries[profile.id])
-    .sort((a, b) => stamp(b).localeCompare(stamp(a)));
-
-  const since = profile.lastSeen;
-  const unseen = since ? mine.filter((e) => stamp(e) > since) : mine;
-  const unseenKeys = new Set(unseen.map((e) => e.key ?? stamp(e) + e.title));
+  const library = ctx.state.libraries[profile.id];
+  const mine = visibleEvents(ctx.state.events, profile, library)
+    .sort((a, b) => eventStamp(b).localeCompare(eventStamp(a)));
+  const unseen = unseenEvents(ctx.state.events, profile, library);
+  const unseenKeys = new Set(unseen.map((e) => e.key ?? eventStamp(e) + e.title));
 
   const markRead = h('button', {
     class: 'btn secondary', type: 'button',
@@ -386,7 +406,19 @@ export function whatsNewView(ctx, profile) {
     onclick: () => ctx.actions.markSeen(profile),
   }, 'Mark all as read');
 
-  const row = (e, isNew) => h('div', { class: 'card release' },
+  // Each event opens the same panel as Upcoming - description, date history
+  // and the add/hide actions - rather than being a dead end.
+  const open = (e) => {
+    const known = ctx.state.seriesState[e.seriesId]?.books?.[e.bookId];
+    ctx.actions.openRelease({
+      bookId: String(e.bookId), title: e.title, releaseDate: known?.releaseDate ?? e.releaseDate ?? null,
+      image: known?.image ?? null, seriesName: e.seriesName ?? null, position: e.position ?? null,
+      authorName: e.authorName ?? '', daysUntil: daysUntil(known?.releaseDate ?? e.releaseDate),
+      source: e.tracked ? 'tracked' : e.authorId ? 'author' : 'series',
+    }, profile);
+  };
+
+  const row = (e, isNew) => h('button', { class: `card release${isNew ? ' unread' : ''}`, type: 'button', onclick: () => open(e) },
     h('div', { class: 'release-when' },
       h('strong', { text: EVENT_LABEL[e.type] ?? e.type }),
       fmtDate(e.detectedAt)),
@@ -395,11 +427,26 @@ export function whatsNewView(ctx, profile) {
       h('div', { class: 'book-meta', text: (EVENT_TEXT[e.type] ?? (() => e.type))(e) })),
     isNew ? h('span', { class: 'pill soon', text: 'new' }) : null);
 
+  // The log only grows, so draw a page at a time rather than silently
+  // cutting it off as it used to at 80.
+  const list = h('div', { class: 'books' });
+  const more = h('button', { class: 'btn secondary', type: 'button' });
+  let shown = 0;
+  const showMore = () => {
+    const next = mine.slice(shown, shown + FEED_PAGE);
+    list.append(...next.map((e) => row(e, unseenKeys.has(e.key ?? eventStamp(e) + e.title))));
+    shown += next.length;
+    more.hidden = shown >= mine.length;
+    more.textContent = `Show older (${mine.length - shown})`;
+  };
+  more.addEventListener('click', showMore);
+  showMore();
+
   return frag(
     pageHead(`What's new · ${profile.name}`,
       unseen.length ? `${unseen.length} since you last looked` : 'All caught up', markRead),
     mine.length
-      ? h('div', { class: 'books' }, mine.slice(0, 80).map((e) => row(e, unseenKeys.has(e.key ?? stamp(e) + e.title))))
+      ? [list, h('div', { class: 'row feed-more' }, more)]
       : emptyState('No release news yet. The watcher runs daily and anything it finds shows up here.'));
 }
 
@@ -447,7 +494,7 @@ export function sharedView(ctx) {
         h('span', { class: 'count', text: String(disagree.length) })),
       disagree.length
         ? h('div', { class: 'books' }, disagree.map((p) => bookRow(p.mine, ctx, ratingPair(p), a)))
-        : emptyState('No strong disagreements — you have rated everything within a star of each other.')),
+        : emptyState('No strong disagreements — every book you have both rated is less than two stars apart.')),
 
     h('section', { class: 'section' },
       h('div', { class: 'section-head' },
@@ -457,9 +504,8 @@ export function sharedView(ctx) {
         ? h('div', { class: 'books' }, readBoth.map((p) => bookRow(p.mine, ctx, ratingPair(p), a)))
         : emptyState('Nothing you have both finished yet.')),
 
-    h('section', { class: 'section' },
-      h('div', { class: 'section-head' }, h('h2', { text: 'On their shelf, not yours' })),
-      recommendations(libA, libB, a, b, ctx)),
+    favouritesFor(a, b, ctx),
+    favouritesFor(b, a, ctx),
 
     tasteOverlap(libA, libB, a, b),
     togetherYear(ctx, a, b));
@@ -516,17 +562,44 @@ function tasteOverlap(libA, libB, a, b) {
           : h('span', { class: 'count', text: 'nothing unique' })))));
 }
 
-function recommendations(libA, libB, a, b, ctx) {
-  const mine = new Set(libA.map((x) => x.id));
-  // Their favourites you have never touched — the useful half of a shared tracker.
-  const picks = libB
-    .filter((x) => x.status === 'read' && (x.rating ?? 0) >= 4 && !mine.has(x.id))
+/**
+ * One person's favourites the other has never touched - the useful half of
+ * a shared tracker. Shown both ways: the page used to list only the second
+ * person's picks for the first, so one of you never saw the section at all.
+ */
+function favouritesFor(reader, owner, ctx) {
+  const readerBooks = ctx.state.libraries[reader.id]?.books ?? [];
+  const ownerBooks = ctx.state.libraries[owner.id]?.books ?? [];
+  const have = new Set(readerBooks.map((x) => x.id));
+  const picks = ownerBooks
+    .filter((x) => x.status === 'read' && (x.rating ?? 0) >= 4 && !have.has(x.id))
     .sort((x, y) => (y.rating ?? 0) - (x.rating ?? 0))
     .slice(0, 8);
 
-  if (!picks.length) return h('p', { class: 'empty', text: `Nothing ${b.name} has rated 4+ that ${a.name} is missing.` });
-  return h('div', { class: 'books' }, picks.map((x) => bookRow(x, ctx,
-    starsEl(x.rating), b)));
+  const body = picks.length
+    ? h('div', { class: 'rec-rows picks' }, picks.map((x) => h('div', { class: 'rec-row' },
+        // The owner's copy is theirs to edit; the reader gets the read-only
+        // description, and one tap to put it on their own pile.
+        h('button', { class: 'rec-open', type: 'button', onclick: () => ctx.actions.openBookPreview(x) },
+          coverEl(x),
+          h('div', { class: 'book-main' },
+            h('div', { class: 'book-title', text: x.title }),
+            h('div', { class: 'book-meta', text: [authorNames(x), seriesLabel(x)].filter(Boolean).join(' · ') }),
+            starsEl(x.rating))),
+        ctx.state.canWrite ? h('div', { class: 'rec-actions' }, h('button', {
+          class: 'btn small', type: 'button', 'aria-label': `Add ${x.title} to ${reader.name}'s want-to-read pile`,
+          onclick: async (e) => {
+            e.currentTarget.disabled = true;
+            if (!(await ctx.actions.addById(reader, x.hardcoverId, x.title))) e.currentTarget.disabled = false;
+          },
+        }, `+ ${reader.name}`)) : null)))
+    : h('p', { class: 'empty', text: `Nothing ${owner.name} has rated 4★ or more that ${reader.name} is missing.` });
+
+  return h('section', { class: 'section' },
+    h('div', { class: 'section-head' },
+      h('h2', { text: `${owner.name}’s favourites ${reader.name} hasn’t read` }),
+      picks.length ? h('span', { class: 'count', text: String(picks.length) }) : null),
+    body);
 }
 
 export { frag, pageHead, emptyState, bookRow };
