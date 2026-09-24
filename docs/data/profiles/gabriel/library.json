@@ -110,7 +110,7 @@
       "cover": "https://assets.hardcover.app/edition/26332868/ca7c2f58-409f-4dbf-8d69-7d94cf302d5f.jpg",
       "slug": "rhythm-of-war",
       "status": "read",
-      "rating": 5,
+      "rating": 4.5,
       "note": "",
       "added": "2026-09-21",
       "started": "2026-08-28",
@@ -129,7 +129,8 @@
         "tense",
         "inspiring",
         "dark"
-      ]
+      ],
+      "readOn": "2026-09-09"
     },
     {
       "id": "hc:459452",
