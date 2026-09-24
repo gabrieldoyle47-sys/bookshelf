@@ -210,6 +210,17 @@ export async function bookById(gql, id) {
 /* ------------------------------------------------------------------ series */
 
 /**
+ * Only books with an English edition.
+ *
+ * Hardcover keeps many translations as separate books - "Varjojen kuningatar"
+ * is Queen of Shadows in Finnish - and each one looks like a brand-new title by
+ * the author the day a librarian adds it. Requiring an English edition drops
+ * them, along with the odd untagged bundle or split volume, which were never
+ * news either.
+ */
+const HAS_ENGLISH_EDITION = `editions: { language: { code2: { _eq: "en" } } }`;
+
+/**
  * Every book in a series, de-duplicated.
  *
  * The filters here are load-bearing, not defensive tidying. Hardcover's data is
@@ -232,7 +243,7 @@ const SERIES_BY_ID = `
         distinct_on: position
         order_by: [{ position: asc }, { book: { users_count: desc } }]
         where: {
-          book: { canonical_id: { _is_null: true }, is_partial_book: { _eq: false } }
+          book: { canonical_id: { _is_null: true }, is_partial_book: { _eq: false }, ${HAS_ENGLISH_EDITION} }
           compilation: { _eq: false }
         }
       ) {
@@ -278,7 +289,7 @@ const AUTHOR_BOOKS = `
       contributions(
         order_by: { book: { users_count: desc } }
         limit: 200
-        where: { book: { canonical_id: { _is_null: true } } }
+        where: { book: { canonical_id: { _is_null: true }, ${HAS_ENGLISH_EDITION} } }
       ) {
         book { id title release_date release_year }
       }
@@ -291,6 +302,7 @@ const AUTHOR_BOOKS = `
             release_date: { _gt: $today }
             compilation: { _eq: false }
             is_partial_book: { _eq: false }
+            ${HAS_ENGLISH_EDITION}
           }
         }
       ) {
