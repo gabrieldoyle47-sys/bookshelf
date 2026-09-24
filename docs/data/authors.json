@@ -60,10 +60,6 @@
         "title": "Catwoman: Soulstealer",
         "releaseDate": "2018-08-07"
       },
-      "454685": {
-        "title": "Twilight of the Gods",
-        "releaseDate": null
-      },
       "458947": {
         "title": "A Court of Wings and Ruin",
         "releaseDate": "2017-01-01"
@@ -124,17 +120,9 @@
         "title": "Crescent City Bundle: A 2-book bundle",
         "releaseDate": "2023-03-30"
       },
-      "893818": {
-        "title": "The Assassin and the Princess",
-        "releaseDate": null
-      },
       "893847": {
         "title": "The Captain and the Prince",
         "releaseDate": "2013-05-08"
-      },
-      "893924": {
-        "title": "Empire of Storms: Exclusive Scenes",
-        "releaseDate": null
       },
       "986998": {
         "title": "A Court of Thorns and Roses: 4 Books in 1",
@@ -160,17 +148,9 @@
         "title": "A Court of Thorns and Roses Colouring Book",
         "releaseDate": "2017-01-01"
       },
-      "1295502": {
-        "title": "A Court of Silver Flames - Azriel Bonus Chapter",
-        "releaseDate": null
-      },
       "1363844": {
         "title": "Heir of Fire",
         "releaseDate": "2014-09-02"
-      },
-      "1386749": {
-        "title": " Crescent City Bundle: A 3 Book Bundle ",
-        "releaseDate": "2024-01-30"
       },
       "1389522": {
         "title": "A Court of Silver Flames - Feyre Bonus Chapter",
@@ -192,14 +172,6 @@
         "title": "A Court of Frost and Starlight [Dramatized Adaptation]",
         "releaseDate": "2023-03-01"
       },
-      "1743898": {
-        "title": "Kingdom of Ash, Part 1",
-        "releaseDate": "2018-10-23"
-      },
-      "1743899": {
-        "title": "Kingdom of Ash, Part 2",
-        "releaseDate": "2018-10-23"
-      },
       "1743907": {
         "title": "A Court of Silver Flames, Part 2 of 2",
         "releaseDate": "2021-03-17"
@@ -208,25 +180,9 @@
         "title": "Crescent City ebook Bundle: A 3 Book Bundle",
         "releaseDate": "2022-01-01"
       },
-      "1761090": {
-        "title": "Queen of Shadows, Part 1",
-        "releaseDate": "2015-09-01"
-      },
-      "1761091": {
-        "title": "Queen of Shadows, Part 2",
-        "releaseDate": "2015-01-01"
-      },
       "1803574": {
         "title": "A Court of Silver Flames, Part 1 of 2",
         "releaseDate": "2021-03-17"
-      },
-      "1981029": {
-        "title": "Empire of Storms & Tower of Dawn",
-        "releaseDate": null
-      },
-      "2157245": {
-        "title": "Throne of Glass: 1-3",
-        "releaseDate": null
       },
       "2334009": {
         "title": "A Court of Mist and Fury, Part 1 of 2",
@@ -244,10 +200,6 @@
         "title": "Crescent City Hardcover Box Set",
         "releaseDate": "2022-01-01"
       },
-      "2385778": {
-        "title": "House of Earth and Blood, Part 1 of 2",
-        "releaseDate": "2020-01-01"
-      },
       "2400965": {
         "title": "Embers of Memory",
         "releaseDate": "2019-01-01"
@@ -255,18 +207,6 @@
       "2472931": {
         "title": "A Court of Forgotten Melody",
         "releaseDate": "2027-01-12"
-      },
-      "2515727": {
-        "title": "Throne of Glass Boxset",
-        "releaseDate": null
-      },
-      "2516589": {
-        "title": "The DC Icons Series: The Graphic Novel Box Set",
-        "releaseDate": null
-      },
-      "2516599": {
-        "title": "Throne of Glass / A Court of Thorns and Roses",
-        "releaseDate": null
       },
       "2710497": {
         "title": "House of Flame and Shadow, Part 2 of 2",
@@ -280,14 +220,6 @@
         "title": "House of Flame and Shadow, Part 1 of 2",
         "releaseDate": "2024-12-17"
       },
-      "2807329": {
-        "title": "Throne of Glass Series",
-        "releaseDate": null
-      },
-      "2845001": {
-        "title": "Bonus Scene Chaol/Nysren before the Tower of Dawn",
-        "releaseDate": null
-      },
       "2973988": {
         "title": "A Court of Wings and Ruin (Part 3 of 3) (Dramatized Adaptation)",
         "releaseDate": "2022-08-15"
@@ -295,50 +227,6 @@
       "2973990": {
         "title": "A Court of Wings and Ruin (Part 2 of 3) (Dramatized Adaptation)",
         "releaseDate": "2022-09-15"
-      },
-      "2982139": {
-        "title": "Das Reich der sieben Höfe - Frost und Mondlicht",
-        "releaseDate": null
-      },
-      "2993662": {
-        "title": "Kit Cidade da Lua Crescente",
-        "releaseDate": null
-      },
-      "2993692": {
-        "title": "Box Corte de Espinhos e Rosas",
-        "releaseDate": "2018-01-01"
-      },
-      "2996329": {
-        "title": "Tuhkan valtiatar - osa 2",
-        "releaseDate": "2018-01-01"
-      },
-      "2996332": {
-        "title": "Tuhkan valtiatar - osa 1",
-        "releaseDate": "2018-01-01"
-      },
-      "2996336": {
-        "title": "Aamunkoiton torni",
-        "releaseDate": "2017-01-01"
-      },
-      "2996337": {
-        "title": "Keskiyön kruunu",
-        "releaseDate": "2013-01-01"
-      },
-      "2996339": {
-        "title": "Tulen Perillinen",
-        "releaseDate": "2014-01-01"
-      },
-      "2996342": {
-        "title": "Taistelun myrskyt",
-        "releaseDate": "2016-01-01"
-      },
-      "2996343": {
-        "title": "Lasipalatsi",
-        "releaseDate": "2012-01-01"
-      },
-      "2996346": {
-        "title": "Varjojen kuningatar",
-        "releaseDate": "2015-01-01"
       }
     },
     "forthcoming": [
@@ -703,6 +591,10 @@
         "title": "Long Chills and Case Dough",
         "releaseDate": "2023-12-01"
       },
+      "1123139": {
+        "title": "River of Souls",
+        "releaseDate": "2013-01-01"
+      },
       "1179741": {
         "title": "Isles of the Emberdark",
         "releaseDate": "2025-01-01"
@@ -726,10 +618,6 @@
       "1255222": {
         "title": " Words of Radiance, Part 2",
         "releaseDate": "2014-01-01"
-      },
-      "1361245": {
-        "title": "Hyperthief",
-        "releaseDate": "2023-11-21"
       },
       "1386734": {
         "title": "The Way of Kings, Part 2",
@@ -1019,10 +907,6 @@
         "title": "Sons of Ares Vol. 2: Wrath [Dramatized Adaptation]",
         "releaseDate": "2020-12-23"
       },
-      "2097348": {
-        "title": "Sons of Ares Vol. 3: Forbidden Song [Dramatized Adaptation]",
-        "releaseDate": "2023-07-12"
-      },
       "2099457": {
         "title": "Random House 2014 Free Sampler",
         "releaseDate": "2014-07-15"
@@ -1038,22 +922,6 @@
       "2339487": {
         "title": "Morning Star (1 of 2) [Dramatized Adaptation]",
         "releaseDate": "2024-02-08"
-      },
-      "2555651": {
-        "title": "Dark Age - Partie 2",
-        "releaseDate": "2022-08-24"
-      },
-      "2641090": {
-        "title": "Iron Gold - Partie 1",
-        "releaseDate": "2018-09-12"
-      },
-      "2641093": {
-        "title": "Iron Gold - Partie 2",
-        "releaseDate": "2018-10-10"
-      },
-      "2641094": {
-        "title": "Dark Age - Partie 1",
-        "releaseDate": "2019-07-30"
       },
       "2641110": {
         "title": "Iron Gold (1 of 2) [Dramatized Adaptation]",
@@ -1082,18 +950,6 @@
       "2897077": {
         "title": "Red Rising: Sons of Ares Omnibus",
         "releaseDate": "2025-03-25"
-      },
-      "2965914": {
-        "title": "Red Rising - Tome 1 - Red Rising",
-        "releaseDate": null
-      },
-      "2965915": {
-        "title": "Red Rising - Livre 3 - Morning Star",
-        "releaseDate": null
-      },
-      "2977351": {
-        "title": "Pierce Brown Red Rising Series – Complete 5-Book Science Fiction Collection Set",
-        "releaseDate": null
       }
     },
     "forthcoming": []
@@ -1138,14 +994,6 @@
       "2460032": {
         "title": "Scion",
         "releaseDate": "2026-09-01"
-      },
-      "2992155": {
-        "title": "Vôľa väčšiny",
-        "releaseDate": "2023-01-01"
-      },
-      "2996026": {
-        "title": "The Strength of the Few. La forza dei pochi",
-        "releaseDate": null
       }
     },
     "forthcoming": [
@@ -1220,10 +1068,6 @@
       "714600": {
         "title": "Fourth Wing",
         "releaseDate": "2023-05-02"
-      },
-      "734732": {
-        "title": "Girl in Luv",
-        "releaseDate": "2019-10-19"
       },
       "734738": {
         "title": "Beyond What is Given",
@@ -1305,18 +1149,6 @@
         "title": "Fourth Wing, Iron Flame",
         "releaseDate": "2023-01-01"
       },
-      "2421455": {
-        "title": "1984: Against All Odds",
-        "releaseDate": "2016-05-27"
-      },
-      "2421464": {
-        "title": "Begin Again",
-        "releaseDate": "2018-01-06"
-      },
-      "2483328": {
-        "title": "The Bet:  A legacy Story",
-        "releaseDate": null
-      },
       "2578431": {
         "title": "Peculiar Stars",
         "releaseDate": "2026-11-17"
@@ -1325,29 +1157,9 @@
         "title": "Peculiar Stars",
         "releaseDate": "2026-11-17"
       },
-      "2722083": {
-        "title": "The Renegades Series Collection by Rebecca Yarros",
-        "releaseDate": null
-      },
-      "2769069": {
-        "title": "Fourth Wing Tarot",
-        "releaseDate": null
-      },
       "2769384": {
         "title": "Threshing Day",
         "releaseDate": "2026-09-29"
-      },
-      "2795005": {
-        "title": "Flight & Glory Series Collection 5 Books, Vol. 1.0",
-        "releaseDate": null
-      },
-      "2875357": {
-        "title": "The Last Letter & Great and Precious Things",
-        "releaseDate": null
-      },
-      "2888050": {
-        "title": "Fourth wing, tome 1.5 : Bonus",
-        "releaseDate": null
       },
       "2898212": {
         "title": "Fourth Wing (Part 1 of 2) [Dramatized Adaptation]",
@@ -1356,26 +1168,6 @@
       "2902669": {
         "title": "Iron Flame (Part 2 of 2) [Dramatized Adaptation]",
         "releaseDate": "2024-05-17"
-      },
-      "2916871": {
-        "title": "Legacy. Donde todo comienza",
-        "releaseDate": "2022-01-01"
-      },
-      "2916874": {
-        "title": "Las cosas más preciosas",
-        "releaseDate": "2020-01-01"
-      },
-      "2941784": {
-        "title": "Fourth Wing: The Official Coloring Book",
-        "releaseDate": null
-      },
-      "2943417": {
-        "title": "Le Feu et la Cendre",
-        "releaseDate": "2016-01-01"
-      },
-      "2975987": {
-        "title": "Um caso improvável",
-        "releaseDate": null
       }
     },
     "forthcoming": [
