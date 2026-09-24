@@ -56,6 +56,9 @@ You can override any of it with `books watch` / `books unwatch`.
   steady pace would have you today, and a recap of each year: covers, longest,
   shortest, favourites, most-read author and series, and busiest month.
 - **Half stars.** Click the left half of a star for .5.
+- **Undo.** Removing a book, hiding a release and passing on a recommendation
+  each offer *Undo* for a few seconds. For anything older, every change is a
+  commit, so `git revert` still works.
 
 ## Reading dates
 

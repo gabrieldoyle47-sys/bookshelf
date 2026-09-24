@@ -1349,6 +1349,44 @@ button.hl:hover { border-color: var(--border-strong); box-shadow: var(--shadow);
 }
 .rec-open:hover .book-title { color: var(--accent); }
 
+/* ============================================================ audit fixes */
+
+/* The toast is a popover (so it shows above open dialogs). Undo the browser's
+   popover defaults, which would stretch it across the whole screen. */
+.toast[popover] { top: auto; right: auto; margin: 0; border: 0; overflow: visible; }
+.toast { display: flex; align-items: center; gap: .9rem; max-width: calc(100vw - 2rem); width: max-content; }
+.toast:not(.show) { pointer-events: none; }
+.toast.show { pointer-events: auto; }
+.toast-action {
+  background: none; border: 0; padding: .15rem .1rem; margin: -.15rem 0;
+  color: inherit; font: inherit; font-weight: 700; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; min-height: 32px;
+}
+
+/* Save in progress, in the sidebar's status line. */
+.sync.busy::before { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent); }
+
+/* What's new rows open the book, so they are buttons. */
+button.card.release {
+  width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+button.card.release:hover { border-color: var(--border-strong); }
+button.card.release:hover .book-title { color: var(--accent); }
+.feed-more { justify-content: center; margin-top: 1rem; }
+.feed-more .btn[hidden] { display: none; }
+
+/* Add dialog: results already on the shelf, and the picked book above its
+   three shelf buttons. */
+.result .pill { margin-left: auto; flex: 0 0 auto; }
+.result.owned .book-title { color: var(--text-dim); }
+.result.picked { cursor: default; background: var(--surface-2); border-color: var(--border); margin-bottom: .6rem; }
+.link-btn.back { margin-top: .6rem; padding-left: 0; }
+.link-btn.back:hover { background: none; color: var(--accent); }
+
+/* Both of us: each person's favourites the other has not read. */
+.picks .book-main .stars-el { margin-top: .2rem; }
+
 /* ================================================================ motion */
 
 @media (prefers-reduced-motion: reduce) {

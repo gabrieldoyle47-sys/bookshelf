@@ -251,7 +251,14 @@ export function nextInSeries(seriesState, library, now = today()) {
     books.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
     // The first main book past where you are is the one to read next.
     const next = books.find((b) => !b.extra && b.position > reached) ?? books.find((b) => !b.extra) ?? null;
-    groups.push({ id, name: s.name, books, next, reached });
+    // A main book already waiting on the to-read pile comes first. Without
+    // this, someone reading #2 with #3 on their pile was told to read #4 next.
+    const pile = library.books
+      .filter((b) => b.series?.id === id && b.status === 'tbr' && Number.isInteger(b.series?.position) && b.series.position > reached)
+      .sort((a, b) => a.series.position - b.series.position)[0];
+    const queued = pile && (!next || pile.series.position < next.position)
+      ? { title: pile.title, position: pile.series.position } : null;
+    groups.push({ id, name: s.name, books, next, reached, queued });
   }
 
   // Series with a main book waiting come first; within that, alphabetical.
@@ -335,4 +342,32 @@ export function upcomingFrom(seriesState, watchedIds, now = today()) {
     }
   }
   return out.sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
+/* ------------------------------------------------------------ the feed */
+
+/**
+ * When an event was logged, as finely as we know. `at` is a full timestamp;
+ * older events only carry the day they were detected.
+ */
+export const eventStamp = (e) => String(e.at ?? e.detectedAt ?? '');
+
+/** One person's events, minus books they hid - those are no longer news to them. */
+export function visibleEvents(events, profile, library) {
+  const hidden = hiddenIds(library ?? {});
+  return events.filter((e) => e.profile === profile.id && !hidden.has(String(e.bookId)));
+}
+
+/**
+ * Events since the person last marked the feed read.
+ *
+ * The sidebar badge and the What's new page both use this. They used to
+ * compare different fields - the badge the bare detection day, the page the
+ * full timestamp - so news found later on the day you marked the feed read
+ * showed as "new" on the page while the badge said there was nothing.
+ */
+export function unseenEvents(events, profile, library) {
+  const since = profile.lastSeen;
+  const mine = visibleEvents(events, profile, library);
+  return since ? mine.filter((e) => eventStamp(e) > since) : mine;
 }

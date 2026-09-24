@@ -13,7 +13,7 @@
 
 import { h, fmtRating } from './dom.js';
 import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
-import { frag, pageHead, emptyState } from './views.js';
+import { frag, pageHead, emptyState, plural } from './views.js';
 import { goalSection, yearSection } from './recap.js';
 
 const MIN_POINTS = 3; // below this a chart misleads more than it informs
@@ -148,10 +148,12 @@ function paceSection(read, dated, ctx, profile) {
     return h('section', { class: 'section' },
       h('h2', { text: 'Reading pace' }),
       h('p', { class: 'empty', text: 'Too few read dates recorded to plot a pace yet.' }),
-      read.length && ctx.state.canWrite ? h('button', {
+      // Only when there is something to date: with two books, both dated, this
+      // used to offer to "Set read dates for 0 books".
+      read.length > dated.length && ctx.state.canWrite ? h('button', {
         class: 'btn secondary', type: 'button',
         onclick: () => ctx.actions.openDates(profile),
-      }, `Set read dates for ${read.length - dated.length} books`) : null,
+      }, `Set read dates for ${plural(read.length - dated.length, 'book')}`) : null,
       read.length ? coverage : null);
   }
 

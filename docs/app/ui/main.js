@@ -9,8 +9,10 @@ import { createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy } 
 import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
+  reopenRecommendation, restoreBook, datesProblem,
 } from '../core/model.js';
-import { shelfView, whatsNewView, sharedView, visibleEvents } from './views.js';
+import { unseenEvents } from '../core/watch.js';
+import { shelfView, whatsNewView, sharedView } from './views.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
@@ -41,19 +43,22 @@ async function boot() {
   await storage.adoptLocalConfig();
   state.canWrite = storage.canWrite();
   try {
-    const { profiles } = await storage.loadJSON('profiles.json', { profiles: [] });
-    state.profiles = profiles;
-    await loadWatchState();
-
-    for (const p of profiles) {
-      state.libraries[p.id] = await storage.loadJSON(
-        `profiles/${p.id}/library.json`, { books: [], watch: { series: {}, authors: {} } });
-    }
+    // Every file is a round trip to GitHub through the Worker, so fetch them
+    // side by side: the page used to wait for each shelf in turn, after the
+    // release data, before drawing anything.
+    const loadProfiles = storage.loadJSON('profiles.json', { profiles: [] }).then(async ({ profiles }) => {
+      const libs = await Promise.all(profiles.map((p) => storage.loadJSON(
+        `profiles/${p.id}/library.json`, { books: [], watch: { series: {}, authors: {} } })));
+      state.profiles = profiles;
+      profiles.forEach((p, i) => { state.libraries[p.id] = libs[i]; });
+    });
+    await Promise.all([loadProfiles, loadWatchState()]);
   } catch (err) {
     document.getElementById('main').replaceChildren(
       h('div', { class: 'card' },
         h('h2', { text: 'Could not load your data' }),
-        h('p', { text: err.message })));
+        h('p', { text: friendlyError(err, { saving: false }) }),
+        h('button', { class: 'btn', type: 'button', onclick: () => location.reload() }, 'Try again')));
     return;
   }
 
@@ -66,6 +71,8 @@ async function boot() {
     if (e.key === 'Escape' && document.getElementById('sidebar').classList.contains('open')) toggleMenu(false);
   });
   wireAddDialog();
+  wireDialogs();
+  document.addEventListener('keydown', tablistKeys);
 
   readRoute();
   render();
@@ -79,6 +86,58 @@ async function loadWatchState() {
     storage.loadJSON('books-state.json', {}),
     storage.loadEvents(),
   ]);
+}
+
+/**
+ * Behaviour every dialog shares.
+ *
+ * Tapping the backdrop closes a dialog - on a phone the bottom sheets look
+ * dismissable, and before this only the ✕ or Escape worked. A dialog holding
+ * unsaved edits (it sets isDirty) asks first instead, however it is being
+ * closed: the book dialog used to throw away a rating and note without a word
+ * if Escape was pressed.
+ */
+function wireDialogs() {
+  const discardOk = (dialog) => !dialog.isDirty?.() || confirm('Discard your unsaved changes?');
+  for (const dialog of document.querySelectorAll('dialog.dialog')) {
+    // A press that starts inside and ends on the backdrop (selecting text in
+    // a field, say) is not a tap outside.
+    let downOnBackdrop = false;
+    dialog.addEventListener('pointerdown', (e) => { downOnBackdrop = e.target === dialog; });
+    dialog.addEventListener('click', (e) => {
+      if (e.target !== dialog || !downOnBackdrop) return;
+      // The dialog box itself also counts as the target when its padding is
+      // clicked, so check the point really is outside it.
+      const r = dialog.getBoundingClientRect();
+      const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      if (!inside && discardOk(dialog)) dialog.close();
+    });
+    dialog.addEventListener('cancel', (e) => { if (!discardOk(dialog)) e.preventDefault(); });
+    dialog.querySelector('.dialog-head .icon-btn')?.addEventListener('click', (e) => {
+      if (!discardOk(dialog)) e.preventDefault();
+    });
+    dialog.addEventListener('close', () => { dialog.isDirty = null; });
+  }
+}
+
+/**
+ * Arrow keys, Home and End move along any tab strip or segmented control,
+ * as they do in every native tab bar. Each control already selects on click,
+ * so moving is focusing and clicking the neighbour.
+ */
+function tablistKeys(e) {
+  const tab = e.target.closest?.('[role="tab"]');
+  const list = tab?.closest('[role="tablist"]');
+  if (!list || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+  const tabs = [...list.querySelectorAll('[role="tab"]')];
+  const i = tabs.indexOf(tab);
+  const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1
+    : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault();
+  tabs[next].focus();
+  // The profile tabs change the route, and render() puts focus back on the
+  // redrawn strip.
+  tabs[next].click();
 }
 
 function toggleMenu(force) {
@@ -96,10 +155,24 @@ function readRoute() {
   if (parts[0] === 'upcoming') state.route = { view: 'all-upcoming' };
   else if (parts[0] === 'shared') state.route = { view: 'shared' };
   else if (parts[0] === 'p' && parts[1]) {
-    state.route = { view: 'profile', profileId: parts[1], tab: parts[2] ?? 'shelf' };
+    // An old bookmark or a typo lands on a real page, and the sidebar and
+    // tabs then highlight what is actually showing.
+    const profileId = state.profiles.some((p) => p.id === parts[1]) ? parts[1] : state.profiles[0]?.id ?? null;
+    const tab = PROFILE_TABS.some(([id]) => id === parts[2]) ? parts[2] : 'shelf';
+    state.route = { view: 'profile', profileId, tab };
   } else {
     state.route = { view: 'profile', profileId: state.profiles[0]?.id ?? null, tab: 'shelf' };
   }
+}
+
+/** The browser tab and history say which page this is, not just "Bookshelf". */
+function pageTitle() {
+  const { view, profileId, tab } = state.route;
+  if (view === 'all-upcoming') return 'All upcoming';
+  if (view === 'shared') return 'Both of us';
+  const name = state.profiles.find((p) => p.id === profileId)?.name;
+  const label = PROFILE_TABS.find(([id]) => id === tab)?.[1] ?? 'Shelf';
+  return name ? `${label} · ${name}` : null;
 }
 
 const go = (hash) => { location.hash = hash; };
@@ -107,9 +180,14 @@ const go = (hash) => { location.hash = hash; };
 /* ------------------------------------------------------------------ render */
 
 function render() {
+  // Keyboard focus on the tab strip survives the redraw, so arrowing through
+  // the tabs does not drop focus back to the top of the page.
+  const tabFocused = Boolean(document.activeElement?.closest?.('.tabs'));
   renderSidebar();
   const main = clear(document.getElementById('main'));
   toggleMenu(false);
+  const title = pageTitle();
+  document.title = title ? `${title} — Bookshelf` : 'Bookshelf';
 
   if (!state.profiles.length) {
     main.append(h('div', { class: 'card' },
@@ -127,7 +205,9 @@ function render() {
   ctx.currentProfile = profile;
   const tabs = main.appendChild(profileTabs(profile, tab));
   // On a phone the tab strip scrolls sideways; keep the current tab in view.
-  tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const selected = tabs.querySelector('[aria-selected="true"]');
+  selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  if (tabFocused) selected?.focus();
 
   const views = {
     shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
@@ -136,21 +216,25 @@ function render() {
 }
 
 function profileTabs(profile, current) {
-  const recs = newRecCount(state.libraries[profile.id]);
+  // Each tab carries its own share of the sidebar badge, so the number there
+  // can be traced to where the news actually is.
+  const counts = {
+    recs: newRecCount(state.libraries[profile.id]),
+    new: unseenNews(profile),
+  };
   return h('div', { class: 'tabs', role: 'tablist', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'tab', type: 'button', role: 'tab',
       'aria-selected': String(id === current),
       onclick: () => go(`#/p/${profile.id}/${id}`),
-    }, label, id === 'recs' && recs ? h('span', { class: 'badge', text: String(recs) }) : null)));
+    }, label, counts[id] ? h('span', { class: 'badge', text: String(counts[id]), 'aria-label': `${counts[id]} new` }) : null)));
 }
+
+const unseenNews = (profile) => unseenEvents(state.events, profile, state.libraries[profile.id]).length;
 
 /** The sidebar badge: unread release news plus unanswered recommendations. */
 function unseenCount(profile) {
-  const since = profile.lastSeen;
-  return visibleEvents(state.events, profile, state.libraries[profile.id])
-    .filter((e) => !since || String(e.detectedAt) > since).length
-    + newRecCount(state.libraries[profile.id]);
+  return unseenNews(profile) + newRecCount(state.libraries[profile.id]);
 }
 
 function renderSidebar() {
@@ -167,7 +251,7 @@ function renderSidebar() {
     },
       h('span', { class: 'dot avatar', 'aria-hidden': 'true', style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase() }),
       p.name,
-      n ? h('span', { class: 'badge', text: String(n) }) : null));
+      n ? h('span', { class: 'badge', text: String(n), 'aria-label': `${n} new` }) : null));
   }
   nav.append(people);
 
@@ -184,10 +268,20 @@ function renderSidebar() {
       onclick: () => go('#/shared'),
     }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), 'Both of us')));
 
+  paintSync();
+}
+
+/**
+ * The status line under Settings. It used to read "saving" permanently on the
+ * live site, which looked like a save stuck in progress; now it says so only
+ * while one actually is.
+ */
+function paintSync() {
   const sync = document.getElementById('sync-state');
-  sync.textContent = {
+  sync.classList.toggle('busy', pending > 0);
+  sync.textContent = pending > 0 ? 'Saving…' : {
     local: 'local · saving to disk',
-    live: 'saving',
+    live: 'All changes saved',
     token: 'synced to GitHub',
     'read-only': 'read-only',
   }[storage.writeMode()];
@@ -195,22 +289,65 @@ function renderSidebar() {
 
 /* ------------------------------------------------------------------ saving */
 
-/** The single write path. Everything that changes a library comes through here. */
+let pending = 0;
+let queue = Promise.resolve();
+
+/**
+ * Network failures surface as "Failed to fetch" or "Load failed", which says
+ * nothing about whether the change was kept.
+ */
+function friendlyError(err, { saving = true } = {}) {
+  if (err instanceof TypeError && /fetch|load failed|network/i.test(err.message)) {
+    return `Could not reach the server — check your connection.${saving ? ' Nothing was saved.' : ''}`;
+  }
+  return err.message;
+}
+
+/**
+ * The single write path. Everything that changes a library comes through here.
+ *
+ * Saves run one at a time. Each is a read-modify-commit round trip of a
+ * second or two, and two overlapping ones on the same shelf - a quick rating
+ * then a hide, or a double-click - raced each other through the Worker, where
+ * the later commit could silently drop the earlier change.
+ */
 async function saveLibrary(profileId, mutate, message) {
   if (!state.canWrite) {
     toast('Read-only — add a GitHub token in Settings to make changes.', true);
     return false;
   }
   const path = `profiles/${profileId}/library.json`;
+  pending++;
+  paintSync();
+  const run = queue.then(async () => {
+    try {
+      const next = await storage.mutateJSON(
+        path, { books: [], watch: { series: {}, authors: {} } }, mutate, message);
+      state.libraries[profileId] = next;
+      return true;
+    } catch (err) {
+      toast(friendlyError(err), true);
+      return false;
+    }
+  });
+  queue = run;
+  const ok = await run;
+  pending--;
+  // Redraw either way: on failure that re-enables whatever button started it.
+  render();
+  return ok;
+}
+
+/**
+ * Disable a button while its save is in flight, so a second tap cannot send
+ * the same change twice.
+ */
+async function busy(button, work) {
+  if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
   try {
-    const next = await storage.mutateJSON(
-      path, { books: [], watch: { series: {}, authors: {} } }, mutate, message);
-    state.libraries[profileId] = next;
-    render();
-    return true;
-  } catch (err) {
-    toast(err.message, true);
-    return false;
+    return await work();
+  } finally {
+    if (button?.isConnected) { button.disabled = false; button.removeAttribute('aria-busy'); }
   }
 }
 
@@ -259,14 +396,16 @@ ctx.actions.addById = async (profile, bookId, title) => {
     if (!hit) throw new Error(`Hardcover could not find “${title}”.`);
     return await ctx.actions.addHit(profile, hit);
   } catch (err) {
-    toast(err.message, true);
+    toast(friendlyError(err), true);
     return false;
   }
 };
 
 ctx.actions.hide = async (profile, bookId, title) => {
   const ok = await saveLibrary(profile.id, (lib) => hideBook(lib, bookId, title), `Hide ${title} for ${profile.name}`);
-  if (ok) toast(`Hidden “${title}” — bring it back from the bottom of Upcoming`);
+  // One tap on a small ✕ is easy to hit by mistake; undo is right there
+  // rather than a trip to the bottom of Upcoming.
+  if (ok) toast(`Hidden “${title}”`, false, { label: 'Undo', run: () => ctx.actions.unhide(profile, bookId, title) });
 };
 
 ctx.actions.unhide = async (profile, bookId, title) => {
@@ -307,8 +446,19 @@ ctx.actions.openBookPreview = (book) => openRelease(ctx, {
 ctx.actions.answerRec = async (profile, rec, answer) => {
   const ok = await saveLibrary(profile.id, (lib) => answerRecommendation(lib, rec.id, answer),
     `${answer === 'added' ? 'Accept' : 'Pass on'} ${rec.book.title} for ${profile.name}`);
-  if (ok) toast(answer === 'added' ? `Added ${rec.book.title} to your want-to-read pile` : 'Passed — it moves to Earlier');
+  if (!ok) return;
+  if (answer === 'added') toast(`Added ${rec.book.title} to your want-to-read pile`);
+  else toast('Passed — it moves to Earlier', false, { label: 'Undo', run: () => ctx.actions.reopenRec(profile, rec) });
 };
+
+/** Take back a "No thanks", putting the recommendation back in the queue. */
+ctx.actions.reopenRec = async (profile, rec) => {
+  await saveLibrary(profile.id, (lib) => reopenRecommendation(lib, rec.id),
+    `Reopen ${rec.book.title} for ${profile.name}`);
+};
+
+/** The book panel from Upcoming, for anywhere else that lists a release. */
+ctx.actions.openRelease = (item, profile) => openRelease(ctx, item, profile);
 
 /**
  * Recommend a book to someone else. Given a book it goes straight to the
@@ -485,7 +635,7 @@ function setHint(text, isError = false) {
 
 async function runSearch() {
   const query = document.getElementById('add-query').value.trim();
-  const results = clear(document.getElementById('add-results'));
+  clear(document.getElementById('add-results'));
   if (query.length < 3) return setHint('Keep typing…');
 
   // Responses can land out of order — a slow "harry" arriving after a fast
@@ -497,51 +647,89 @@ async function runSearch() {
     const hits = await ctx.actions.searchBooks(query, 8);
     if (seq !== searchSeq) return;
     if (!hits.length) return setHint(`Hardcover has nothing for “${query}”.`, true);
-    setHint('Pick the right edition — everything else is filled in for you.');
-
-    for (const hit of hits) {
-      const bits = [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean);
-      results.append(h('button', {
-        class: 'result', type: 'button',
-        onclick: () => chooseStatus(hit),
-      },
-        coverEl({ cover: hit.image }),
-        h('div', { class: 'book-main' },
-          h('div', { class: 'book-title', text: hit.title }),
-          h('div', { class: 'book-meta', text: bits.join(' · ') }))));
-    }
+    showHits(hits);
   } catch (err) {
-    if (seq === searchSeq) setHint(err.message, true);
+    if (seq === searchSeq) setHint(friendlyError(err, { saving: false }), true);
+  }
+}
+
+function showHits(hits) {
+  const results = clear(document.getElementById('add-results'));
+  setHint('Pick the right edition — everything else is filled in for you.');
+  // Say up front which results are already on the shelf. Before, picking one
+  // walked through the shelf choice only to fail with an error at the end.
+  const shelf = new Map((state.libraries[addProfile.id]?.books ?? []).map((b) => [String(b.hardcoverId), b]));
+  for (const hit of hits) {
+    const bits = [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean);
+    const have = shelf.get(String(hit.id));
+    results.append(h('button', {
+      class: `result${have ? ' owned' : ''}`, type: 'button',
+      onclick: () => {
+        if (!have) return chooseStatus(hit, hits);
+        // Already there: go straight to it instead.
+        document.getElementById('add-dialog').close();
+        ctx.actions.openBook(have, addProfile);
+      },
+    },
+      coverEl({ cover: hit.image }),
+      h('div', { class: 'book-main' },
+        h('div', { class: 'book-title', text: hit.title }),
+        h('div', { class: 'book-meta', text: bits.join(' · ') })),
+      have ? h('span', { class: 'pill', text: `On shelf · ${SHELF_LABEL[have.status] ?? have.status}` }) : null));
   }
 }
 
 /** Second step of adding: which shelf does it go on? */
-function chooseStatus(hit) {
+function chooseStatus(hit, hits) {
   const results = clear(document.getElementById('add-results'));
   setHint(`Where does “${hit.title}” go?`);
+  const profile = addProfile;
 
-  const add = async (status) => {
+  const add = async (status, button) => {
     const book = bookFromHardcover(hit, { status });
-    const ok = await saveLibrary(addProfile.id, (lib) => {
+    // Every button goes quiet while the save runs; a second tap used to add
+    // the book twice, or fail with "already on this shelf".
+    choices.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    button.setAttribute('aria-busy', 'true');
+    const ok = await saveLibrary(profile.id, (lib) => {
       if (lib.books.some((b) => b.id === book.id)) throw new Error('That book is already on this shelf.');
       lib.books.push(book);
+      untrackBook(lib, hit.id);
       return lib;
-    }, `Add ${book.title} for ${addProfile.name}`);
+    }, `Add ${book.title} for ${profile.name}`);
 
-    if (ok) {
-      document.getElementById('add-dialog').close();
-      const watching = book.series?.id && deriveWatchlist(state.libraries[addProfile.id]).series[book.series.id];
-      const started = status === 'reading' ? ' · started today' : '';
-      toast(watching
-        ? `Added${started} · now watching ${book.series.name}`
-        : `Added ${book.title}${started}`);
+    if (!ok) {
+      choices.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+      button.removeAttribute('aria-busy');
+      return;
     }
+    document.getElementById('add-dialog').close();
+    const watching = book.series?.id && deriveWatchlist(state.libraries[profile.id]).series[book.series.id];
+    const started = status === 'reading' ? ' · started today' : '';
+    const message = watching ? `Added${started} · now watching ${book.series.name}` : `Added ${book.title}${started}`;
+    // A book you have already read is usually added in order to rate it.
+    toast(message, false, status === 'read' ? {
+      label: 'Rate it',
+      run: () => { const saved = findBookIn(profile.id, book.id); if (saved) ctx.actions.openBook(saved, profile); },
+    } : null);
   };
 
-  results.append(h('div', { class: 'row' },
-    h('button', { class: 'btn', type: 'button', onclick: () => add('reading') }, 'Reading now'),
-    h('button', { class: 'btn secondary', type: 'button', onclick: () => add('tbr') }, 'Want to read'),
-    h('button', { class: 'btn secondary', type: 'button', onclick: () => add('read') }, 'Already read')));
+  const choices = h('div', { class: 'row' },
+    h('button', { class: 'btn', type: 'button', onclick: (e) => add('reading', e.currentTarget) }, 'Reading now'),
+    h('button', { class: 'btn secondary', type: 'button', onclick: (e) => add('tbr', e.currentTarget) }, 'Want to read'),
+    h('button', { class: 'btn secondary', type: 'button', onclick: (e) => add('read', e.currentTarget) }, 'Already read'));
+
+  results.append(
+    h('div', { class: 'result picked' },
+      coverEl({ cover: hit.image }),
+      h('div', { class: 'book-main' },
+        h('div', { class: 'book-title', text: hit.title }),
+        h('div', { class: 'book-meta', text: [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean).join(' · ') }))),
+    choices,
+    // Picking the wrong edition was a dead end: the only way back was to
+    // retype the search.
+    h('button', { class: 'link-btn back', type: 'button', onclick: () => showHits(hits) }, '← Back to results'));
+  choices.querySelector('button').focus();
 }
 
 /* ------------------------------------------------------------- book dialog */
@@ -558,6 +746,10 @@ ctx.actions.openBook = (book, owner) => {
     status: book.status, rating: book.rating ?? null, note: book.note ?? '',
     readOn: readOnOf(book), started: book.started ?? '', finished: book.finished ?? '',
   };
+  // Closing with edits unsaved asks first (see wireDialogs).
+  const initial = JSON.stringify(draft);
+  dialog.isDirty = () => JSON.stringify(draft) !== initial;
+  const problem = h('p', { class: 'hint error', role: 'alert' });
 
   body.append(
     h('div', { class: 'row book-hero' },
@@ -568,7 +760,9 @@ ctx.actions.openBook = (book, owner) => {
         book.pages && h('div', { class: 'book-meta', text: `${book.pages} pages` }),
         book.released && h('div', { class: 'book-meta', text: `Published ${fmtDate(book.released)}` }))),
 
-    h('label', { class: 'field' }, h('span', { text: 'Shelf' }),
+    // Named, because from Both of us or a recap this may be the other
+    // person's copy of the book.
+    h('label', { class: 'field' }, h('span', { text: `${profile.name}'s shelf` }),
       h('select', { onchange: (e) => { draft.status = e.target.value; } },
         STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, SHELF_LABEL[s] ?? s)))),
 
@@ -589,6 +783,8 @@ ctx.actions.openBook = (book, owner) => {
         h('label', { class: 'field' }, h('span', { text: 'Finished' }),
           h('input', { type: 'date', value: draft.finished, onchange: (e) => { draft.finished = e.target.value; } })))),
 
+    problem,
+
     h('div', { class: 'row end', style: 'margin-top:1rem' },
       book.recommendedBy ? h('span', { class: 'count rec-origin',
         text: `Recommended by ${state.profiles.find((p) => p.id === book.recommendedBy)?.name ?? book.recommendedBy}` }) : null,
@@ -599,7 +795,11 @@ ctx.actions.openBook = (book, owner) => {
       h('button', { class: 'btn danger', type: 'button', disabled: !state.canWrite,
         onclick: () => removeBook(profile, book) }, 'Remove'),
       h('button', { class: 'btn', type: 'button', disabled: !state.canWrite,
-        onclick: () => applyEdit(profile, book, draft) }, 'Save')));
+        onclick: (e) => {
+          problem.textContent = datesProblem(draft) ?? '';
+          if (problem.textContent) return;
+          busy(e.currentTarget, () => applyEdit(profile, book, draft));
+        } }, 'Save')));
 
   dialog.showModal();
 };
@@ -711,6 +911,10 @@ function ratingPicker(draft) {
     slots.forEach((slot, i) => {
       slot.classList.toggle('full', r >= i + 1);
       slot.classList.toggle('half', r === i + 0.5);
+      // A screen reader hears which of the ten buttons is the current rating.
+      const [left, right] = slot.querySelectorAll('.star-half');
+      left.setAttribute('aria-pressed', String(r === i + 0.5));
+      right.setAttribute('aria-pressed', String(r === i + 1));
     });
     label.textContent = draft.rating ? `${fmtRating(draft.rating)} / 5` : 'Not rated';
   };
@@ -770,12 +974,23 @@ function datesMessage(before, after) {
 
 async function removeBook(profile, book) {
   if (!confirm(`Remove “${book.title}” from ${profile.name}'s shelf?`)) return;
-  const ok = await saveLibrary(profile.id,
-    (lib) => ({ ...lib, books: lib.books.filter((b) => b.id !== book.id) }),
-    `Remove ${book.title}`);
+  // Keep the record exactly as it was on disk, rating, note and dates
+  // included, so Undo really puts it back rather than re-adding a blank copy.
+  let removed = null;
+  const ok = await saveLibrary(profile.id, (lib) => {
+    removed = lib.books.find((b) => b.id === book.id) ?? null;
+    return { ...lib, books: lib.books.filter((b) => b.id !== book.id) };
+  }, `Remove ${book.title}`);
   if (ok) {
     document.getElementById('book-dialog').close();
-    toast(`Removed ${book.title}`);
+    toast(`Removed ${book.title}`, false, removed ? {
+      label: 'Undo',
+      run: async () => {
+        if (await saveLibrary(profile.id, (lib) => restoreBook(lib, removed), `Put back ${book.title}`)) {
+          toast(`${book.title} is back on ${profile.name}'s shelf`);
+        }
+      },
+    } : null);
   }
 }
 
@@ -961,7 +1176,7 @@ ctx.actions.checkNow = async (button) => {
       console.warn('Series that could not be checked:', result.failures);
     }
   } catch (err) {
-    toast(err.message, true);
+    toast(friendlyError(err, { saving: false }), true);
     button.disabled = false;
     button.textContent = original;
   }
@@ -977,7 +1192,7 @@ ctx.actions.markSeen = async (profile) => {
     state.profiles = next.profiles;
     render();
   } catch (err) {
-    toast(err.message, true);
+    toast(friendlyError(err), true);
   }
 };
 
@@ -997,19 +1212,24 @@ function openSettings() {
       'read-only': 'This site is not connected to its backend yet, so nothing can be saved.',
     }[storage.writeMode()] }),
 
-    h('label', { class: 'field' }, h('span', { text: 'Hardcover API token (for searching)' }),
-      h('input', { type: 'text', value: cfg.hardcover, placeholder: 'hc_pat_…', autocomplete: 'off',
-        oninput: (e) => { draft.hardcover = e.target.value.trim(); } })),
+    // With the backend connected there is genuinely nothing to set, and a
+    // form of token fields made it look as if there was. They stay reachable
+    // for running the site without the Worker.
+    h('details', { class: 'optional', ...(['token', 'read-only'].includes(storage.writeMode()) ? { open: true } : {}) },
+      h('summary', { text: 'Advanced: use your own tokens' }),
+      h('label', { class: 'field' }, h('span', { text: 'Hardcover API token (for searching)' }),
+        h('input', { type: 'text', value: cfg.hardcover, placeholder: 'hc_pat_…', autocomplete: 'off',
+          oninput: (e) => { draft.hardcover = e.target.value.trim(); } })),
 
-    !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub repo' }),
-      h('input', { type: 'text', value: cfg.repo, placeholder: 'user/bookshelf', autocomplete: 'off',
-        oninput: (e) => { draft.repo = e.target.value.trim(); } })),
+      !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub repo' }),
+        h('input', { type: 'text', value: cfg.repo, placeholder: 'user/bookshelf', autocomplete: 'off',
+          oninput: (e) => { draft.repo = e.target.value.trim(); } })),
 
-    !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub token (Contents: read and write)' }),
-      h('input', { type: 'text', value: cfg.token, placeholder: 'github_pat_…', autocomplete: 'off',
-        oninput: (e) => { draft.token = e.target.value.trim(); } })),
+      !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub token (Contents: read and write)' }),
+        h('input', { type: 'text', value: cfg.token, placeholder: 'github_pat_…', autocomplete: 'off',
+          oninput: (e) => { draft.token = e.target.value.trim(); } })),
 
-    h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' }),
+      h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' })),
 
     h('div', { class: 'row end' },
       h('button', { class: 'btn', type: 'button', onclick: () => {

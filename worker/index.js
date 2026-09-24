@@ -73,10 +73,15 @@ const gh = (env, path, options = {}) =>
 
 /* ----------------------------------------------------------- the watcher */
 
-/** Read a data file, or a fallback when it does not exist yet. */
+/**
+ * Read a data file, or a fallback when it does not exist yet. Any other
+ * failure stops the check: carrying on with an empty snapshot would make
+ * every series look brand new (and so silently drop a moved date).
+ */
 async function readData(env, path, fallback) {
   const res = await gh(env, path);
-  if (!res.ok) return fallback;
+  if (res.status === 404) return fallback;
+  if (!res.ok) throw new Error(`could not read ${path} (github ${res.status})`);
   try {
     return JSON.parse(decodeBase64((await res.json()).content));
   } catch {
@@ -84,19 +89,56 @@ async function readData(env, path, fallback) {
   }
 }
 
-/** Write a data file, fetching its sha first so we update rather than clobber. */
+/**
+ * Write a whole data file, fetching its sha first so we update rather than
+ * clobber. A conflict (the nightly job committing at the same moment) is
+ * retried once; these files are rebuilt in full by the check, so the fresh
+ * result is the right one to keep.
+ */
 async function writeData(env, path, text, message) {
-  const current = await gh(env, path);
-  const sha = current.ok ? (await current.json()).sha : undefined;
-  const res = await gh(env, path, {
-    method: 'PUT',
-    body: JSON.stringify({
-      message,
-      content: encodeBase64(text),
-      ...(sha ? { sha } : {}),
-    }),
-  });
-  return res.ok;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const current = await gh(env, path);
+    const sha = current.ok ? (await current.json()).sha : undefined;
+    const res = await gh(env, path, {
+      method: 'PUT',
+      body: JSON.stringify({ message, content: encodeBase64(text), ...(sha ? { sha } : {}) }),
+    });
+    if (res.ok) return true;
+    if (res.status !== 409 && res.status !== 422) return false;
+  }
+  return false;
+}
+
+/**
+ * The event log as text, plus its sha.
+ *
+ * Refuses rather than guessing. Treating an unreadable log as empty meant
+ * every event looked unseen - so a GitHub hiccup re-announced everything -
+ * and the append then replaced the whole history with just today's lines.
+ * The Contents API also stops returning content for files over 1 MB.
+ */
+async function readEvents(env) {
+  const res = await gh(env, 'events.jsonl');
+  if (res.status === 404) return { text: '', sha: undefined };
+  if (!res.ok) throw new Error(`could not read events.jsonl (github ${res.status})`);
+  const body = await res.json();
+  if (!body.content && body.size) throw new Error('events.jsonl is too large for the GitHub contents API');
+  return { text: decodeBase64(body.content ?? ''), sha: body.sha };
+}
+
+/** Append lines to the event log, re-reading and retrying on a conflict. */
+async function appendEvents(env, lines, message) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { text, sha } = await readEvents(env);
+    const next = `${text}${text && !text.endsWith('\n') ? '\n' : ''}${lines}\n`;
+    const res = await gh(env, 'events.jsonl', {
+      method: 'PUT',
+      body: JSON.stringify({ message, content: encodeBase64(next), ...(sha ? { sha } : {}) }),
+    });
+    if (res.ok) return;
+    if (res.status !== 409 && res.status !== 422) throw new Error(`could not save events (github ${res.status})`);
+  }
+  throw new Error('events.jsonl kept changing; try again');
 }
 
 const asJson = (value) => `${JSON.stringify(value, null, 2)}\n`;
@@ -121,8 +163,7 @@ async function runCheck(env) {
   const authorState = await readData(env, 'authors.json', {});
   const bookState = await readData(env, 'books-state.json', {});
 
-  const eventsRes = await gh(env, 'events.jsonl');
-  const eventsText = eventsRes.ok ? decodeBase64((await eventsRes.json()).content) : '';
+  const { text: eventsText } = await readEvents(env);
   const seen = new Set();
   for (const line of eventsText.split('\n')) {
     if (!line.trim()) continue;
@@ -133,14 +174,20 @@ async function runCheck(env) {
   const fresh = result.events;
 
   const stamped = new Date().toISOString();
-  await writeData(env, 'series-state.json', asJson(seriesState), `Release check ${now}`);
-  await writeData(env, 'authors.json', asJson(authorState), `Release check ${now}`);
-  if (result.checkedTracked || Object.keys(bookState).length) {
-    await writeData(env, 'books-state.json', asJson(bookState), `Release check ${now}`);
-  }
+  // Events first. If the new snapshots were saved and the events were not,
+  // the next check would compare against the new snapshots and the news
+  // would be lost for good; this way round, a failure part-way through just
+  // means the next check finds the same changes again, and the log's keys
+  // stop them being announced twice.
   if (fresh.length) {
     const lines = fresh.map((e) => JSON.stringify({ ...e, at: stamped })).join('\n');
-    await writeData(env, 'events.jsonl', `${eventsText}${eventsText && !eventsText.endsWith('\n') ? '\n' : ''}${lines}\n`, `Release events ${now}`);
+    await appendEvents(env, lines, `Release events ${now}`);
+  }
+  const unsaved = [];
+  if (!await writeData(env, 'series-state.json', asJson(seriesState), `Release check ${now}`)) unsaved.push('series-state.json');
+  if (!await writeData(env, 'authors.json', asJson(authorState), `Release check ${now}`)) unsaved.push('authors.json');
+  if (result.checkedTracked || Object.keys(bookState).length) {
+    if (!await writeData(env, 'books-state.json', asJson(bookState), `Release check ${now}`)) unsaved.push('books-state.json');
   }
 
   return {
@@ -151,7 +198,8 @@ async function runCheck(env) {
     newSeries: result.newSeries,
     upcoming: result.upcoming,
     events: fresh.length,
-    failures: result.failures,
+    // Said out loud rather than reporting success over a half-saved check.
+    failures: [...result.failures, ...unsaved.map((f) => `could not save ${f}`)],
   };
 }
 
@@ -236,8 +284,16 @@ export default {
         return json({ error: 'content is not valid JSON' }, 400);
       }
 
-      const current = await gh(env, payload.path);
-      const sha = current.ok ? (await current.json()).sha : undefined;
+      // Optimistic concurrency. The page sends the sha of the copy it edited;
+      // committing against that sha makes GitHub refuse (409) if someone else
+      // saved in between, and the page re-reads and replays its change.
+      // Fetching the latest sha here instead - still the fallback for pages
+      // that do not send one - quietly overwrote the other person's save.
+      let sha = typeof payload.sha === 'string' && /^[0-9a-f]{40}$/.test(payload.sha) ? payload.sha : undefined;
+      if (!sha) {
+        const current = await gh(env, payload.path);
+        sha = current.ok ? (await current.json()).sha : undefined;
+      }
 
       const put = await gh(env, payload.path, {
         method: 'PUT',

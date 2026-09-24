@@ -609,3 +609,42 @@ export function coarsen(readOn, precision) {
   const length = precision === 'year' ? 4 : precision === 'month' ? 7 : 10;
   return String(readOn).slice(0, length);
 }
+
+/**
+ * What is wrong with a pair of exact reading dates, or null if nothing is.
+ * Both are optional; together they must be in order, and neither can be in
+ * the future - a finish date next month is always a slip of the picker.
+ */
+export function datesProblem({ started, finished }, now = today()) {
+  if (started && started > now) return 'The start date is in the future.';
+  if (finished && finished > now) return 'The finish date is in the future.';
+  if (started && finished && finished < started) return 'The finish date is before the start date.';
+  return null;
+}
+
+/* ------------------------------------------------------------- undoing */
+
+/**
+ * Take back a "No thanks". Only a pass can be reopened: an accepted
+ * recommendation already put a book on the shelf, and that is undone by
+ * removing the book.
+ */
+export function reopenRecommendation(library, recId) {
+  const rec = (library.recommendations ?? []).find((r) => r.id === recId);
+  if (!rec) throw new Error('That recommendation is no longer there.');
+  if (rec.status === 'dismissed') {
+    rec.status = 'new';
+    delete rec.answeredAt;
+  }
+  return library;
+}
+
+/**
+ * Put back a book that was just removed, exactly as it was. If it has been
+ * re-added in the meantime the shelf copy wins - restoring over it would
+ * throw away whatever happened since.
+ */
+export function restoreBook(library, book) {
+  if (!library.books.some((b) => b.id === book.id)) library.books.push(structuredClone(book));
+  return library;
+}
