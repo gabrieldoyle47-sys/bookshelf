@@ -36,7 +36,7 @@ export function goalSection(ctx, profile) {
   };
 
   if (!g.target) {
-    section.append(
+    fill(section,
       h('div', { class: 'section-head' }, h('h2', { text: `${year} reading goal` }),
         h('span', { class: 'count', text: 'optional' })),
       h('p', { class: 'hint', text: `${plural(g.done, 'book')} finished in ${year} so far. Set a target and this tracks whether you are ahead or behind.` }),
@@ -77,7 +77,7 @@ export function yearSection(ctx, profile) {
 
   if (!years.length) {
     const undated = (library.books ?? []).filter((b) => b.status === 'read').length;
-    section.append(h('h2', { text: 'Year in books' }),
+    fill(section, h('h2', { text: 'Year in books' }),
       h('p', { class: 'empty', text: 'Once finished books have a read date, each year gets a recap here. A year on its own is enough.' }),
       undated && ctx.state.canWrite ? h('button', { class: 'btn secondary', type: 'button',
         onclick: () => ctx.actions.openDates(profile) }, `Add read dates for ${plural(undated, 'book')}`) : null);
