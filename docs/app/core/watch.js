@@ -266,6 +266,78 @@ export function nextInSeries(seriesState, library, now = today()) {
 }
 
 /**
+ * How far through each series you are: one slot per main book, in order.
+ *
+ * A slot is yours if a book on your shelf is that book - by id, or by its
+ * position in the series, since the edition on your shelf is often not the
+ * one Hardcover lists in the series. Extras (a 2.5 novella) are left out: a
+ * progress bar that counts novellas says "5 of 9" to someone who has read the
+ * whole main series.
+ *
+ * Only series you have read or are reading in, and that the watcher has
+ * data for.
+ */
+const SLOT_RANK = { read: 4, reading: 3, tbr: 2, abandoned: 1 };
+
+export function seriesProgress(seriesState, library, now = today()) {
+  const books = library.books ?? [];
+  const hidden = hiddenIds(library);
+  const engaged = new Set(books
+    .filter((b) => b.series?.id && (b.status === 'read' || b.status === 'reading'))
+    .map((b) => b.series.id));
+
+  const out = [];
+  for (const id of engaged) {
+    const s = seriesState[id];
+    if (!s) continue;
+    const mine = books.filter((b) => b.series?.id === id);
+    const byPosition = new Map();
+    for (const [bookId, b] of Object.entries(s.books ?? {})) {
+      if (!Number.isInteger(b.position) || b.position <= 0) continue;
+      if (!byPosition.has(b.position)) byPosition.set(b.position, { ...b, bookId });
+    }
+    // Something on your shelf the watcher does not list still counts.
+    for (const b of mine) {
+      const pos = b.series?.position;
+      if (Number.isInteger(pos) && pos > 0 && !byPosition.has(pos)) {
+        byPosition.set(pos, { position: pos, title: b.title, bookId: b.hardcoverId, releaseDate: b.released ?? null, image: b.cover ?? null });
+      }
+    }
+
+    const slots = [...byPosition.values()].sort((a, b) => a.position - b.position).map((slot) => {
+      const shelf = mine
+        .filter((b) => b.hardcoverId === slot.bookId || b.series?.position === slot.position)
+        .sort((a, b) => (SLOT_RANK[b.status] ?? 0) - (SLOT_RANK[a.status] ?? 0))[0] ?? null;
+      const released = Boolean(slot.releaseDate && slot.releaseDate <= now);
+      const state = shelf ? shelf.status
+        : released ? (hidden.has(slot.bookId) ? 'skipped' : 'missing')
+        : 'upcoming';
+      return { ...slot, state, book: shelf, released: Boolean(shelf) || released };
+    });
+
+    const furthest = Math.max(0, ...slots.filter((x) => x.state === 'read' || x.state === 'reading').map((x) => x.position));
+    const releasedSlots = slots.filter((x) => x.released);
+    const read = releasedSlots.filter((x) => x.state === 'read').length;
+    out.push({
+      id,
+      name: s.name,
+      slots,
+      read,
+      released: releasedSlots.length,
+      reading: slots.find((x) => x.state === 'reading') ?? null,
+      // A released book before where you have got to that you never read.
+      gaps: slots.filter((x) => x.state === 'missing' && x.position < furthest),
+      nextDue: slots.find((x) => x.state === 'upcoming' && x.releaseDate) ?? null,
+      complete: releasedSlots.length > 0 && read === releasedSlots.length,
+    });
+  }
+
+  // Series in progress first, then finished-for-now ones; alphabetical within.
+  return out.sort((a, b) => Number(a.complete) - Number(b.complete)
+    || Number(!a.reading) - Number(!b.reading) || a.name.localeCompare(b.name));
+}
+
+/**
  * Forthcoming books by authors you read, that are not already covered by a
  * series you watch, a book you track, or your shelf.
  */

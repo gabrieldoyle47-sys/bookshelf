@@ -56,6 +56,14 @@ You can override any of it with `books watch` / `books unwatch`.
   steady pace would have you today, and a recap of each year: covers, longest,
   shortest, favourites, most-read author and series, and busiest month.
 - **Half stars.** Click the left half of a star for .5.
+- **Series progress** on Stats: a bar per series, one segment per main book —
+  read, reading, on your pile, out but not on your shelf, or not out yet — with
+  skipped books called out and the next release date.
+- **Release days in your calendar.** *Add release to calendar* on any upcoming
+  book opens a calendar invite (an all-day event with a 9am reminder); on an
+  iPhone or Mac it goes straight into Apple Calendar.
+- **Indigo links.** *Buy* or *Pre-order at Indigo* on upcoming books, next-in-series
+  suggestions and recommendations.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation
   each offer *Undo* for a few seconds. For anything older, every change is a
   commit, so `git revert` still works.

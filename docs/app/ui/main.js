@@ -62,7 +62,13 @@ async function boot() {
     return;
   }
 
-  window.addEventListener('hashchange', () => { readRoute(); render(); });
+  window.addEventListener('hashchange', () => {
+    // Going to another page (a link, or the browser's back button) should not
+    // leave the last page's panel open on top of the new one.
+    for (const d of document.querySelectorAll('dialog[open]')) d.close();
+    readRoute();
+    render();
+  });
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
