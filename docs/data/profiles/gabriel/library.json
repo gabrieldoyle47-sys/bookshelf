@@ -22,7 +22,7 @@
       "cover": "https://assets.hardcover.app/editions/30395755/5517573796567974.jpg",
       "slug": "wind-and-truth",
       "status": "read",
-      "rating": 5,
+      "rating": 4.5,
       "note": "",
       "added": "2026-09-21",
       "started": "2026-09-13",
@@ -41,7 +41,8 @@
         "tense",
         "inspiring",
         "hopeful"
-      ]
+      ],
+      "readOn": "2026-09-25"
     },
     {
       "id": "hc:427473",
