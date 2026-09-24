@@ -19,6 +19,7 @@
 // request can't scribble over the site's own code and break it for everyone.
 import { createClient, booksByIds } from '../docs/app/core/hardcover.js';
 import { today } from '../docs/app/core/model.js';
+import { releaseInvite } from '../docs/app/core/calendar.js';
 import { runReleaseCheck } from '../docs/app/core/check.js';
 
 const WRITABLE = /^(profiles\.json|profiles\/[a-z0-9_-]{1,40}\/library\.json)$/i;
@@ -240,6 +241,37 @@ export default {
         return json({ books: await booksByIds(createClient(env.HARDCOVER_TOKEN), ids) });
       } catch (err) {
         return json({ error: err.message }, 502);
+      }
+    }
+
+    /* ---- a release day as a calendar invite ---- */
+    // Opened as a plain link, so an iPhone shows "Add to Calendar" and a Mac
+    // opens Calendar. Everything comes from the query string; nothing is
+    // stored and no token is used, so there is nothing here to protect.
+    if (request.method === 'GET' && url.pathname === '/ics') {
+      const q = (k, max) => (url.searchParams.get(k) ?? '').slice(0, max);
+      const link = q('link', 300);
+      try {
+        const body = releaseInvite({
+          id: q('id', 20),
+          title: q('title', 200),
+          date: q('date', 10),
+          by: q('by', 200),
+          series: q('series', 200),
+          // Only ever a link to Hardcover or Indigo, never anything passed in.
+          link: /^https:\/\/(hardcover\.app|www\.indigo\.ca)\//.test(link) ? link : '',
+        });
+        const file = (q('title', 60).replace(/[^\w -]/g, '').trim() || 'release').replace(/\s+/g, '-');
+        return new Response(body, {
+          headers: {
+            'Content-Type': 'text/calendar; charset=utf-8',
+            'Content-Disposition': `inline; filename="${file}.ics"`,
+            'Cache-Control': 'no-store',
+            ...CORS,
+          },
+        });
+      } catch (err) {
+        return json({ error: err.message }, 400);
       }
     }
 

@@ -12,9 +12,10 @@
  */
 
 import {
-  h, clear, fill, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, toast, isPlaceholderDate,
+  h, clear, fill, indigoLink, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, toast, isPlaceholderDate,
 } from './dom.js';
 import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js';
+import { getConfig } from './storage.js';
 import { upcomingFrom, authorUpcoming, trackedUpcoming } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 
@@ -212,6 +213,32 @@ const subline = (item) => [
 const people = (who) => h('div', { class: 'row who' }, who.map((p) =>
   h('span', { class: 'pill person', style: `--who:${p.colour}`, text: p.name })));
 
+/**
+ * A link that adds the release day to a calendar.
+ *
+ * It points at the Worker, which answers with a real text/calendar file:
+ * that is what makes an iPhone offer "Add to Calendar" and a Mac open
+ * Calendar. Only for a real date - an event on 1 January for a book due
+ * "sometime in 2032" would be wrong - and only for books not yet out.
+ */
+export function calendarHref(item) {
+  const { worker } = getConfig();
+  if (!worker || !item.releaseDate || isPlaceholderDate(item.releaseDate)) return null;
+  if (item.releaseDate < today()) return null;
+  const params = new URLSearchParams({
+    id: item.bookId, title: item.title, date: item.releaseDate,
+    by: item.authorName ?? '',
+    series: item.seriesName ? `${item.seriesName}${item.position != null ? ` #${item.position}` : ''}` : '',
+  });
+  return `${worker}/ics?${params}`;
+}
+
+function calendarLink(item, className) {
+  const href = calendarHref(item);
+  return href ? h('a', { class: className, href, title: `Add the release of ${item.title} to your calendar` },
+    h('span', { class: 'ico ico-calendar', 'aria-hidden': 'true' }), 'Add release to calendar') : null;
+}
+
 /** One release. The hide button is its own control, not nested in the card's. */
 function releaseCard(item, ctx, profile) {
   const when = fmtRelease(item.releaseDate);
@@ -240,7 +267,10 @@ function releaseCard(item, ctx, profile) {
       onclick: () => (item.source === 'tracked'
         ? ctx.actions.untrack(profile, item.bookId, item.title)
         : ctx.actions.hide(profile, item.bookId, item.title)),
-    }, '✕') : null);
+    }, '✕') : null,
+    h('div', { class: 'rcard-foot' },
+      calendarLink(item, 'rcard-link'),
+      indigoLink(item, { released: item.daysUntil != null && item.daysUntil <= 0, className: 'rcard-link' })));
 }
 
 /* --------------------------------------------------------- track search */
@@ -390,8 +420,14 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
             } }, 'Add to want to read'));
   }
 
+  const released = Boolean(item.releaseDate && item.releaseDate <= today());
+  const links = h('div', { class: 'row release-links' },
+    calendarLink(item, 'btn secondary small'),
+    indigoLink(item, { released, className: 'btn secondary small' }));
+
   fill(body,
     h('div', { class: 'release-top' }, coverSlot, metaSlot),
+    links,
     preview ? null : history(ctx, item, profile),
     extra,
     actions);

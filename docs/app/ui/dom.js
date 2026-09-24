@@ -62,6 +62,24 @@ export function starsEl(n, { empty = '' } = {}) {
     h('span', { class: 'stars-fill', 'aria-hidden': 'true', style: `width:${(n / 5) * 100}%`, text: '★★★★★' }));
 }
 
+/**
+ * A search on Indigo for this book. A search rather than a product page,
+ * because Hardcover does not carry ISBNs for unreleased books and Indigo's
+ * product URLs are not predictable from a title.
+ */
+export function indigoUrl(book) {
+  const author = (book.authorName ?? authorNames(book)).split(',')[0];
+  return `https://www.indigo.ca/search?q=${encodeURIComponent([book.title, author].filter(Boolean).join(' '))}`;
+}
+
+/** An Indigo link that says whether it is a purchase or a pre-order. */
+export function indigoLink(book, { released = true, className = 'shop-link' } = {}) {
+  return h('a', {
+    class: className, href: indigoUrl(book), target: '_blank', rel: 'noopener',
+    title: `${released ? 'Buy' : 'Pre-order'} ${book.title} at Indigo`,
+  }, released ? 'Buy at Indigo ↗' : 'Pre-order at Indigo ↗');
+}
+
 /** A Jan-1 date in Hardcover usually means "we know the year, not the day". */
 export const isPlaceholderDate = (d) => typeof d === 'string' && d.endsWith('-01-01');
 

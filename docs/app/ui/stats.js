@@ -15,6 +15,7 @@ import { h, fmtRating } from './dom.js';
 import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
 import { frag, pageHead, emptyState, plural } from './views.js';
 import { goalSection, yearSection } from './recap.js';
+import { seriesSection } from './progress.js';
 
 const MIN_POINTS = 3; // below this a chart misleads more than it informs
 
@@ -48,6 +49,7 @@ export function statsView(ctx, profile) {
 
     goalSection(ctx, profile),
     yearSection(ctx, profile),
+    seriesSection(ctx, profile),
     ratingSection(rated),
     tasteSection(books),
     paceSection(read, dated, ctx, profile),

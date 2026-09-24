@@ -6,7 +6,7 @@
  * the future. Right, books the other person sent you, with their note.
  */
 
-import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl } from './dom.js';
+import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl, indigoLink } from './dom.js';
 import { onShelfIds, today } from '../core/model.js';
 import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
@@ -86,19 +86,29 @@ function seriesRow(ctx, profile, b, isNext, queued = null) {
         // With an earlier book already waiting on the pile, this one is not
         // what to read next - it is what to get once that one is done.
         isNext ? h('span', { class: 'pill soon', text: queued ? `after ${queued.title}` : 'read next' }) : null)),
-    ctx.state.canWrite ? h('div', { class: 'rec-actions' },
-      h('button', {
+    h('div', { class: 'rec-actions' },
+      indigoLink({ title: b.title, authorName: b.authorName ?? seriesAuthorOf(ctx, b.seriesId) }, { className: 'shop-link compact' }),
+      ctx.state.canWrite ? h('button', {
         class: 'btn small', type: 'button',
         onclick: async (e) => {
           e.currentTarget.disabled = true;
           if (!(await ctx.actions.addById(profile, b.bookId, b.title))) e.currentTarget.disabled = false;
         },
-      }, '+ Want to read'),
-      h('button', {
+      }, '+ Want to read') : null,
+      ctx.state.canWrite ? h('button', {
         class: 'icon-btn', type: 'button', title: 'Not interested',
         'aria-label': `Not interested in ${b.title}`,
         onclick: () => ctx.actions.hide(profile, b.bookId, b.title),
-      }, '✕')) : null);
+      }, '✕') : null));
+}
+
+/** The author of a series, from whichever shelf has a book in it - for the Indigo search. */
+function seriesAuthorOf(ctx, seriesId) {
+  for (const lib of Object.values(ctx.state.libraries)) {
+    const book = (lib.books ?? []).find((x) => x.series?.id === seriesId);
+    if (book) return authorNames(book);
+  }
+  return '';
 }
 
 /* ------------------------------------------------------ sent to you */
@@ -179,13 +189,14 @@ function recCard(ctx, profile, r, fromName) {
         h('div', { class: 'book-meta', text: [authorNames(book), book.series?.name ? `${book.series.name}${book.series.position != null ? ` #${book.series.position}` : ''}` : null].filter(Boolean).join(' · ') }),
         h('div', { class: 'rec-from', text: `From ${fromName} · ${fmtAgo(r.at)}` }),
         r.note ? h('blockquote', { class: 'rec-note', text: r.note }) : null)),
-    ctx.state.canWrite ? h('div', { class: 'row end' },
+    h('div', { class: 'row end' },
+      indigoLink(book, { className: 'shop-link' }),
       // Added some other way since it was sent: a disabled button with no
       // reason was a puzzle, so say it and let "Got it" file it away.
-      have ? h('span', { class: 'count', text: 'Already on your shelf' }) : null,
-      h('button', { class: 'btn secondary small', type: 'button',
+      ctx.state.canWrite && have ? h('span', { class: 'count', text: 'Already on your shelf' }) : null,
+      ctx.state.canWrite ? h('button', { class: 'btn secondary small', type: 'button',
         onclick: (e) => { e.currentTarget.disabled = true; ctx.actions.answerRec(profile, r, have ? 'added' : 'dismissed'); } },
-        have ? 'Got it' : 'No thanks'),
-      have ? null : h('button', { class: 'btn small', type: 'button',
-        onclick: (e) => { e.currentTarget.disabled = true; ctx.actions.answerRec(profile, r, 'added'); } }, '+ Want to read')) : null);
+        have ? 'Got it' : 'No thanks') : null,
+      ctx.state.canWrite && !have ? h('button', { class: 'btn small', type: 'button',
+        onclick: (e) => { e.currentTarget.disabled = true; ctx.actions.answerRec(profile, r, 'added'); } }, '+ Want to read') : null));
 }
