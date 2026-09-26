@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-09-25",
+    "checkedAt": "2026-09-26",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -221,12 +221,16 @@
         "releaseDate": "2024-12-17"
       },
       "2973988": {
-        "title": "A Court of Wings and Ruin (Part 3 of 3) (Dramatized Adaptation)",
-        "releaseDate": "2022-08-15"
+        "title": "A Court of Wings and Ruin (Part 1 of 3) [Dramatized Adaptation]",
+        "releaseDate": "2022-10-01"
       },
       "2973990": {
         "title": "A Court of Wings and Ruin (Part 2 of 3) (Dramatized Adaptation)",
         "releaseDate": "2022-09-15"
+      },
+      "3001456": {
+        "title": "A Court of Mist and Fury, Part 2 of 2",
+        "releaseDate": "2022-07-01"
       }
     },
     "forthcoming": [
@@ -261,7 +265,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-09-25",
+    "checkedAt": "2026-09-26",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -697,7 +701,7 @@
         "releaseDate": "2027-12-31",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 40,
+        "usersCount": 41,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -813,7 +817,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-09-25",
+    "checkedAt": "2026-09-26",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -957,7 +961,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-09-25",
+    "checkedAt": "2026-09-26",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1003,7 +1007,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 270,
+        "usersCount": 271,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1015,7 +1019,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-09-25",
+    "checkedAt": "2026-09-26",
     "books": {
       "355758": {
         "title": "Australia",
