@@ -2,7 +2,7 @@
   "997": {
     "id": "997",
     "name": "The Stormlight Archive",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "374131": {
         "position": 2,
@@ -121,7 +121,7 @@
   "1033": {
     "id": "1033",
     "name": "Red Rising Saga",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "378044": {
         "position": 2,
@@ -177,7 +177,7 @@
   "1275": {
     "id": "1275",
     "name": "A Court of Thorns and Roses",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "428290": {
         "position": 1,
@@ -254,7 +254,7 @@
   "2211": {
     "id": "2211",
     "name": "Crescent City",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "429093": {
         "position": 2,
@@ -282,7 +282,7 @@
   "5509": {
     "id": "5509",
     "name": "Throne of Glass",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "39629": {
         "position": 1,
@@ -326,12 +326,54 @@
         "releaseYear": 2018,
         "image": "https://assets.hardcover.app/external_data/61236994/977131bd833b4a4de2424de518adbbb74dec2570.jpeg"
       },
+      "525818": {
+        "position": 2.9,
+        "title": "The Assassin and the Empire",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/external_data/44132828/f2947c1a56daae2fa7dc6f94bf49ca83c4af9fbe.jpeg"
+      },
+      "531375": {
+        "position": 2.8,
+        "title": "The Assassin and the Underworld",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/external_data/59724766/f7b48d0d315358b7a741d51916030025765296fb.jpeg"
+      },
+      "531376": {
+        "position": 2.7,
+        "title": "The Assassin and the Desert",
+        "releaseDate": "2012-01-01",
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/external_data/59724765/3466bdc4b404d0525c394ad6f6bc9d8b26ebd521.jpeg"
+      },
+      "531377": {
+        "position": 2.6,
+        "title": "The Assassin and the Healer",
+        "releaseDate": "2012-03-30",
+        "releaseYear": 2012,
+        "image": "https://assets.hardcover.app/external_data/59557396/ddae3b5bb5a473e68aedb2620a5d165623672759.jpeg"
+      },
       "531378": {
-        "position": null,
+        "position": 2.5,
         "title": "The Assassin and the Pirate Lord",
         "releaseDate": "2012-01-13",
         "releaseYear": 2012,
         "image": "https://assets.hardcover.app/external_data/4287953/13defbf372c84c872a7042718693eddd000b2637.jpeg"
+      },
+      "544239": {
+        "position": null,
+        "title": "The Throne of Glass Coloring Book",
+        "releaseDate": "2016-01-01",
+        "releaseYear": 2016,
+        "image": "https://assets.hardcover.app/external_data/34336963/690e0a76c73f4c9154c6cf8ba77a0003f879dabd.jpeg"
+      },
+      "893847": {
+        "position": 1.1,
+        "title": "The Captain and the Prince",
+        "releaseDate": "2013-05-08",
+        "releaseYear": 2013,
+        "image": null
       },
       "1363844": {
         "position": 3,
@@ -345,7 +387,7 @@
   "5982": {
     "id": "5982",
     "name": "The Licanius Trilogy",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "441081": {
         "position": 2,
@@ -373,7 +415,7 @@
   "10001": {
     "id": "10001",
     "name": "The Mistborn Saga: The Original Trilogy",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "103241": {
         "position": 3,
@@ -415,7 +457,7 @@
   "35077": {
     "id": "35077",
     "name": "Hierarchy",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "594985": {
         "position": 1,
@@ -443,7 +485,7 @@
   "41764": {
     "id": "41764",
     "name": "The Empyrean",
-    "checkedAt": "2026-09-26",
+    "checkedAt": "2026-09-27",
     "books": {
       "714600": {
         "position": 1,
