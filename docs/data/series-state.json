@@ -2,7 +2,7 @@
   "997": {
     "id": "997",
     "name": "The Stormlight Archive",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "374131": {
         "position": 2,
@@ -121,7 +121,7 @@
   "1033": {
     "id": "1033",
     "name": "Red Rising Saga",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "378044": {
         "position": 2,
@@ -177,7 +177,7 @@
   "1275": {
     "id": "1275",
     "name": "A Court of Thorns and Roses",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "428290": {
         "position": 1,
@@ -254,7 +254,7 @@
   "2211": {
     "id": "2211",
     "name": "Crescent City",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "429093": {
         "position": 2,
@@ -282,7 +282,7 @@
   "5509": {
     "id": "5509",
     "name": "Throne of Glass",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "39629": {
         "position": 1,
@@ -387,7 +387,7 @@
   "5982": {
     "id": "5982",
     "name": "The Licanius Trilogy",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "441081": {
         "position": 2,
@@ -415,7 +415,7 @@
   "10001": {
     "id": "10001",
     "name": "The Mistborn Saga: The Original Trilogy",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "103241": {
         "position": 3,
@@ -439,7 +439,7 @@
         "image": "https://assets.hardcover.app/external_data/4306769/4070292d7523bcd11cd5494948564d38044c1d2a.jpeg"
       },
       "427844": {
-        "position": 0.5,
+        "position": 1.5,
         "title": "The Eleventh Metal",
         "releaseDate": "2012-04-10",
         "releaseYear": 2012,
@@ -457,7 +457,7 @@
   "35077": {
     "id": "35077",
     "name": "Hierarchy",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "594985": {
         "position": 1,
@@ -485,7 +485,7 @@
   "41764": {
     "id": "41764",
     "name": "The Empyrean",
-    "checkedAt": "2026-09-27",
+    "checkedAt": "2026-09-28",
     "books": {
       "714600": {
         "position": 1,
