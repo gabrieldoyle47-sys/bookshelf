@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-09-28",
+    "checkedAt": "2026-09-29",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -248,7 +248,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 402,
+        "usersCount": 408,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -261,7 +261,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 235,
+        "usersCount": 238,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -273,7 +273,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-09-28",
+    "checkedAt": "2026-09-29",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -353,7 +353,7 @@
       },
       "427477": {
         "title": "Calamity",
-        "releaseDate": "2001-07-08"
+        "releaseDate": "2016-01-01"
       },
       "427522": {
         "title": "Rhythm of War",
@@ -696,7 +696,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": null,
-        "usersCount": 150,
+        "usersCount": 151,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -761,7 +761,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 227,
+        "usersCount": 230,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -774,7 +774,7 @@
         "releaseDate": "2032-01-01",
         "releaseYear": 2032,
         "image": null,
-        "usersCount": 183,
+        "usersCount": 184,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -787,7 +787,7 @@
         "releaseDate": "2033-01-01",
         "releaseYear": 2033,
         "image": null,
-        "usersCount": 84,
+        "usersCount": 86,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -800,7 +800,7 @@
         "releaseDate": "2034-01-01",
         "releaseYear": 2034,
         "image": null,
-        "usersCount": 173,
+        "usersCount": 175,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -813,7 +813,7 @@
         "releaseDate": "2035-01-01",
         "releaseYear": 2035,
         "image": null,
-        "usersCount": 174,
+        "usersCount": 176,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -825,7 +825,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-09-28",
+    "checkedAt": "2026-09-29",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -969,7 +969,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-09-28",
+    "checkedAt": "2026-09-29",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1027,7 +1027,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-09-28",
+    "checkedAt": "2026-09-29",
     "books": {
       "355758": {
         "title": "Australia",
@@ -1184,19 +1184,6 @@
     },
     "forthcoming": [
       {
-        "bookId": "2769384",
-        "title": "Threshing Day",
-        "releaseDate": "2026-09-29",
-        "releaseYear": 2026,
-        "image": "https://assets.hardcover.app/edition/33089282/bab991f2-9488-40a2-97e5-e01ef962fe90.jpg",
-        "usersCount": 167,
-        "series": {
-          "id": "41764",
-          "name": "The Empyrean",
-          "position": 3.5
-        }
-      },
-      {
         "bookId": "2578431",
         "title": "Peculiar Stars",
         "releaseDate": "2026-11-17",
@@ -1211,7 +1198,7 @@
         "releaseDate": "2026-11-17",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
-        "usersCount": 16,
+        "usersCount": 18,
         "series": null
       }
     ]
