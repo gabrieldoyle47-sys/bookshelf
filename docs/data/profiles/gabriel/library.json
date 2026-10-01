@@ -839,10 +839,10 @@
       "cover": "https://assets.hardcover.app/book_mappings/7332844/702879986b75f035349c34acad3d94f88bb737ed.jpeg",
       "slug": "morning-star",
       "status": "reading",
-      "rating": null,
+      "rating": 4.5,
       "note": "",
       "added": "2026-09-22",
-      "readOn": null,
+      "readOn": "2026-10-01",
       "started": "2026-09-28",
       "finished": null,
       "genres": [
