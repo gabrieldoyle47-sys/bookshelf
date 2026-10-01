@@ -904,6 +904,50 @@
       "readOn": null,
       "started": "2026-09-30",
       "finished": null
+    },
+    {
+      "id": "hc:427876",
+      "hardcoverId": "427876",
+      "title": "Dark Age",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 5,
+        "booksCount": 14
+      },
+      "pages": 800,
+      "released": "2019-01-01",
+      "releaseYear": 2019,
+      "cover": "https://assets.hardcover.app/editions/30399300/3644584410675518.jpg",
+      "slug": "dark-age",
+      "genres": [
+        "Science Fiction",
+        "Dystopian",
+        "Science Fiction & Fantasy",
+        "Fantasy",
+        "Adventure",
+        "Space"
+      ],
+      "moods": [
+        "tense",
+        "dark",
+        "Adventurous",
+        "emotional",
+        "sad"
+      ],
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-10-01",
+      "readOn": null,
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
