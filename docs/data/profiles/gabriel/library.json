@@ -860,6 +860,50 @@
         "emotional",
         "sad"
       ]
+    },
+    {
+      "id": "hc:427678",
+      "hardcoverId": "427678",
+      "title": "Iron Gold",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 4,
+        "booksCount": 14
+      },
+      "pages": 624,
+      "released": "2018-01-01",
+      "releaseYear": 2018,
+      "cover": "https://assets.hardcover.app/edition/17101586/fc907b5ac7e2ad5cbed835a3ba21ec56b342407e.jpeg",
+      "slug": "iron-gold",
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Young Adult",
+        "Science Fiction & Fantasy",
+        "Dystopia",
+        "Space"
+      ],
+      "moods": [
+        "dark",
+        "tense",
+        "Adventurous",
+        "emotional",
+        "challenging"
+      ],
+      "status": "reading",
+      "rating": null,
+      "note": "",
+      "added": "2026-10-01",
+      "readOn": null,
+      "started": "2026-10-01",
+      "finished": null
     }
   ],
   "watch": {
