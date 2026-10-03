@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-03",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -164,10 +164,6 @@
         "title": "A Court of Thorns and Roses (Dramatized Adaptation), Part 1 of 2",
         "releaseDate": "2022-01-01"
       },
-      "1715532": {
-        "title": "A Court of Frost and Starlight (Dramatized Adaptation)",
-        "releaseDate": "2023-03-01"
-      },
       "1743907": {
         "title": "A Court of Silver Flames (Dramatized Adaptation), Part 2 of 2",
         "releaseDate": "2023-10-10"
@@ -235,6 +231,10 @@
       "3010085": {
         "title": "Throne of Glass, Books 0.1-5",
         "releaseDate": "2017-11-01"
+      },
+      "3018015": {
+        "title": "A Court of Thorns and Roses Box Set",
+        "releaseDate": "2017-07-08"
       }
     },
     "forthcoming": [
@@ -244,7 +244,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 425,
+        "usersCount": 429,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -269,7 +269,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-03",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -821,7 +821,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-03",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -965,7 +965,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-03",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1011,7 +1011,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 283,
+        "usersCount": 284,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1023,7 +1023,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-02",
+    "checkedAt": "2026-10-03",
     "books": {
       "355758": {
         "title": "Australia",
