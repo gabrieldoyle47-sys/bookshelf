@@ -730,50 +730,6 @@
         "tense",
         "challenging"
       ]
-    },
-    {
-      "id": "hc:1197328",
-      "hardcoverId": "1197328",
-      "title": "Onyx Storm",
-      "authors": [
-        {
-          "id": "252677",
-          "name": "Rebecca Yarros"
-        }
-      ],
-      "series": {
-        "id": "41764",
-        "name": "The Empyrean",
-        "position": 3,
-        "booksCount": 11
-      },
-      "pages": 527,
-      "released": "2025-01-21",
-      "releaseYear": 2025,
-      "cover": "https://assets.hardcover.app/edition/31924195/ae56c549dc746e14273905b3a7ee11d0e1f199a1.jpeg",
-      "slug": "onyx-storm",
-      "genres": [
-        "Fantasy",
-        "Romantasy",
-        "Romance",
-        "dragons",
-        "Fantasy romance",
-        "Science Fiction & Fantasy"
-      ],
-      "moods": [
-        "Adventurous",
-        "emotional",
-        "tense",
-        "dark",
-        "mysterious"
-      ],
-      "status": "tbr",
-      "rating": null,
-      "note": "",
-      "added": "2026-10-03",
-      "readOn": null,
-      "started": null,
-      "finished": null
     }
   ],
   "watch": {
