@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-07",
+    "checkedAt": "2026-10-08",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -244,7 +244,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 447,
+        "usersCount": 452,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -257,7 +257,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 257,
+        "usersCount": 261,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -269,7 +269,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-07",
+    "checkedAt": "2026-10-08",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -545,7 +545,7 @@
       },
       "484948": {
         "title": "The Way of Kings Prime",
-        "releaseDate": "2020-01-01"
+        "releaseDate": "2020-07-07"
       },
       "484983": {
         "title": "Defending Elysium",
@@ -731,7 +731,7 @@
         "releaseDate": "2029-12-01",
         "releaseYear": 2029,
         "image": null,
-        "usersCount": 99,
+        "usersCount": 98,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -744,7 +744,7 @@
         "releaseDate": "2030-12-01",
         "releaseYear": 2030,
         "image": null,
-        "usersCount": 90,
+        "usersCount": 89,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -821,7 +821,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-07",
+    "checkedAt": "2026-10-08",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -958,6 +958,10 @@
       "2897077": {
         "title": "Red Rising: Sons of Ares Omnibus",
         "releaseDate": "2025-03-25"
+      },
+      "3036051": {
+        "title": "From a Certain Point of View",
+        "releaseDate": "2017-10-03"
       }
     },
     "forthcoming": []
@@ -965,7 +969,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-07",
+    "checkedAt": "2026-10-08",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1011,7 +1015,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 292,
+        "usersCount": 297,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1023,7 +1027,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-07",
+    "checkedAt": "2026-10-08",
     "books": {
       "355758": {
         "title": "Australia",
