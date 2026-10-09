@@ -62,6 +62,14 @@ You can override any of it with `books watch` / `books unwatch`.
 - **Release days in your calendar.** *Add release to calendar* on any upcoming
   book opens a calendar invite (an all-day event with a 9am reminder); on an
   iPhone or Mac it goes straight into Apple Calendar.
+- **People.** *+ Add a person* in the sidebar gives someone their own shelf.
+  Right-click a person (long-press on a phone) to remove them; it asks you to
+  type their name first. Removed people are kept, not deleted, and can be
+  restored from Settings.
+- **Both of us / Everyone.** The group page works for any number of people:
+  taste match for every pair, a shared activity feed, books read by more than
+  one of you with everyone's rating, debates, picks for whoever is viewing, a
+  genre map and a this-year leaderboard. With three or more, choose who to compare.
 - **Indigo links.** *Buy* or *Pre-order at Indigo* on upcoming books, next-in-series
   suggestions and recommendations.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation

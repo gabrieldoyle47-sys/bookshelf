@@ -7,6 +7,7 @@
  */
 
 import { readFile, writeFile, mkdir, appendFile } from 'node:fs/promises';
+import { activeProfiles } from '../docs/app/core/model.js';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -61,9 +62,9 @@ export async function saveLibrary(profileId, library) {
 
 /** Every profile's library, keyed by id — what the watcher unions over. */
 export async function loadAllLibraries() {
-  const { profiles } = await loadProfiles();
+  // A removed person's shelf is kept, but nobody is watching for them now.
   const out = {};
-  for (const p of profiles) out[p.id] = await loadLibrary(p.id);
+  for (const p of activeProfiles(await loadProfiles())) out[p.id] = await loadLibrary(p.id);
   return out;
 }
 

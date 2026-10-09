@@ -18,7 +18,7 @@
 // Confined to the data files: not as a defence, but so a bug or a stray
 // request can't scribble over the site's own code and break it for everyone.
 import { createClient, booksByIds } from '../docs/app/core/hardcover.js';
-import { today } from '../docs/app/core/model.js';
+import { today, activeProfiles } from '../docs/app/core/model.js';
 import { releaseInvite } from '../docs/app/core/calendar.js';
 import { runReleaseCheck } from '../docs/app/core/check.js';
 
@@ -154,7 +154,7 @@ async function runCheck(env) {
   const gql = createClient(env.HARDCOVER_TOKEN);
   const now = today();
 
-  const { profiles } = await readData(env, 'profiles.json', { profiles: [] });
+  const profiles = activeProfiles(await readData(env, 'profiles.json', { profiles: [] }));
   const libraries = {};
   for (const p of profiles) {
     libraries[p.id] = await readData(env, `profiles/${p.id}/library.json`, { books: [] });
