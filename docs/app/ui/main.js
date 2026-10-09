@@ -10,9 +10,11 @@ import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
+  activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
-import { shelfView, whatsNewView, sharedView } from './views.js';
+import { shelfView, whatsNewView } from './views.js';
+import { togetherView, groupLabel, avatar } from './together.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
@@ -46,7 +48,11 @@ async function boot() {
     // Every file is a round trip to GitHub through the Worker, so fetch them
     // side by side: the page used to wait for each shelf in turn, after the
     // release data, before drawing anything.
-    const loadProfiles = storage.loadJSON('profiles.json', { profiles: [] }).then(async ({ profiles }) => {
+    const loadProfiles = storage.loadJSON('profiles.json', { profiles: [] }).then(async (doc) => {
+      // Removed people are kept in the file (so they can be restored) but
+      // nothing else on the site sees them.
+      const profiles = activeProfiles(doc);
+      state.allProfiles = doc.profiles ?? [];
       const libs = await Promise.all(profiles.map((p) => storage.loadJSON(
         `profiles/${p.id}/library.json`, { books: [], watch: { series: {}, authors: {} } })));
       state.profiles = profiles;
@@ -205,10 +211,12 @@ function render() {
   const { view, profileId, tab } = state.route;
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
-  if (view === 'shared') return void main.append(sharedView(ctx));
+  if (view === 'shared') return void main.append(togetherView(ctx));
 
   const profile = state.profiles.find((p) => p.id === profileId) ?? state.profiles[0];
   ctx.currentProfile = profile;
+  // The group page shows picks for whoever was looking at their own shelf.
+  state.viewer = profile.id;
   const tabs = main.appendChild(profileTabs(profile, tab));
   // On a phone the tab strip scrolls sideways; keep the current tab in view.
   const selected = tabs.querySelector('[aria-selected="true"]');
@@ -250,14 +258,24 @@ function renderSidebar() {
   const people = h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'People' }));
   for (const p of state.profiles) {
     const n = unseenCount(p);
+    const menu = profileMenuHandlers(p);
     people.append(h('button', {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'profile' && p.id === profileId ? 'page' : null,
-      onclick: () => go(`#/p/${p.id}`),
+      'aria-haspopup': 'menu',
+      title: 'Right-click for options',
+      ...menu.handlers,
+      onclick: () => { if (!menu.consumed()) go(`#/p/${p.id}`); },
     },
       h('span', { class: 'dot avatar', 'aria-hidden': 'true', style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase() }),
       p.name,
       n ? h('span', { class: 'badge', text: String(n), 'aria-label': `${n} new` }) : null));
+  }
+  if (state.canWrite) {
+    people.append(h('button', {
+      class: 'nav-item nav-add', type: 'button',
+      onclick: () => ctx.actions.openNewProfile(),
+    }, h('span', { class: 'avatar-add', 'aria-hidden': 'true', text: '+' }), 'Add a person'));
   }
   nav.append(people);
 
@@ -272,7 +290,7 @@ function renderSidebar() {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'shared' ? 'page' : null,
       onclick: () => go('#/shared'),
-    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), 'Both of us')));
+    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), groupLabel(state.profiles))));
 
   paintSync();
 }
@@ -1195,14 +1213,289 @@ ctx.actions.markSeen = async (profile) => {
       if (p) p.lastSeen = new Date().toISOString();
       return data;
     }, `Mark ${profile.name}'s news as read`);
-    state.profiles = next.profiles;
+    setProfiles(next);
     render();
   } catch (err) {
     toast(friendlyError(err), true);
   }
 };
 
+/* --------------------------------------------------------------- profiles */
+
+/**
+ * The one write path for profiles.json, on the same queue as shelf saves so
+ * a new profile and its first book cannot race each other.
+ */
+async function saveProfiles(mutate, message) {
+  if (!state.canWrite) {
+    toast('Read-only — add a GitHub token in Settings to make changes.', true);
+    return null;
+  }
+  pending++;
+  paintSync();
+  const run = queue.then(async () => {
+    try {
+      const next = await storage.mutateJSON('profiles.json', { profiles: [] }, mutate, message);
+      setProfiles(next);
+      return next;
+    } catch (err) {
+      toast(friendlyError(err), true);
+      return null;
+    }
+  });
+  queue = run;
+  const result = await run;
+  pending--;
+  render();
+  return result;
+}
+
+/** Keep the full list (for restoring) and the visible one in step. */
+function setProfiles(doc) {
+  state.allProfiles = doc.profiles ?? [];
+  state.profiles = activeProfiles(doc);
+}
+
+/** "+ Add a person": a name and a colour, and they have a shelf. */
+ctx.actions.openNewProfile = () => {
+  const dialog = document.getElementById('profile-dialog');
+  document.getElementById('profile-title').textContent = 'Add a person';
+  const body = clear(document.getElementById('profile-body'));
+  const used = new Set(state.profiles.map((p) => p.colour));
+  let colour = PROFILE_COLOURS.find((c) => !used.has(c)) ?? PROFILE_COLOURS[0];
+  const error = h('p', { class: 'hint error', role: 'alert' });
+
+  const preview = h('span', { class: 'avatar-chip xl', 'aria-hidden': 'true' });
+  const input = h('input', { type: 'text', maxlength: '30', placeholder: 'Their first name', autocomplete: 'off', 'aria-describedby': 'profile-error' });
+  error.id = 'profile-error';
+  const paintPreview = () => {
+    preview.style.background = colour;
+    preview.textContent = (input.value.trim() || '?').slice(0, 1).toUpperCase();
+  };
+  input.addEventListener('input', () => { error.textContent = ''; paintPreview(); });
+
+  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Colour' },
+    PROFILE_COLOURS.map((c) => h('button', {
+      class: 'swatch', type: 'button', role: 'radio', 'aria-checked': String(c === colour),
+      'aria-label': `Colour ${c}${used.has(c) ? ' (already used)' : ''}`, style: `background:${c}`,
+      onclick: (e) => {
+        colour = c;
+        for (const s of swatches.children) s.setAttribute('aria-checked', String(s === e.currentTarget));
+        paintPreview();
+      },
+    })));
+
+  const create = h('button', { class: 'btn', type: 'submit' }, 'Create profile');
+  const form = h('form', {
+    class: 'profile-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      const name = input.value.trim();
+      // Check before writing anything, so a clash never leaves a stray shelf.
+      try {
+        addPerson({ profiles: structuredClone(state.allProfiles ?? state.profiles) }, { name, colour });
+      } catch (err) {
+        error.textContent = err.message;
+        input.focus();
+        return;
+      }
+      create.disabled = true;
+      let made = null;
+      const doc = await saveProfiles((data) => { made = addPerson(data, { name, colour }); return data; },
+        `Add ${name}`);
+      if (!doc || !made) { create.disabled = false; return; }
+      // An empty shelf file, so the new person exists everywhere at once -
+      // the nightly check and the other browsers - before their first book.
+      // Written directly: reading a file that cannot exist yet would only
+      // log a 404 for nothing.
+      state.libraries[made.id] = emptyLibrary();
+      try {
+        await storage.saveJSON(`profiles/${made.id}/library.json`, state.libraries[made.id], `Create ${made.name}'s shelf`);
+      } catch (err) {
+        toast(friendlyError(err), true);
+      }
+      dialog.close();
+      go(`#/p/${made.id}`);
+      toast(`Welcome, ${made.name} — add the book you are reading to get started`);
+    },
+  },
+    h('div', { class: 'row profile-preview' }, preview,
+      h('label', { class: 'field grow' }, h('span', { text: 'Name' }), input)),
+    h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
+    error,
+    h('p', { class: 'hint', text: 'Anyone with the link can see and edit every shelf here, including this one.' }),
+    h('div', { class: 'row end' }, create));
+
+  body.append(form);
+  paintPreview();
+  dialog.showModal();
+  input.focus();
+};
+
+/**
+ * Removing a person, behind a deliberate confirmation: it says exactly what
+ * goes, and the button stays disabled until their name is typed - the
+ * pattern GitHub uses before deleting a repository. Nothing is destroyed:
+ * the shelf file stays and Settings can bring them back.
+ */
+ctx.actions.openRemoveProfile = (profile) => {
+  if (state.profiles.length <= 1) return toast('The last profile cannot be removed.', true);
+  const dialog = document.getElementById('profile-dialog');
+  document.getElementById('profile-title').textContent = `Remove ${profile.name}?`;
+  const body = clear(document.getElementById('profile-body'));
+  const lib = state.libraries[profile.id] ?? { books: [] };
+  const count = (status) => lib.books.filter((b) => b.status === status).length;
+  const facts = [
+    `${lib.books.length} book${lib.books.length === 1 ? '' : 's'} (${count('read')} finished, ${count('reading')} reading, ${count('tbr')} to read)`,
+    (lib.recommendations ?? []).length ? `${lib.recommendations.length} recommendation${lib.recommendations.length === 1 ? '' : 's'} sent to them` : null,
+    (lib.tracked ?? []).length ? `${lib.tracked.length} tracked release${lib.tracked.length === 1 ? '' : 's'}` : null,
+    Object.keys(lib.goals ?? {}).length ? 'their reading goals' : null,
+  ].filter(Boolean);
+
+  const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': `Type ${profile.name} to confirm` });
+  const remove = h('button', { class: 'btn danger-solid', type: 'submit', disabled: true }, `Remove ${profile.name}`);
+  // Exact, case and all: a confirmation you can satisfy by accident is not one.
+  input.addEventListener('input', () => { remove.disabled = input.value.trim() !== profile.name; });
+
+  body.append(h('form', {
+    class: 'profile-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      if (input.value.trim() !== profile.name) return;
+      remove.disabled = true;
+      const doc = await saveProfiles((data) => { removeProfile(data, profile.id); return data; }, `Remove ${profile.name}`);
+      if (!doc) { remove.disabled = false; return; }
+      dialog.close();
+      if (state.route.profileId === profile.id) go(`#/p/${state.profiles[0].id}`);
+      toast(`Removed ${profile.name}`, false, { label: 'Undo', run: () => ctx.actions.restoreProfile(profile) });
+    },
+  },
+    h('div', { class: 'danger-note' },
+      h('p', {}, h('strong', { text: `${profile.name} will disappear from every page` }),
+        ' — their shelf, their What’s new, and the group page. This includes:'),
+      h('ul', {}, facts.map((f) => h('li', { text: f }))),
+      h('p', { class: 'hint', text: 'Their data is kept, not deleted: you can bring them back from Settings.' })),
+    h('label', { class: 'field' },
+      h('span', {}, 'To confirm, type ', h('strong', { text: profile.name }), ' below'),
+      input),
+    h('div', { class: 'row end' },
+      h('button', { class: 'btn secondary', type: 'button', onclick: () => dialog.close() }, 'Cancel'),
+      remove)));
+  dialog.showModal();
+  input.focus();
+};
+
+ctx.actions.restoreProfile = async (profile) => {
+  const doc = await saveProfiles((data) => { restoreProfile(data, profile.id); return data; }, `Restore ${profile.name}`);
+  if (!doc) return;
+  // Their shelf was left alone while they were away; fetch it fresh.
+  state.libraries[profile.id] = await storage.loadJSON(
+    `profiles/${profile.id}/library.json`, { books: [], watch: { series: {}, authors: {} } });
+  render();
+  toast(`${profile.name} is back`);
+};
+
+/* ------------------------------------------------- profile context menu */
+
+let menuEl = null;
+
+function closeProfileMenu() {
+  menuEl?.remove();
+  menuEl = null;
+}
+
+/**
+ * Right-click (or long-press on a phone) a person in the sidebar for their
+ * options. A real menu: arrow keys, Escape, and a click anywhere else close it.
+ */
+function openProfileMenu(profile, x, y, opener) {
+  closeProfileMenu();
+  const item = (label, run, cls = '') => h('button', {
+    class: `ctx-item ${cls}`, type: 'button', role: 'menuitem',
+    onclick: () => { closeProfileMenu(); run(); },
+  }, label);
+  menuEl = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `${profile.name} options` },
+    h('div', { class: 'ctx-head', text: profile.name }),
+    item('Open shelf', () => go(`#/p/${profile.id}`)),
+    item('Add a person…', () => ctx.actions.openNewProfile()),
+    h('div', { class: 'ctx-sep', role: 'separator' }),
+    item(`Remove ${profile.name}…`, () => ctx.actions.openRemoveProfile(profile), 'danger'));
+  document.body.append(menuEl);
+  // Keep it on screen near the pointer.
+  const r = menuEl.getBoundingClientRect();
+  menuEl.style.left = `${Math.max(8, Math.min(x, innerWidth - r.width - 8))}px`;
+  menuEl.style.top = `${Math.max(8, Math.min(y, innerHeight - r.height - 8))}px`;
+  const items = [...menuEl.querySelectorAll('.ctx-item')];
+  items[0].focus();
+  menuEl.addEventListener('keydown', (e) => {
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault();
+      closeProfileMenu();
+      opener?.focus();
+    }
+  });
+}
+
+document.addEventListener('pointerdown', (e) => { if (menuEl && !menuEl.contains(e.target)) closeProfileMenu(); });
+window.addEventListener('resize', closeProfileMenu);
+window.addEventListener('scroll', closeProfileMenu, true);
+
+/**
+ * Right-click and long-press on a sidebar person both open the menu.
+ * `consumed()` tells the item's click handler that the tap which ended a long
+ * press was already used, so it must not also navigate.
+ */
+function profileMenuHandlers(profile) {
+  let timer = null;
+  let longPressed = false;
+  let start = null;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  return {
+    consumed() { const was = longPressed; longPressed = false; return was; },
+    handlers: {
+      oncontextmenu: (e) => {
+        e.preventDefault();
+        if (longPressed) return; // Android fires this too after a long press.
+        const r = e.currentTarget.getBoundingClientRect();
+        // The keyboard's menu key fires this at 0,0 - anchor to the item instead.
+        openProfileMenu(profile, e.clientX || r.left + 24, e.clientY || r.bottom, e.currentTarget);
+      },
+      // iPhones never fire contextmenu, so a held touch opens it there.
+      onpointerdown: (e) => {
+        if (e.pointerType !== 'touch') return;
+        longPressed = false;
+        start = { x: e.clientX, y: e.clientY };
+        const target = e.currentTarget;
+        timer = setTimeout(() => { longPressed = true; openProfileMenu(profile, start.x, start.y, target); }, 550);
+      },
+      // A finger always wobbles a little; only a real drag cancels.
+      onpointermove: (e) => {
+        if (timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) cancel();
+      },
+      onpointerup: cancel,
+      onpointercancel: cancel,
+    },
+  };
+}
 /* ---------------------------------------------------------------- settings */
+
+/** Settings' list of removed people, each with a way back. */
+function removedPeople(dialog) {
+  const removed = (state.allProfiles ?? []).filter((p) => p.removed);
+  if (!removed.length) return null;
+  return h('details', { class: 'optional', open: true },
+    h('summary', { text: `Removed people (${removed.length})` }),
+    h('div', { class: 'hidden-list' }, removed.map((p) => h('div', { class: 'hidden-row' },
+      h('span', { class: 'row' }, avatar(p), h('span', { text: `${p.name} · removed ${fmtDate(String(p.removed).slice(0, 10))}` })),
+      h('button', {
+        class: 'btn secondary small', type: 'button', disabled: !state.canWrite,
+        onclick: () => { dialog.close(); ctx.actions.restoreProfile(p); },
+      }, 'Restore')))));
+}
 
 function openSettings() {
   const dialog = document.getElementById('settings-dialog');
@@ -1236,6 +1529,8 @@ function openSettings() {
           oninput: (e) => { draft.token = e.target.value.trim(); } })),
 
       h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' })),
+
+    removedPeople(dialog),
 
     h('div', { class: 'row end' },
       h('button', { class: 'btn', type: 'button', onclick: () => {

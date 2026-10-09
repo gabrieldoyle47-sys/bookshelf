@@ -648,3 +648,73 @@ export function restoreBook(library, book) {
   if (!library.books.some((b) => b.id === book.id)) library.books.push(structuredClone(book));
   return library;
 }
+
+/* --------------------------------------------------------------- profiles */
+
+/** Colours offered for a new person, chosen to read on light and dark. */
+export const PROFILE_COLOURS = [
+  '#6366f1', '#ec4899', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#84cc16', '#f97316',
+];
+
+/** Everyone who has not been removed. */
+export function activeProfiles(doc) {
+  return (doc?.profiles ?? []).filter((p) => !p.removed);
+}
+
+/**
+ * The id a name becomes: lowercase letters, digits and dashes, which is what
+ * the Worker accepts in a file path. Accented letters lose their accents;
+ * a name with nothing usable left ("李") becomes "reader".
+ */
+export function profileId(name, taken = []) {
+  const base = String(name ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'reader';
+  const used = new Set(taken);
+  if (!used.has(base)) return base;
+  for (let n = 2; ; n++) if (!used.has(`${base}-${n}`)) return `${base}-${n}`;
+}
+
+/**
+ * Add a person. Ids are never reused - not even a removed person's - so a new
+ * "Sam" can never inherit an old Sam's shelf.
+ */
+export function addProfile(doc, { name, colour }, now = new Date().toISOString()) {
+  doc.profiles ??= [];
+  const clean = cleanText(name ?? '');
+  if (!clean) throw new Error('Give the new profile a name.');
+  if (clean.length > 30) throw new Error('Keep the name to 30 characters or fewer.');
+  const clash = activeProfiles(doc).find((p) => p.name.toLowerCase() === clean.toLowerCase());
+  if (clash) throw new Error(`There is already someone called ${clash.name}.`);
+  const profile = {
+    id: profileId(clean, doc.profiles.map((p) => p.id)),
+    name: clean,
+    colour: /^#[0-9a-f]{6}$/i.test(colour ?? '') ? colour : PROFILE_COLOURS[doc.profiles.length % PROFILE_COLOURS.length],
+    lastSeen: null,
+    created: now,
+  };
+  doc.profiles.push(profile);
+  return profile;
+}
+
+/**
+ * Remove a person from the site. Their entry stays, marked removed, and their
+ * shelf file is left untouched - so a removal is undone by restoring, and the
+ * nightly check simply stops looking for them.
+ */
+export function removeProfile(doc, id, now = new Date().toISOString()) {
+  const p = (doc.profiles ?? []).find((x) => x.id === id && !x.removed);
+  if (!p) throw new Error('That profile is not here any more.');
+  if (activeProfiles(doc).length <= 1) throw new Error('The last profile cannot be removed.');
+  p.removed = now;
+  return p;
+}
+
+export function restoreProfile(doc, id) {
+  const p = (doc.profiles ?? []).find((x) => x.id === id && x.removed);
+  if (!p) throw new Error('That profile is not in the removed list.');
+  if (activeProfiles(doc).some((x) => x.name.toLowerCase() === p.name.toLowerCase())) {
+    throw new Error(`Someone called ${p.name} is already here — rename them first.`);
+  }
+  delete p.removed;
+  return p;
+}
