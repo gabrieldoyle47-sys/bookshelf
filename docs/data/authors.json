@@ -244,7 +244,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 453,
+        "usersCount": 456,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -257,7 +257,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 262,
+        "usersCount": 263,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -731,7 +731,7 @@
         "releaseDate": "2029-12-01",
         "releaseYear": 2029,
         "image": null,
-        "usersCount": 100,
+        "usersCount": 101,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -744,7 +744,7 @@
         "releaseDate": "2030-12-01",
         "releaseYear": 2030,
         "image": null,
-        "usersCount": 89,
+        "usersCount": 91,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -757,7 +757,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 232,
+        "usersCount": 233,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -1015,7 +1015,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 299,
+        "usersCount": 300,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1189,7 +1189,7 @@
         "releaseDate": "2026-11-17",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
-        "usersCount": 24,
+        "usersCount": 25,
         "series": null
       }
     ]
