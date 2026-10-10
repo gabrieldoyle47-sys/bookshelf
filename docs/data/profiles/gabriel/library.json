@@ -903,7 +903,11 @@
       "added": "2026-10-01",
       "readOn": null,
       "started": "2026-09-30",
-      "finished": null
+      "finished": null,
+      "progress": {
+        "page": 350,
+        "updated": "2026-10-09"
+      }
     },
     {
       "id": "hc:427876",
