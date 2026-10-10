@@ -17,7 +17,7 @@
 
 // Confined to the data files: not as a defence, but so a bug or a stray
 // request can't scribble over the site's own code and break it for everyone.
-import { createClient, booksByIds } from '../docs/app/core/hardcover.js';
+import { createClient, booksByIds, booksByGenre } from '../docs/app/core/hardcover.js';
 import { today, activeProfiles } from '../docs/app/core/model.js';
 import { releaseInvite } from '../docs/app/core/calendar.js';
 import { runReleaseCheck } from '../docs/app/core/check.js';
@@ -256,6 +256,24 @@ export default {
       if (!ids.length) return json({ error: 'no book ids' }, 400);
       try {
         return json({ books: await booksByIds(createClient(env.HARDCOVER_TOKEN), ids) });
+      } catch (err) {
+        return json({ error: err.message }, 502);
+      }
+    }
+
+    /* ---- suggestion candidates: popular, well-rated books by genre ---- */
+    // Genres are separated by "|" because Hardcover genre names contain
+    // commas ("Science Fiction & Fantasy" doesn't, but others do).
+    if (request.method === 'GET' && url.pathname === '/discover') {
+      const genres = [...new Set((url.searchParams.get('genres') ?? '').split('|')
+        .map((g) => g.trim()).filter((g) => g && g.length <= 40))].slice(0, 4);
+      if (!genres.length) return json({ error: 'no genres' }, 400);
+      try {
+        const gql = createClient(env.HARDCOVER_TOKEN);
+        const lists = await Promise.all(genres.map((g) => booksByGenre(gql, g)));
+        const seen = new Set();
+        const books = lists.flat().filter((b) => !seen.has(b.id) && seen.add(b.id));
+        return json({ books });
       } catch (err) {
         return json({ error: err.message }, 502);
       }

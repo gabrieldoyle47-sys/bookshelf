@@ -8,10 +8,11 @@
  * now-playing treatment), progress, and a finish estimate.
  */
 
-import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort } from './dom.js';
+import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
 import { readOnOf, readYearOf, readingEstimate, today } from '../core/model.js';
 import { bookshelf } from './art.js';
 import { avatar } from './together.js';
+import { carousel } from './carousel.js';
 import { plural } from './views.js';
 
 /** A cover as a CSS background, with anything that could escape url("…") removed. */
@@ -25,7 +26,13 @@ export function profileHero(ctx, profile, library, { tally, actions }) {
   const thisYear = finished.filter((b) => readYearOf(b) === year).length;
   const pages = finished.reduce((s, b) => s + (b.pages ?? 0), 0);
 
-  const chip = (n, label) => h('span', { class: 'ph-stat' }, h('strong', { text: n }), ` ${label}`);
+  // Numbers count up when you arrive on the page; on a redraw after a save
+  // they just appear.
+  const chip = (n, label) => {
+    const num = h('strong', { text: Number(n).toLocaleString() });
+    if (ctx.state.navigated) countUp(num, n);
+    return h('span', { class: 'ph-stat' }, num, ` ${label}`);
+  };
   const shelf = bookshelf(finished, (b) => ctx.actions.openBook(b, profile), { label: `${profile.name}'s finished books` });
   // Most recent on the right, where the eye lands; start scrolled there.
   if (shelf) requestAnimationFrame(() => { const row = shelf.querySelector('.shelf-row'); if (row) row.scrollLeft = row.scrollWidth; });
@@ -36,9 +43,9 @@ export function profileHero(ctx, profile, library, { tally, actions }) {
       h('div', { class: 'ph-name' },
         h('h1', { text: profile.name }),
         h('div', { class: 'ph-stats' },
-          chip(String(finished.length), 'finished'),
-          pages ? chip(pages.toLocaleString(), 'pages') : null,
-          chip(String(thisYear), `in ${year}`),
+          chip(finished.length, 'finished'),
+          pages ? chip(pages, 'pages') : null,
+          chip(thisYear, `in ${year}`),
           tally)),
       h('div', { class: 'spacer' }),
       h('div', { class: 'ph-actions' }, actions)),
@@ -49,8 +56,14 @@ export function profileHero(ctx, profile, library, { tally, actions }) {
 export function readingSpotlight(ctx, profile, books) {
   const reading = books.filter((b) => b.status === 'reading');
   if (!reading.length) return null;
-  return h('section', { class: 'spotlight', 'aria-label': 'Reading now' },
-    reading.map((b) => spotlightCard(ctx, profile, b)));
+  const cards = reading.map((b) => spotlightCard(ctx, profile, b));
+  // Two or more at once become a row to swipe through, rather than a stack
+  // that pushes everything else off a phone screen.
+  if (cards.length > 1) {
+    return h('section', { class: 'spotlight multi', 'aria-label': 'Reading now' },
+      carousel(cards, { label: 'Books being read', className: 'spotlight-row' }));
+  }
+  return h('section', { class: 'spotlight', 'aria-label': 'Reading now' }, cards);
 }
 
 function spotlightCard(ctx, profile, book) {

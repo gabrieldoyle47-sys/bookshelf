@@ -21,8 +21,8 @@ import {
 import { frag, pageHead, emptyState, plural } from './views.js';
 import { emptyArt } from './art.js';
 
-/** "Both of us" while there are two of you; "Everyone" once there are more. */
-export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : 'Everyone');
+/** "Both of us" while there are two of you, "Everyone" once there are more. */
+export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : profiles.length > 2 ? 'Everyone' : 'Together');
 
 /** A person's initial on their colour - the same mark as the sidebar. */
 export function avatar(p, { size = '' } = {}) {

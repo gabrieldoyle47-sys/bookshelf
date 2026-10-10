@@ -461,6 +461,50 @@ function normaliseDetail(b) {
   };
 }
 
+/**
+ * Well-liked books in one genre, most-read first - the raw material for
+ * suggestions. Thresholds keep out books too obscure or too poorly rated to
+ * be worth suggesting; the English-edition filter keeps out translations.
+ */
+const BOOKS_BY_GENRE = `
+  query BooksByGenre($tags: jsonb!, $limit: Int!, $minUsers: Int!, $minRating: numeric!) {
+    books(
+      where: {
+        cached_tags: { _contains: $tags }
+        canonical_id: { _is_null: true }
+        compilation: { _eq: false }
+        users_count: { _gt: $minUsers }
+        rating: { _gte: $minRating }
+        editions: { language: { code2: { _eq: "en" } } }
+      }
+      order_by: { users_count: desc }
+      limit: $limit
+    ) {
+      id title subtitle description pages release_date release_year slug
+      users_count rating ratings_count cached_tags
+      image { url }
+      contributions { contribution author { id name } }
+      book_series { position series { id name books_count } }
+      default_physical_edition { publisher { name } }
+    }
+  }
+`;
+
+export async function booksByGenre(gql, genre, { limit = 30, minUsers = 300, minRating = 3.8 } = {}) {
+  const data = await gql(BOOKS_BY_GENRE, { tags: { Genre: [{ tag: genre }] }, limit, minUsers, minRating });
+  return (data?.books ?? []).map(normaliseDetail);
+}
+
+/** Suggestion candidates through the Worker, for up to four genres at once. */
+export async function discoverViaProxy(workerUrl, genres) {
+  const res = await fetch(`${workerUrl}/discover?genres=${encodeURIComponent(genres.join('|'))}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Could not load suggestions (${res.status})`);
+  }
+  return (await res.json()).books ?? [];
+}
+
 /** Book details through the Worker, which holds the Hardcover token. */
 export async function booksViaProxy(workerUrl, ids) {
   const res = await fetch(`${workerUrl}/book?ids=${encodeURIComponent(ids.join(','))}`);

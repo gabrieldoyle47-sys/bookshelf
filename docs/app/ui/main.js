@@ -5,7 +5,8 @@
 
 import { h, clear, fill, fmtDate, fmtReadOn, fmtRating, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
-import { createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy } from '../core/hardcover.js';
+import { createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy, booksByGenre, discoverViaProxy } from '../core/hardcover.js';
+import { scoreSuggestions, discoveryGenres } from '../core/suggest.js';
 import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
@@ -23,6 +24,8 @@ import { cssArt } from './shelfhero.js';
 
 const state = {
   profiles: [], libraries: {}, seriesState: {}, authorState: {}, bookState: {}, events: [],
+  // Suggestions per profile, kept for the visit: { status, items, error }.
+  suggestions: {},
   route: { view: 'profile', profileId: null, tab: 'shelf' },
   canWrite: false,
 };
@@ -80,12 +83,14 @@ async function boot() {
     readRoute();
     // A soft cross-fade between pages where the browser supports it; saves
     // still redraw instantly, since only navigation comes through here.
+    const paint = () => { state.navigated = true; render(); state.navigated = false; };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.startViewTransition(() => render());
+      document.startViewTransition(paint);
     } else {
-      render();
+      paint();
     }
   });
+  wireScroll();
   wireThemeSwitch();
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
@@ -99,7 +104,32 @@ async function boot() {
   document.addEventListener('keydown', tablistKeys);
 
   readRoute();
+  state.navigated = true;
   render();
+  state.navigated = false;
+}
+
+/**
+ * Scroll touches: a shadow under the sticky tabs once the page has moved
+ * (so they read as floating above it), and a back-to-top button on long
+ * pages.
+ */
+function wireScroll() {
+  const top = h('button', {
+    class: 'to-top', type: 'button', 'aria-label': 'Back to top', title: 'Back to top',
+    onclick: () => scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }),
+  }, '↑');
+  document.body.append(top);
+  let ticking = false;
+  addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      document.documentElement.classList.toggle('scrolled', scrollY > 8);
+      top.classList.toggle('show', scrollY > 900);
+      ticking = false;
+    });
+  }, { passive: true });
 }
 
 /** Everything the release check writes; reloaded after "check now". */
@@ -250,6 +280,7 @@ function render() {
   // The group page shows picks for whoever was looking at their own shelf.
   state.viewer = profile.id;
   const tabs = main.appendChild(profileTabs(profile, tab));
+  main.append(bottomNav(profile, tab));
   // On a phone the tab strip scrolls sideways; keep the current tab in view.
   const selected = tabs.querySelector('[aria-selected="true"]');
   selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -259,6 +290,26 @@ function render() {
     shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
   };
   main.append((views[tab] ?? shelfView)(ctx, profile));
+}
+
+/**
+ * On a phone, the profile's pages as a bottom tab bar - the Spotify and
+ * Strava pattern, in thumb reach - instead of a strip at the top that has to
+ * be scrolled sideways to find "Stats".
+ */
+const TAB_ICONS = { shelf: 'ico-books', recs: 'ico-sparkle', upcoming: 'ico-calendar', new: 'ico-bell', stats: 'ico-chart' };
+const SHORT = { shelf: 'Shelf', recs: 'For you', upcoming: 'Upcoming', new: 'News', stats: 'Stats' };
+
+function bottomNav(profile, current) {
+  const badges = { recs: newRecCount(state.libraries[profile.id]), new: unseenNews(profile) };
+  return h('nav', { class: 'bottom-nav', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
+    h('button', {
+      class: 'bn-item', type: 'button', 'aria-current': id === current ? 'page' : null, 'aria-label': label,
+      onclick: () => { go(`#/p/${profile.id}/${id}`); scrollTo({ top: 0 }); },
+    },
+      h('span', { class: 'bn-icon' }, h('span', { class: `ico ${TAB_ICONS[id]}`, 'aria-hidden': 'true' }),
+        badges[id] ? h('span', { class: 'bn-badge', text: String(badges[id]) }) : null),
+      h('span', { class: 'bn-label', text: SHORT[id] }))));
 }
 
 function profileTabs(profile, current) {
@@ -423,6 +474,38 @@ ctx.actions.fetchBooks = async (ids) => {
   if (worker) return booksViaProxy(worker, ids);
   if (hardcover) return booksByIds(createClient(hardcover), ids);
   throw new Error('This site is not connected to its backend yet.');
+};
+
+/* ------------------------------------------------------------ suggestions */
+
+/**
+ * Find books for someone: popular, well-rated titles in their strongest
+ * genres, ranked against their taste (core/suggest.js).
+ */
+ctx.actions.suggestFor = async (profile) => {
+  const lib = state.libraries[profile.id] ?? { books: [] };
+  const genres = discoveryGenres(lib);
+  if (!genres.length) return toast('Rate or finish a few books first, so there is a taste to go on.', true);
+  state.suggestions[profile.id] = { status: 'loading' };
+  render();
+  try {
+    const { hardcover, worker } = storage.getConfig();
+    const candidates = worker
+      ? await discoverViaProxy(worker, genres)
+      : (await Promise.all(genres.map((g) => booksByGenre(createClient(hardcover), g)))).flat();
+    // Scored against the shelf as it is now, in case it changed meanwhile.
+    const items = scoreSuggestions(candidates, state.libraries[profile.id] ?? lib, { limit: 24 });
+    state.suggestions[profile.id] = { status: 'ready', items };
+  } catch (err) {
+    state.suggestions[profile.id] = { status: 'error', error: friendlyError(err, { saving: false }) };
+  }
+  render();
+};
+
+/** The Shelf's "Suggest a book": over to Recommendations, and start looking. */
+ctx.actions.goSuggest = (profile) => {
+  go(`#/p/${profile.id}/recs`);
+  if (state.suggestions[profile.id]?.status !== 'ready') ctx.actions.suggestFor(profile);
 };
 
 /* ------------------------------------------------ adding from suggestions */
@@ -711,6 +794,7 @@ async function runSearch() {
 
 function showHits(hits) {
   const results = clear(document.getElementById('add-results'));
+  results.setAttribute('role', 'listbox');
   setHint('Pick the right edition — everything else is filled in for you.');
   // Say up front which results are already on the shelf. Before, picking one
   // walked through the shelf choice only to fail with an error at the end.
@@ -736,56 +820,108 @@ function showHits(hits) {
 }
 
 /** Second step of adding: which shelf does it go on? */
+/**
+ * Second step of adding: which shelf, and the details that go with it.
+ *
+ * Picking a shelf used to save on the spot, so the rating or the date you
+ * read it had to be added afterwards from the book's own panel. Now the
+ * shelf only chooses which details to show, and nothing is saved until
+ * "Add to shelf".
+ */
 function chooseStatus(hit, hits) {
   const results = clear(document.getElementById('add-results'));
-  setHint(`Where does “${hit.title}” go?`);
+  // A form now, not a list of choices, for anyone using a screen reader.
+  results.removeAttribute('role');
+  setHint(`Adding “${hit.title}” for ${addProfile.name}`);
   const profile = addProfile;
+  const draft = { status: 'tbr', rating: null, readOn: null, note: '', started: todayISO(), page: '' };
 
-  const add = async (status, button) => {
-    const book = bookFromHardcover(hit, { status });
-    // Every button goes quiet while the save runs; a second tap used to add
-    // the book twice, or fail with "already on this shelf".
-    choices.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-    button.setAttribute('aria-busy', 'true');
-    const ok = await saveLibrary(profile.id, (lib) => {
-      if (lib.books.some((b) => b.id === book.id)) throw new Error('That book is already on this shelf.');
-      lib.books.push(book);
-      untrackBook(lib, hit.id);
-      return lib;
-    }, `Add ${book.title} for ${profile.name}`);
+  const details = h('div', { class: 'add-details' });
+  const submit = h('button', { class: 'btn', type: 'submit' }, 'Add to shelf');
 
-    if (!ok) {
-      choices.querySelectorAll('button').forEach((b) => { b.disabled = false; });
-      button.removeAttribute('aria-busy');
-      return;
-    }
-    document.getElementById('add-dialog').close();
-    const watching = book.series?.id && deriveWatchlist(state.libraries[profile.id]).series[book.series.id];
-    const started = status === 'reading' ? ' · started today' : '';
-    const message = watching ? `Added${started} · now watching ${book.series.name}` : `Added ${book.title}${started}`;
-    // A book you have already read is usually added in order to rate it.
-    toast(message, false, status === 'read' ? {
-      label: 'Rate it',
-      run: () => { const saved = findBookIn(profile.id, book.id); if (saved) ctx.actions.openBook(saved, profile); },
-    } : null);
-  };
+  const field = (label, control) => h('label', { class: 'field' }, h('span', { text: label }), control);
+  const noteBox = () => field('Note (optional)', h('textarea', {
+    rows: '2', placeholder: draft.status === 'read' ? 'What you thought of it…' : 'Why you want to read it, who recommended it…',
+    oninput: (e) => { draft.note = e.target.value; },
+  }, draft.note));
 
-  const choices = h('div', { class: 'row' },
-    h('button', { class: 'btn', type: 'button', onclick: (e) => add('reading', e.currentTarget) }, 'Reading now'),
-    h('button', { class: 'btn secondary', type: 'button', onclick: (e) => add('tbr', e.currentTarget) }, 'Want to read'),
-    h('button', { class: 'btn secondary', type: 'button', onclick: (e) => add('read', e.currentTarget) }, 'Already read'));
+  function paintDetails() {
+    fill(details,
+      draft.status === 'read' ? [
+        h('div', { class: 'field' }, h('span', { text: 'Your rating (optional)' }), ratingPicker(draft)),
+        h('div', { class: 'field' }, h('span', { text: 'When did you read it? (optional)' }), readOnPicker(draft)),
+        noteBox(),
+      ] : null,
+      draft.status === 'reading' ? h('div', { class: 'grid-2' },
+        field('Started', h('input', { type: 'date', value: draft.started, max: todayISO(),
+          onchange: (e) => { draft.started = e.target.value || todayISO(); } })),
+        field(hit.pages ? `Page you're on (of ${hit.pages})` : 'Page you’re on (optional)', h('input', {
+          type: 'number', min: '0', max: hit.pages ? String(hit.pages) : null, inputmode: 'numeric',
+          placeholder: 'Optional', value: draft.page, oninput: (e) => { draft.page = e.target.value; } }))) : null,
+      draft.status === 'tbr' ? noteBox() : null);
+    submit.textContent = { tbr: 'Add to Want to read', reading: 'Add to Reading now', read: 'Add to Finished' }[draft.status];
+  }
 
-  results.append(
+  const shelves = h('div', { class: 'seg add-shelves', role: 'tablist', 'aria-label': 'Which shelf' },
+    [['tbr', 'Want to read'], ['reading', 'Reading now'], ['read', 'Already read']].map(([id, label]) => h('button', {
+      class: 'seg-btn', type: 'button', role: 'tab', 'aria-selected': String(id === draft.status),
+      onclick: (e) => {
+        draft.status = id;
+        for (const b of shelves.children) b.setAttribute('aria-selected', String(b === e.currentTarget));
+        paintDetails();
+      },
+    }, label)));
+
+  const form = h('form', {
+    class: 'add-form',
+    onsubmit: async (e) => {
+      e.preventDefault();
+      const book = bookFromHardcover(hit, { status: draft.status, rating: normaliseRating(draft.rating), note: draft.note.trim() });
+      if (draft.status === 'reading') {
+        book.started = draft.started || todayISO();
+        if (draft.page !== '' && Number.isFinite(Number(draft.page))) setProgress(book, draft.page);
+      }
+      if (draft.status === 'read' && isValidReadOn(draft.readOn)) {
+        // A remembered date replaces "finished today", which is only right
+        // for a book finished today.
+        book.readOn = draft.readOn;
+        book.finished = draft.readOn.length === 10 ? draft.readOn : null;
+      }
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+      const ok = await saveLibrary(profile.id, (lib) => {
+        if (lib.books.some((b) => b.id === book.id)) throw new Error('That book is already on this shelf.');
+        lib.books.push(book);
+        untrackBook(lib, hit.id);
+        return lib;
+      }, `Add ${book.title} for ${profile.name}`);
+      if (!ok) {
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
+        return;
+      }
+      document.getElementById('add-dialog').close();
+      const watching = book.series?.id && deriveWatchlist(state.libraries[profile.id]).series[book.series.id];
+      toast(watching ? `Added ${book.title} · now watching ${book.series.name}` : `Added ${book.title}`);
+    },
+  },
     h('div', { class: 'result picked' },
       coverEl({ cover: hit.image }),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-title', text: hit.title }),
         h('div', { class: 'book-meta', text: [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean).join(' · ') }))),
-    choices,
-    // Picking the wrong edition was a dead end: the only way back was to
-    // retype the search.
-    h('button', { class: 'link-btn back', type: 'button', onclick: () => showHits(hits) }, '← Back to results'));
-  choices.querySelector('button').focus();
+    h('div', { class: 'field' }, h('span', { text: 'Shelf' }), shelves),
+    details,
+    h('div', { class: 'row add-foot' },
+      // Picking the wrong edition was a dead end: the only way back was to
+      // retype the search.
+      h('button', { class: 'link-btn back', type: 'button', onclick: () => showHits(hits) }, '← Back to results'),
+      h('div', { class: 'spacer' }),
+      submit));
+
+  results.append(form);
+  paintDetails();
+  shelves.querySelector('[aria-selected="true"]').focus();
 }
 
 /* ------------------------------------------------------------- book dialog */
@@ -808,7 +944,7 @@ ctx.actions.openBook = (book, owner) => {
   dialog.isDirty = () => JSON.stringify(draft) !== initial;
   const problem = h('p', { class: 'hint error', role: 'alert' });
 
-  body.append(
+  fill(body,
     h('div', { class: 'row book-hero', style: cssArt(book.cover) },
       h('div', { class: 'hero-wash', 'aria-hidden': 'true' }),
       coverEl(book),
@@ -918,17 +1054,17 @@ function readOnPicker(draft) {
 
   function paint() {
     const thisYear = new Date().getFullYear();
-    clear(yearSel).append(option('', 'Year…', !year));
+    clear(yearSel).append(option('', 'Year', !year));
     for (let y = thisYear; y >= 1960; y--) yearSel.append(option(String(y), String(y), String(y) === year));
 
-    clear(monthSel).append(option('', year ? 'Month (optional)' : '—', !month));
+    clear(monthSel).append(option('', 'Month', !month));
     MONTHS.forEach((name, i) => {
       const value = String(i + 1).padStart(2, '0');
       monthSel.append(option(value, name, value === month));
     });
     monthSel.disabled = !year;
 
-    clear(daySel).append(option('', month ? 'Day (optional)' : '—', !day));
+    clear(daySel).append(option('', 'Day', !day));
     const max = year && month ? daysInMonth(year, month) : 31;
     for (let d = 1; d <= max; d++) {
       const value = String(d).padStart(2, '0');
@@ -958,7 +1094,9 @@ function readOnPicker(draft) {
   }, 'Clear');
 
   paint();
-  wrap.append(yearSel, monthSel, daySel, quick, clearBtn);
+  // Three equal dropdowns, then the shortcuts - so nothing is squeezed until
+  // its text runs under the arrow.
+  wrap.append(h('div', { class: 'readon-selects' }, yearSel, monthSel, daySel), h('div', { class: 'readon-quick' }, quick, clearBtn));
   return h('div', {}, wrap, summary);
 }
 

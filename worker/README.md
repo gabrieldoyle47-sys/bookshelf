@@ -13,6 +13,7 @@ It does three things:
 |---|---|
 | `GET /search?q=` | proxies Hardcover, so book search needs no token in the browser |
 | `GET /book?ids=` | full details for up to 20 books — the detail panel, and adding a book by id |
+| `GET /discover?genres=A\|B` | popular, well-rated books in up to four genres, for *Suggest a book* |
 | `GET /ics?id=&title=&date=` | a release day as a calendar invite (text/calendar), for *Add release to calendar* |
 | `GET /read?path=` | reads a data file fresh, bypassing the Pages cache |
 | `POST /check` | runs the release check now (the same `core/check.js` as the nightly job) |
