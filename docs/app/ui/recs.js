@@ -11,6 +11,7 @@ import { onShelfIds, today } from '../core/model.js';
 import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 import { openRelease } from './upcoming.js';
+import { emptyArt } from './art.js';
 
 /** New recommendations waiting for an answer - the tab's badge. */
 export const newRecCount = (library) =>
@@ -138,9 +139,9 @@ function sentToYouColumn(ctx, profile, library, others) {
 
     fresh.length
       ? h('div', { class: 'rec-cards' }, fresh.map((r) => recCard(ctx, profile, r, nameOf(r.from))))
-      : h('p', { class: 'col-empty', text: others.length
+      : emptyArt('letter', others.length
           ? `Nothing waiting. ${others[0].name} can send you one from their Recommendations tab, or from any book on their shelf.`
-          : 'Nothing waiting.' }),
+          : 'Nothing waiting.'),
 
     answered.length ? h('details', { class: 'optional' },
       h('summary', { text: `Earlier (${answered.length})` }),

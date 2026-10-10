@@ -240,3 +240,17 @@ test('a state file that fails to save is reported, not hidden behind ok', async 
   assert.ok(body.failures.includes('could not save authors.json'));
   globalThis.fetch = origFetch;
 });
+
+test('the check skips files it did not change, and saves the rest without looking the sha up again', async () => {
+  // authors.json is already exactly what the check would write.
+  const calls = github({ ...checkFiles(), 'authors.json': '{}\n' });
+  const res = await check();
+  assert.equal(res.status, 200);
+  const puts = calls.filter((c) => c.method === 'PUT').map((c) => c.url.split('/docs/data/')[1]);
+  assert.ok(!puts.includes('authors.json'), 'an unchanged file is not committed again');
+  assert.ok(puts.includes('series-state.json'));
+  const seriesGets = calls.filter((c) => c.method === 'GET' && c.url.endsWith('series-state.json'));
+  assert.equal(seriesGets.length, 1, 'read once; the write reuses that sha');
+  assert.equal(calls.find((c) => c.method === 'PUT' && c.url.endsWith('series-state.json')).body.sha, 'sha-series-state.json');
+  globalThis.fetch = origFetch;
+});

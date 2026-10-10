@@ -152,7 +152,7 @@ export const authorNames = (book) =>
 export function coverEl(book) {
   if (book.cover) {
     return h('img', {
-      class: 'cover', src: book.cover, alt: '', loading: 'lazy',
+      class: 'cover', src: book.cover, alt: '', loading: 'lazy', decoding: 'async',
       onerror: (e) => e.target.replaceWith(h('div', { class: 'cover placeholder', text: '📕' })),
     });
   }

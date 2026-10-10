@@ -16,6 +16,8 @@ import {
 } from './dom.js';
 import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js';
 import { getConfig } from './storage.js';
+import { cssArt } from './shelfhero.js';
+import { emptyArt } from './art.js';
 import { upcomingFrom, authorUpcoming, trackedUpcoming } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 
@@ -166,7 +168,7 @@ function upColumn(title, sub, items, card, emptyText) {
 
   if (!items.length) {
     return h('section', { class: 'up-col' }, head, h('p', { class: 'col-sub', text: sub }),
-      h('p', { class: 'col-empty', text: emptyText }));
+      emptyArt('calendar', emptyText));
   }
 
   const body = bands.map(([label, test]) => {
@@ -190,19 +192,27 @@ function upColumn(title, sub, items, card, emptyText) {
 function nextUp(item, ctx, profile) {
   if (!item) return null;
   const when = fmtRelease(item.releaseDate);
+  // A ring that fills over the last two months, so "soon" is something you
+  // can see rather than read.
+  const ring = item.daysUntil != null && item.daysUntil <= 60
+    ? h('div', { class: 'countdown-ring', style: `--p:${(60 - item.daysUntil) / 60}`, 'aria-hidden': 'true' },
+        h('span', {}, h('strong', { text: String(item.daysUntil) }), item.daysUntil === 1 ? 'day' : 'days'))
+    : null;
   return h('button', {
-    class: 'next-up', type: 'button',
+    class: 'next-up', type: 'button', style: cssArt(item.image),
     onclick: () => openRelease(ctx, item, profile),
   },
+    h('div', { class: 'next-up-wash', 'aria-hidden': 'true' }),
     coverEl({ cover: item.image }),
     h('div', { class: 'next-up-main' },
       h('div', { class: 'eyebrow', text: 'Next up' }),
       h('div', { class: 'next-up-title', text: item.title }),
       h('div', { class: 'book-meta', text: subline(item) }),
       item.who ? people(item.who) : null),
-    h('div', { class: 'next-up-when' },
+    ring ?? h('div', { class: 'next-up-when' },
       h('strong', { text: when.countdown ?? when.date }),
-      when.countdown ? h('span', { text: when.date }) : null));
+      when.countdown ? h('span', { text: when.date }) : null),
+    ring ? h('div', { class: 'next-up-when ring-date' }, h('span', { text: when.date })) : null);
 }
 
 const subline = (item) => [
@@ -426,7 +436,8 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
     indigoLink(item, { released, className: 'btn secondary small' }));
 
   fill(body,
-    h('div', { class: 'release-top' }, coverSlot, metaSlot),
+    h('div', { class: 'release-top', style: cssArt(item.image) },
+      h('div', { class: 'hero-wash', 'aria-hidden': 'true' }), coverSlot, metaSlot),
     links,
     preview ? null : history(ctx, item, profile),
     extra,

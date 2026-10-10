@@ -10,7 +10,7 @@ import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
-  activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
+  setProgress, goalProgress, activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
@@ -18,6 +18,8 @@ import { togetherView, groupLabel, avatar } from './together.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
+import { celebrate, art } from './art.js';
+import { cssArt } from './shelfhero.js';
 
 const state = {
   profiles: [], libraries: {}, seriesState: {}, authorState: {}, bookState: {}, events: [],
@@ -70,11 +72,21 @@ async function boot() {
 
   window.addEventListener('hashchange', () => {
     // Going to another page (a link, or the browser's back button) should not
-    // leave the last page's panel open on top of the new one.
-    for (const d of document.querySelectorAll('dialog[open]')) d.close();
+    // leave the last page's panel open on top of the new one - unless it holds
+    // unsaved edits, which are asked about rather than thrown away.
+    for (const d of document.querySelectorAll('dialog[open]')) {
+      if (!d.isDirty?.() || confirm('Discard your unsaved changes?')) d.close();
+    }
     readRoute();
-    render();
+    // A soft cross-fade between pages where the browser supports it; saves
+    // still redraw instantly, since only navigation comes through here.
+    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(() => render());
+    } else {
+      render();
+    }
   });
+  wireThemeSwitch();
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
@@ -150,6 +162,26 @@ function tablistKeys(e) {
   // The profile tabs change the route, and render() puts focus back on the
   // redrawn strip.
   tabs[next].click();
+}
+
+/** Auto / Light / Dark, remembered per browser. */
+function wireThemeSwitch() {
+  const box = document.getElementById('theme-switch');
+  if (!box) return;
+  const KEY = 'bookshelf.theme';
+  const current = () => { try { return localStorage.getItem(KEY) || 'auto'; } catch { return 'auto'; } };
+  const options = [['auto', 'Auto', 'ico-auto'], ['light', 'Light', 'ico-sun'], ['dark', 'Dark', 'ico-moon']];
+  const paint = () => fill(box, options.map(([id, label, icon]) => h('button', {
+    class: 'theme-opt', type: 'button', role: 'radio', 'aria-checked': String(current() === id),
+    title: `${label} theme`, 'aria-label': `${label} theme`,
+    onclick: () => {
+      try { if (id === 'auto') localStorage.removeItem(KEY); else localStorage.setItem(KEY, id); } catch { /* private mode */ }
+      if (id === 'auto') delete document.documentElement.dataset.theme;
+      else document.documentElement.dataset.theme = id;
+      paint();
+    },
+  }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' }))));
+  paint();
 }
 
 function toggleMenu(force) {
@@ -769,6 +801,7 @@ ctx.actions.openBook = (book, owner) => {
   const draft = {
     status: book.status, rating: book.rating ?? null, note: book.note ?? '',
     readOn: readOnOf(book), started: book.started ?? '', finished: book.finished ?? '',
+    page: book.progress?.page ?? '',
   };
   // Closing with edits unsaved asks first (see wireDialogs).
   const initial = JSON.stringify(draft);
@@ -776,7 +809,8 @@ ctx.actions.openBook = (book, owner) => {
   const problem = h('p', { class: 'hint error', role: 'alert' });
 
   body.append(
-    h('div', { class: 'row book-hero' },
+    h('div', { class: 'row book-hero', style: cssArt(book.cover) },
+      h('div', { class: 'hero-wash', 'aria-hidden': 'true' }),
       coverEl(book),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-meta', text: authorNames(book) }),
@@ -791,6 +825,14 @@ ctx.actions.openBook = (book, owner) => {
         STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, SHELF_LABEL[s] ?? s)))),
 
     h('div', { class: 'field' }, h('span', { text: 'Rating' }), ratingPicker(draft)),
+
+    // Only means something while the book is open; shown for current reads.
+    book.status === 'reading' ? h('label', { class: 'field progress-field' }, h('span', { text: 'Progress' }),
+      h('span', { class: 'row' },
+        h('input', { type: 'number', min: '0', max: book.pages ? String(book.pages) : null, inputmode: 'numeric',
+          value: draft.page, placeholder: 'Page', class: 'page-input',
+          oninput: (e) => { draft.page = e.target.value; } }),
+        h('span', { class: 'count', text: book.pages ? `of ${book.pages} pages` : 'page' }))) : null,
 
     h('div', { class: 'field' }, h('span', { text: 'When did you read it?' }), readOnPicker(draft)),
 
@@ -969,6 +1011,9 @@ async function applyEdit(profile, book, draft) {
       started: draft.started || null,
       finished: draft.finished || null,
     });
+    if (draft.page !== '' && draft.page != null && Number(draft.page) !== target.progress?.page) {
+      setProgress(target, draft.page);
+    }
     // Fill in whatever the status change implies, without touching anything
     // the reader set by hand in the dates panel.
     applyStatusDates(target, previous);
@@ -978,9 +1023,58 @@ async function applyEdit(profile, book, draft) {
   if (ok) {
     document.getElementById('book-dialog').close();
     const saved = findBookIn(profile.id, book.id);
+    if (book.status !== 'read' && saved?.status === 'read') return finishedMoment(profile, saved);
     toast(datesMessage(book, saved) ?? `Saved ${book.title}`);
   }
 }
+
+/**
+ * Finishing a book is the best moment in a reading tracker, so it gets a
+ * little ceremony: confetti, and a nudge to rate it while it is fresh. If it
+ * was the book that reached the year's goal, that gets said too.
+ */
+function finishedMoment(profile, book) {
+  celebrate();
+  const lib = state.libraries[profile.id] ?? { books: [] };
+  const goal = goalProgress(lib, Number(todayISO().slice(0, 4)));
+  const message = goal.target && goal.done === goal.target
+    ? `Finished ${book.title} — and that's your ${goal.target}-book goal for the year!`
+    : `Finished ${book.title}!`;
+  toast(message, false, book.rating ? null : { label: 'Rate it', run: () => ctx.actions.openBook(findBookIn(profile.id, book.id) ?? book, profile) });
+}
+
+/** "Finished!" on the reading spotlight. */
+ctx.actions.finishBook = async (profile, book) => {
+  const ok = await saveLibrary(profile.id, (lib) => {
+    const target = lib.books.find((b) => b.id === book.id);
+    if (!target) throw new Error('That book is no longer on this shelf.');
+    const previous = target.status;
+    target.status = 'read';
+    if (target.pages && target.progress) target.progress.page = target.pages;
+    applyStatusDates(target, previous);
+    return lib;
+  }, `Finish ${book.title}`);
+  if (ok) finishedMoment(profile, findBookIn(profile.id, book.id) ?? book);
+};
+
+/** The page field on the reading spotlight. */
+ctx.actions.setProgress = async (profile, book, page) => {
+  if (page === '' || !Number.isFinite(Number(page))) return toast('Type the page you are on.', true);
+  const ok = await saveLibrary(profile.id, (lib) => {
+    const target = lib.books.find((b) => b.id === book.id);
+    if (!target) throw new Error('That book is no longer on this shelf.');
+    setProgress(target, page);
+    return lib;
+  }, `Progress on ${book.title}`);
+  if (!ok) return;
+  const saved = findBookIn(profile.id, book.id);
+  // Reaching the last page is as good as finishing; offer it rather than assume.
+  if (saved?.pages && saved.progress?.page >= saved.pages) {
+    toast(`Last page of ${saved.title}!`, false, { label: 'Mark finished', run: () => ctx.actions.finishBook(profile, saved) });
+  } else {
+    toast(`Page ${saved?.progress?.page} of ${saved?.title}`);
+  }
+};
 
 const findBookIn = (profileId, id) =>
   (state.libraries[profileId]?.books ?? []).find((b) => b.id === id);
@@ -1481,7 +1575,164 @@ function profileMenuHandlers(profile) {
     },
   };
 }
+/* ------------------------------------------------------ pick my next read */
+
+const PICK_FILTERS = [
+  ['any', 'Anything', () => true],
+  ['short', 'Short reads', (b) => b.pages && b.pages < 380],
+  ['series', 'Next in a series', (b, lib) => b.series?.id
+    && lib.books.some((x) => x.series?.id === b.series.id && (x.status === 'read' || x.status === 'reading'))],
+  ['waiting', 'Waiting longest', () => true],
+];
+
+/**
+ * A shuffle through the to-read pile that slows down and lands on one book -
+ * for when choosing is the hard part. "Waiting longest" weights the draw
+ * towards books that have sat on the pile the longest.
+ */
+ctx.actions.openPicker = (profile) => {
+  const dialog = document.getElementById('picker-dialog');
+  const body = clear(document.getElementById('picker-body'));
+  const lib = state.libraries[profile.id] ?? { books: [] };
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let filter = 'any';
+  let timer = null;
+
+  // The blurred cover behind the card is read from --art on the wrapper.
+  const wrap = h('div', { class: 'picker-wrap' });
+  const card = h('div', { class: 'picker-card' });
+  const info = h('div', { class: 'picker-info', 'aria-live': 'polite' });
+  const actions = h('div', { class: 'row end picker-actions' });
+
+  const pool = () => {
+    const test = PICK_FILTERS.find(([id]) => id === filter)[2];
+    return lib.books.filter((b) => b.status === 'tbr' && test(b, lib));
+  };
+
+  function draw(books) {
+    if (filter !== 'waiting') return books[Math.floor(Math.random() * books.length)];
+    // Older additions get more tickets.
+    const oldest = [...books].sort((a, b) => String(a.added).localeCompare(String(b.added)));
+    const tickets = oldest.flatMap((b, i) => Array(oldest.length - i).fill(b));
+    return tickets[Math.floor(Math.random() * tickets.length)];
+  }
+
+  function show(book, final) {
+    wrap.setAttribute('style', cssArt(book.cover));
+    fill(card, coverEl(book));
+    card.classList.toggle('landed', final);
+    if (!final) return fill(info, h('div', { class: 'picker-title', text: book.title }));
+    fill(info,
+      h('div', { class: 'eyebrow', text: 'Your next read' }),
+      h('div', { class: 'picker-title', text: book.title }),
+      h('div', { class: 'book-meta', text: [authorNames(book), seriesLabel(book), book.pages ? `${book.pages} pages` : null].filter(Boolean).join(' · ') }),
+      book.added ? h('div', { class: 'book-meta', text: `On the pile since ${fmtDate(book.added)}` }) : null);
+    fill(actions,
+      h('button', { class: 'btn secondary', type: 'button', onclick: () => spin() }, 'Shuffle again'),
+      state.canWrite ? h('button', { class: 'btn', type: 'button', onclick: async (e) => {
+        e.currentTarget.disabled = true;
+        const ok = await saveLibrary(profile.id, (l) => {
+          const t = l.books.find((b) => b.id === book.id);
+          if (!t) throw new Error('That book is no longer on this shelf.');
+          const previous = t.status;
+          t.status = 'reading';
+          applyStatusDates(t, previous);
+          return l;
+        }, `Start ${book.title}`);
+        if (ok) { dialog.close(); toast(`Started ${book.title} — enjoy!`); }
+      } }, 'Start reading') : null);
+  }
+
+  function spin() {
+    clearTimeout(timer);
+    const books = pool();
+    fill(actions);
+    if (!books.length) {
+      wrap.removeAttribute('style');
+      fill(card, art('books'));
+      fill(info, h('p', { class: 'hint', text: 'Nothing on the pile matches that — try another filter.' }));
+      return;
+    }
+    const winner = draw(books);
+    if (reduced || books.length === 1) return show(winner, true);
+    // Slow down like a wheel: each step a little longer than the last.
+    let delay = 60;
+    let i = 0;
+    const step = () => {
+      if (delay > 320) return show(winner, true);
+      show(books[i++ % books.length], false);
+      delay *= 1.16;
+      timer = setTimeout(step, delay);
+    };
+    step();
+  }
+
+  body.append(
+    h('div', { class: 'seg picker-filters', role: 'tablist', 'aria-label': 'What kind of book' },
+      PICK_FILTERS.map(([id, label]) => h('button', {
+        class: 'seg-btn', type: 'button', role: 'tab', 'aria-selected': String(id === filter),
+        onclick: (e) => {
+          filter = id;
+          for (const b of e.currentTarget.parentElement.children) b.setAttribute('aria-selected', String(b === e.currentTarget));
+          spin();
+        },
+      }, label))),
+    (wrap.append(h('div', { class: 'picker-wash', 'aria-hidden': 'true' }), card), wrap),
+    info,
+    actions);
+  dialog.addEventListener('close', () => clearTimeout(timer), { once: true });
+  dialog.showModal();
+  spin();
+};
+
 /* ---------------------------------------------------------------- settings */
+
+/* ----------------------------------------------------------------- backup */
+
+/** Hand the browser a file to save. Nothing leaves the page. */
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = h('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const csvCell = (v) => {
+  const t = v == null ? '' : String(v);
+  return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+};
+
+/**
+ * A copy of everything, and a spreadsheet of one shelf. Git already keeps the
+ * history; this is a copy you can hold, open in Excel or Numbers, or take to
+ * another tracker.
+ */
+function yourData() {
+  const stamp = todayISO();
+  const who = ctx.currentProfile ?? state.profiles[0];
+  const backup = () => download(`bookshelf-backup-${stamp}.json`, `${JSON.stringify({
+    exported: new Date().toISOString(),
+    profiles: state.allProfiles ?? state.profiles,
+    libraries: state.libraries,
+  }, null, 2)}\n`, 'application/json');
+  const csv = () => {
+    const lib = state.libraries[who.id] ?? { books: [] };
+    const head = ['Title', 'Author', 'Series', 'Number', 'Shelf', 'Rating', 'Date read', 'Started', 'Finished', 'Pages', 'Added', 'Hardcover ID'];
+    const rows = lib.books.map((b) => [
+      b.title, authorNames(b), b.series?.name, b.series?.position, SHELF_LABEL[b.status] ?? b.status,
+      b.rating, readOnOf(b), b.started, b.finished, b.pages, b.added, b.hardcoverId,
+    ]);
+    download(`${who.id}-shelf-${stamp}.csv`, `${[head, ...rows].map((r) => r.map(csvCell).join(',')).join('\n')}\n`, 'text/csv');
+  };
+  return h('details', { class: 'optional' },
+    h('summary', { text: 'Your data' }),
+    h('p', { class: 'hint', text: 'Every change is already kept in the site’s history. These give you a copy of your own.' }),
+    h('div', { class: 'row' },
+      h('button', { class: 'btn secondary small', type: 'button', onclick: backup }, 'Download everything (JSON)'),
+      who ? h('button', { class: 'btn secondary small', type: 'button', onclick: csv }, `Download ${who.name}’s shelf (CSV)`) : null));
+}
 
 /** Settings' list of removed people, each with a way back. */
 function removedPeople(dialog) {
@@ -1531,6 +1782,8 @@ function openSettings() {
       h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' })),
 
     removedPeople(dialog),
+
+    yourData(),
 
     h('div', { class: 'row end' },
       h('button', { class: 'btn', type: 'button', onclick: () => {

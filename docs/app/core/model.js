@@ -718,3 +718,41 @@ export function restoreProfile(doc, id) {
   delete p.removed;
   return p;
 }
+
+/* -------------------------------------------------------- reading progress */
+
+const MS_DAY = 86_400_000;
+const dayNumber = (iso) => Math.floor(Date.parse(`${String(iso).slice(0, 10)}T00:00:00Z`) / MS_DAY);
+
+/**
+ * Record how far into a book someone is. Optional, like every date here:
+ * a book with no progress is simply "reading". Pages are clamped to the book.
+ */
+export function setProgress(book, page, now = today()) {
+  const n = Math.max(0, Math.round(Number(page)));
+  if (!Number.isFinite(n)) throw new Error('Progress needs a page number.');
+  const capped = book.pages ? Math.min(n, book.pages) : n;
+  book.progress = { page: capped, updated: now };
+  return book;
+}
+
+/**
+ * How a current read is going: percent, pace since starting, and when it
+ * will be finished at that pace. The pace is only claimed once there is a
+ * start date and some pages behind it - "you'll finish in 400 days" on day
+ * one would be noise.
+ */
+export function readingEstimate(book, now = today()) {
+  const total = book.pages ?? null;
+  const page = book.progress?.page ?? null;
+  const percent = total && page != null ? Math.min(100, Math.round((page / total) * 100)) : null;
+  const out = { page, total, percent, pagesPerDay: null, daysLeft: null, finishOn: null, day: null };
+  if (book.started) out.day = Math.max(1, dayNumber(now) - dayNumber(book.started) + 1);
+  if (!book.started || !page || !total) return out;
+  const pace = page / out.day;
+  if (pace <= 0) return out;
+  out.pagesPerDay = Math.round(pace * 10) / 10;
+  out.daysLeft = Math.ceil((total - page) / pace);
+  out.finishOn = new Date((dayNumber(now) + out.daysLeft) * MS_DAY).toISOString().slice(0, 10);
+  return out;
+}
