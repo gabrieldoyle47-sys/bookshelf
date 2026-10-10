@@ -10,6 +10,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500..700;1,6..72,400..500&display=swap">
 <link rel="stylesheet" href="./app/ui/style.css">
+<script>
+  // Apply a chosen theme before the first paint, so there is no flash of the
+  // other one. "auto" (or nothing saved) follows the device.
+  try { var t = localStorage.getItem('bookshelf.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23a2461f'/><path d='M7 6.5A1.2 1.2 0 0 1 8.2 5.3H17v11H8.2A1.2 1.2 0 0 0 7 17.5zM7 17.5a1.2 1.2 0 0 0 1.2 1.2H17v-2.4' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/></svg>">
 
 <!-- Match the browser chrome to the page in both themes. -->
@@ -36,6 +41,7 @@
       <div id="nav" class="nav"></div>
       <div class="sidebar-foot">
         <button id="open-settings" class="link-btn"><span class="ico ico-settings" aria-hidden="true"></span>Settings</button>
+        <div id="theme-switch" class="theme-switch" role="radiogroup" aria-label="Theme"></div>
         <span id="sync-state" class="sync" aria-live="polite"></span>
       </div>
     </nav>
@@ -43,7 +49,14 @@
     <button id="nav-scrim" class="scrim" type="button" tabindex="-1" aria-label="Close menu"></button>
 
     <main id="main" class="main" tabindex="-1">
-      <div class="loading">Loading…</div>
+      <!-- A shimmering outline of the page while the shelves load. -->
+      <div class="skeleton" aria-label="Loading" role="status">
+        <div class="sk sk-title"></div>
+        <div class="sk sk-line"></div>
+        <div class="sk-row"><div class="sk sk-spine"></div><div class="sk sk-spine tall"></div><div class="sk sk-spine"></div><div class="sk sk-spine tall"></div><div class="sk sk-spine"></div><div class="sk sk-spine"></div></div>
+        <div class="sk sk-card"></div>
+        <div class="sk-cols"><div class="sk sk-col"></div><div class="sk sk-col"></div><div class="sk sk-col"></div></div>
+      </div>
     </main>
   </div>
 
@@ -107,6 +120,15 @@
       <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
     </form>
     <div id="profile-body" class="dialog-body"></div>
+  </dialog>
+
+  <!-- Pick my next read -->
+  <dialog id="picker-dialog" class="dialog">
+    <form method="dialog" class="dialog-head">
+      <h2>Pick my next read</h2>
+      <button class="icon-btn" value="cancel" aria-label="Close">✕</button>
+    </form>
+    <div id="picker-body" class="dialog-body"></div>
   </dialog>
 
   <!-- Settings dialog -->

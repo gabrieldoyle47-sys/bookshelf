@@ -72,7 +72,7 @@ function tile(book, ctx) {
 
   const art = book.cover
     ? h('img', {
-        class: 'tile-art', src: book.cover, alt: '', loading: 'lazy',
+        class: 'tile-art', src: book.cover, alt: '', loading: 'lazy', decoding: 'async',
         onerror: (e) => e.target.replaceWith(
           h('div', { class: 'tile-art tile-fallback' }, h('span', { text: book.title }))),
       })

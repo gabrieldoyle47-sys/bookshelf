@@ -79,12 +79,17 @@ const gh = (env, path, options = {}) =>
  * failure stops the check: carrying on with an empty snapshot would make
  * every series look brand new (and so silently drop a moved date).
  */
-async function readData(env, path, fallback) {
+async function readData(env, path, fallback, memo) {
   const res = await gh(env, path);
   if (res.status === 404) return fallback;
   if (!res.ok) throw new Error(`could not read ${path} (github ${res.status})`);
   try {
-    return JSON.parse(decodeBase64((await res.json()).content));
+    const body = await res.json();
+    const text = decodeBase64(body.content);
+    // Remember what was read, so writeData can skip an unchanged file and
+    // save without looking the sha up again.
+    memo?.set(path, { text, sha: body.sha });
+    return JSON.parse(text);
   } catch {
     return fallback;
   }
@@ -96,10 +101,20 @@ async function readData(env, path, fallback) {
  * retried once; these files are rebuilt in full by the check, so the fresh
  * result is the right one to keep.
  */
-async function writeData(env, path, text, message) {
+async function writeData(env, path, text, message, memo) {
+  const known = memo?.get(path);
+  // Nothing changed: no request, and no empty commit in the history. This is
+  // most "check now" presses after the first of the day.
+  if (known && known.text === text) return true;
   for (let attempt = 0; attempt < 2; attempt++) {
-    const current = await gh(env, path);
-    const sha = current.ok ? (await current.json()).sha : undefined;
+    // The sha from the read is good unless someone committed since; only a
+    // conflict costs the extra lookup. Each request counts against the
+    // Worker's limit of 50 per call, which a growing group would reach.
+    let sha = attempt === 0 ? known?.sha : undefined;
+    if (!sha) {
+      const current = await gh(env, path);
+      sha = current.ok ? (await current.json()).sha : undefined;
+    }
     const res = await gh(env, path, {
       method: 'PUT',
       body: JSON.stringify({ message, content: encodeBase64(text), ...(sha ? { sha } : {}) }),
@@ -154,15 +169,17 @@ async function runCheck(env) {
   const gql = createClient(env.HARDCOVER_TOKEN);
   const now = today();
 
+  const memo = new Map();
   const profiles = activeProfiles(await readData(env, 'profiles.json', { profiles: [] }));
-  const libraries = {};
-  for (const p of profiles) {
-    libraries[p.id] = await readData(env, `profiles/${p.id}/library.json`, { books: [] });
-  }
+  // Side by side rather than one after another: each is a round trip to GitHub.
+  const libraries = Object.fromEntries(await Promise.all(profiles.map(async (p) =>
+    [p.id, await readData(env, `profiles/${p.id}/library.json`, { books: [] })])));
 
-  const seriesState = await readData(env, 'series-state.json', {});
-  const authorState = await readData(env, 'authors.json', {});
-  const bookState = await readData(env, 'books-state.json', {});
+  const [seriesState, authorState, bookState] = await Promise.all([
+    readData(env, 'series-state.json', {}, memo),
+    readData(env, 'authors.json', {}, memo),
+    readData(env, 'books-state.json', {}, memo),
+  ]);
 
   const { text: eventsText } = await readEvents(env);
   const seen = new Set();
@@ -185,10 +202,10 @@ async function runCheck(env) {
     await appendEvents(env, lines, `Release events ${now}`);
   }
   const unsaved = [];
-  if (!await writeData(env, 'series-state.json', asJson(seriesState), `Release check ${now}`)) unsaved.push('series-state.json');
-  if (!await writeData(env, 'authors.json', asJson(authorState), `Release check ${now}`)) unsaved.push('authors.json');
+  if (!await writeData(env, 'series-state.json', asJson(seriesState), `Release check ${now}`, memo)) unsaved.push('series-state.json');
+  if (!await writeData(env, 'authors.json', asJson(authorState), `Release check ${now}`, memo)) unsaved.push('authors.json');
   if (result.checkedTracked || Object.keys(bookState).length) {
-    if (!await writeData(env, 'books-state.json', asJson(bookState), `Release check ${now}`)) unsaved.push('books-state.json');
+    if (!await writeData(env, 'books-state.json', asJson(bookState), `Release check ${now}`, memo)) unsaved.push('books-state.json');
   }
 
   return {

@@ -62,6 +62,12 @@ You can override any of it with `books watch` / `books unwatch`.
 - **Release days in your calendar.** *Add release to calendar* on any upcoming
   book opens a calendar invite (an all-day event with a 9am reminder); on an
   iPhone or Mac it goes straight into Apple Calendar.
+- **Your shelf, drawn.** Each shelf opens with a bookshelf of everything you've
+  finished — taller, thicker spines for longer books, a gold band for 5★ — and a
+  spotlight on what you're reading, with progress and a finish-date estimate.
+  *Finished!* gets confetti; *Pick my next read* shuffles your to-read pile.
+- **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
+  everything, CSV for one shelf) in Settings.
 - **People.** *+ Add a person* in the sidebar gives someone their own shelf.
   Right-click a person (long-press on a phone) to remove them; it asks you to
   type their name first. Removed people are kept, not deleted, and can be

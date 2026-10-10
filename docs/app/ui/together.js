@@ -19,6 +19,7 @@ import {
   matchPairs, readTogether, picksFor, activity, genreGrid, yearBoard,
 } from '../core/together.js';
 import { frag, pageHead, emptyState, plural } from './views.js';
+import { emptyArt } from './art.js';
 
 /** "Both of us" while there are two of you; "Everyone" once there are more. */
 export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : 'Everyone');
@@ -151,7 +152,7 @@ export function togetherView(ctx) {
             it.type === 'recommended' ? ` to ${byId[it.to]?.name ?? 'someone'}` : null,
             it.rating ? h('span', { class: 'feed-stars' }, starsEl(it.rating)) : null),
           h('span', { class: 'feed-when', text: fmtAgo(it.at) })))))
-        : emptyState('Nothing dated yet — finishing or starting a book shows up here.'));
+        : emptyArt('together', 'Nothing dated yet — finishing or starting a book shows up here.'));
   }
 
   /* -- books in common ------------------------------------------------- */

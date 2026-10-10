@@ -12,6 +12,8 @@ import {
 } from '../core/model.js';
 import { visibleEvents, unseenEvents, eventStamp } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
+import { profileHero, readingSpotlight } from './shelfhero.js';
+import { emptyArt } from './art.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -194,8 +196,8 @@ export function shelfView(ctx, profile) {
 
   if (!library.books.length) {
     return frag(
-      pageHead(profile.name, 'Nothing on the shelf yet', addBtn),
-      emptyState(canWrite
+      profileHero(ctx, profile, library, { tally: null, actions: addBtn }),
+      emptyArt('books', canWrite
         ? 'Add the book you are reading right now — its series is watched automatically from then on.'
         : 'This shelf is empty, and this browser is in read-only mode.'));
   }
@@ -222,13 +224,16 @@ export function shelfView(ctx, profile) {
       columns.className = 'shelf-wall';
       columns.append(coverWall(ctx, books));
     } else {
-      // Three columns, left to right: what you mean to read, what you are
-      // reading, what you have read.
-      columns.className = 'shelf-columns';
-      columns.append(
+      // Columns, left to right: what you mean to read, what you are reading,
+      // what you have read. With the spotlight above showing what is being read, a Reading now
+      // column would only repeat it - so the other two get the room.
+      const spotlit = library.books.some((b) => b.status === 'reading');
+      columns.className = `shelf-columns${spotlit ? ' two' : ''}`;
+      columns.append(...[
         plainColumn('tbr', of('tbr'), ctx),
-        plainColumn('reading', of('reading'), ctx),
-        finishedColumn(of('read'), ctx, filters));
+        spotlit ? null : plainColumn('reading', of('reading'), ctx),
+        finishedColumn(of('read'), ctx, filters),
+      ].filter(Boolean));
     }
 
     const filtering = filters.query || filters.rating !== 'all';
@@ -269,11 +274,15 @@ export function shelfView(ctx, profile) {
 
   paint();
 
+  // A shuffle through the to-read pile, for when choosing is the hard part.
+  const tbrCount = library.books.filter((b) => b.status === 'tbr').length;
+  const pickBtn = tbrCount > 1 ? h('button', {
+    class: 'btn secondary', type: 'button', onclick: () => ctx.actions.openPicker(profile),
+  }, h('span', { class: 'ico ico-dice', 'aria-hidden': 'true' }), 'Pick my next read') : null;
+
   return frag(
-    h('div', { class: 'page-head' },
-      h('div', {}, h('h1', { text: profile.name }), tally),
-      h('div', { class: 'spacer' }),
-      addBtn),
+    profileHero(ctx, profile, library, { tally, actions: [pickBtn, addBtn] }),
+    readingSpotlight(ctx, profile, library.books),
     h('div', { class: 'shelf-tools' }, search, ratingFilter, layoutToggle(() => paint())),
     columns,
     extra);
@@ -446,7 +455,7 @@ export function whatsNewView(ctx, profile) {
       unseen.length ? `${unseen.length} since you last looked` : 'All caught up', markRead),
     mine.length
       ? [list, h('div', { class: 'row feed-more' }, more)]
-      : emptyState('No release news yet. The watcher runs daily and anything it finds shows up here.'));
+      : emptyArt('bell', 'No release news yet. The watcher runs daily and anything it finds shows up here.'));
 }
 
 export { frag, pageHead, emptyState, bookRow };

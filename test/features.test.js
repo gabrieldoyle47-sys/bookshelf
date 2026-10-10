@@ -288,3 +288,18 @@ test('series and author lookups only count books with an English edition', async
   // The author query filters both the full catalogue and the forthcoming list.
   assert.equal(sent[1].match(/_eq: "en"/g).length, 2);
 });
+
+test('reading progress is clamped to the book and estimates a finish date from the pace', async () => {
+  const { setProgress, readingEstimate } = await import('../docs/app/core/model.js');
+  const b = { status: 'reading', pages: 400, started: '2026-10-01' };
+  setProgress(b, 900, '2026-10-10');
+  assert.equal(b.progress.page, 400, 'never past the last page');
+  setProgress(b, 100, '2026-10-10');
+  const e = readingEstimate(b, '2026-10-10');
+  assert.equal(e.percent, 25);
+  assert.equal(e.day, 10);
+  assert.equal(e.pagesPerDay, 10);
+  assert.equal(e.daysLeft, 30);
+  assert.equal(e.finishOn, '2026-11-09');
+  assert.equal(readingEstimate({ status: 'reading', pages: 300 }).daysLeft, null, 'no start date, no pace');
+});
