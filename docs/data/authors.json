@@ -244,7 +244,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 459,
+        "usersCount": 464,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -257,7 +257,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 264,
+        "usersCount": 265,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -692,7 +692,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": null,
-        "usersCount": 158,
+        "usersCount": 159,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -962,6 +962,10 @@
       "3036051": {
         "title": "From a Certain Point of View",
         "releaseDate": "2017-10-03"
+      },
+      "3038255": {
+        "title": "Red Rising Series, Vol. 1",
+        "releaseDate": "2023-07-25"
       }
     },
     "forthcoming": []
@@ -1015,7 +1019,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 300,
+        "usersCount": 301,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1189,7 +1193,7 @@
         "releaseDate": "2026-11-17",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
-        "usersCount": 25,
+        "usersCount": 26,
         "series": null
       }
     ]
