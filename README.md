@@ -66,6 +66,11 @@ You can override any of it with `books watch` / `books unwatch`.
   finished — taller, thicker spines for longer books, a gold band for 5★ — and a
   spotlight on what you're reading, with progress and a finish-date estimate.
   *Finished!* gets confetti; *Pick my next read* shuffles your to-read pile.
+- **Suggest a book.** *Picked for you* on Recommendations (or *Suggest a book* on a
+  shelf) finds popular, well-rated books in your most distinctive genres and ranks
+  them against your taste — genres and moods weighted by how much you liked each
+  book, favourite authors, usual length — saying why each was picked.
+- **Adding a book** now lets you rate it, date it and add a note before it's saved.
 - **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
   everything, CSV for one shelf) in Settings.
 - **People.** *+ Add a person* in the sidebar gives someone their own shelf.

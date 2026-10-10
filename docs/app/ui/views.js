@@ -280,8 +280,12 @@ export function shelfView(ctx, profile) {
     class: 'btn secondary', type: 'button', onclick: () => ctx.actions.openPicker(profile),
   }, h('span', { class: 'ico ico-dice', 'aria-hidden': 'true' }), 'Pick my next read') : null;
 
+  const suggestBtn = h('button', {
+    class: 'btn secondary', type: 'button', onclick: () => ctx.actions.goSuggest(profile),
+  }, h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }), 'Suggest a book');
+
   return frag(
-    profileHero(ctx, profile, library, { tally, actions: [pickBtn, addBtn] }),
+    profileHero(ctx, profile, library, { tally, actions: [suggestBtn, pickBtn, addBtn] }),
     readingSpotlight(ctx, profile, library.books),
     h('div', { class: 'shelf-tools' }, search, ratingFilter, layoutToggle(() => paint())),
     columns,

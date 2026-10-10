@@ -7,7 +7,9 @@
  */
 
 import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl, indigoLink } from './dom.js';
-import { onShelfIds, today } from '../core/model.js';
+import { onShelfIds, hiddenIds, today } from '../core/model.js';
+import { tasteProfile, discoveryGenres } from '../core/suggest.js';
+import { carousel } from './carousel.js';
 import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 import { openRelease } from './upcoming.js';
@@ -29,9 +31,92 @@ export function recsView(ctx, profile) {
 
   return frag(
     pageHead(`Recommendations · ${profile.name}`, 'What to read next', sendBtn),
+    pickedForYou(ctx, profile, library),
     h('div', { class: 'recs-columns' },
       seriesColumn(ctx, profile, library),
       sentToYouColumn(ctx, profile, library, others)));
+}
+
+/* --------------------------------------------------------- picked for you */
+
+/**
+ * Suggestions from outside everything you already have: fetched on request
+ * (it costs a few calls to Hardcover), kept for the visit, and shown as a
+ * swipeable row like a Spotify "Made for you" shelf.
+ */
+function pickedForYou(ctx, profile, library) {
+  const taste = tasteProfile(library);
+  const state = ctx.state.suggestions?.[profile.id] ?? { status: 'idle' };
+  // The genres the search actually uses, so the line tells the truth.
+  const basis = discoveryGenres(library, 3);
+  const sub = taste.count
+    ? `From the ${taste.count} books ${profile.name} has read or is reading${basis.length ? ` — mostly ${basis.join(', ')}` : ''}.`
+    : `Finish or rate a few books and ${profile.name}’s suggestions will follow their taste.`;
+
+  const go = h('button', {
+    class: `btn ${state.status === 'ready' ? 'secondary' : ''} suggest-btn`, type: 'button',
+    disabled: !taste.count || state.status === 'loading',
+    onclick: () => ctx.actions.suggestFor(profile),
+  }, h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }),
+  state.status === 'loading' ? 'Finding books…' : state.status === 'ready' ? 'Refresh' : 'Suggest books for me');
+
+  let body;
+  if (state.status === 'ready') {
+    // Drop anything added or dismissed since the list was made.
+    const have = onShelfIds(library);
+    const hidden = hiddenIds(library);
+    const items = state.items.filter((s) => !have.has(String(s.book.id)) && !hidden.has(String(s.book.id)));
+    body = items.length
+      ? carousel(items.map((s) => suggestionCard(ctx, profile, s)), { label: `Suggestions for ${profile.name}`, className: 'suggest-row' })
+      : h('p', { class: 'col-empty', text: 'You have been through every suggestion — press Refresh for more.' });
+  } else if (state.status === 'loading') {
+    body = carousel(Array.from({ length: 5 }, () => h('div', { class: 'sg-card sk-card-skeleton' },
+      h('div', { class: 'sk sg-sk-cover' }), h('div', { class: 'sk sk-line' }), h('div', { class: 'sk sk-line short' }))), { className: 'suggest-row' });
+  } else if (state.status === 'error') {
+    body = h('p', { class: 'hint error', text: state.error });
+  }
+
+  return h('section', { class: 'section picked' },
+    h('div', { class: 'picked-head' },
+      h('div', {},
+        h('div', { class: 'eyebrow', text: 'Made for you' }),
+        h('h2', { text: 'Picked for you' }),
+        h('p', { class: 'col-sub', text: sub })),
+      h('div', { class: 'spacer' }),
+      go),
+    body ?? null);
+}
+
+function suggestionCard(ctx, profile, s) {
+  const b = s.book;
+  const meta = [
+    b.rating ? `★ ${b.rating.toFixed(1)}` : null,
+    b.usersCount ? `${b.usersCount >= 1000 ? `${(b.usersCount / 1000).toFixed(1)}k` : b.usersCount} readers` : null,
+    b.pages ? `${b.pages} pp` : null,
+  ].filter(Boolean).join(' · ');
+  const preview = () => openRelease(ctx, {
+    bookId: String(b.id), title: b.title, image: b.image, releaseDate: b.releaseDate,
+    seriesName: b.series?.name ?? null, position: b.series?.position ?? null, authorName: authorNames(b),
+  }, null, { preview: true });
+
+  return h('article', { class: 'sg-card' },
+    h('button', { class: 'sg-cover', type: 'button', onclick: preview, 'aria-label': `About ${b.title}` },
+      coverEl({ cover: b.image }),
+      h('span', { class: 'sg-match', text: `${s.match}% match` })),
+    h('div', { class: 'sg-body' },
+      h('div', { class: 'sg-title', text: b.title }),
+      h('div', { class: 'book-meta', text: authorNames(b) }),
+      s.reasons[0] ? h('div', { class: 'sg-reason', text: s.reasons[0] }) : null,
+      meta ? h('div', { class: 'sg-meta', text: meta }) : null),
+    h('div', { class: 'sg-actions' },
+      ctx.state.canWrite ? h('button', { class: 'btn small', type: 'button',
+        onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          if (!(await ctx.actions.addHit(profile, b))) e.currentTarget.disabled = false;
+        } }, '+ Want to read') : null,
+      ctx.state.canWrite ? h('button', { class: 'icon-btn', type: 'button', title: 'Not interested',
+        'aria-label': `Not interested in ${b.title}`, onclick: () => ctx.actions.hide(profile, String(b.id), b.title) }, '✕') : null,
+      indigoLink({ title: b.title, authorName: authorNames(b) }, { className: 'shop-link compact' })));
 }
 
 /* ---------------------------------------------------- next in your series */

@@ -177,6 +177,28 @@ export function seriesLabel(book) {
  * backdrop exactly when it mattered. Showing a popover after the dialog puts
  * it on top.
  */
+/**
+ * Count a number up from zero, the way Strava reveals a run's stats. Used
+ * only on arriving at a page - not on every save - and skipped entirely for
+ * reduced motion, where the final number is simply shown.
+ */
+export function countUp(el, to, { duration = 700 } = {}) {
+  const target = Number(to);
+  const format = (n) => Math.round(n).toLocaleString();
+  if (!Number.isFinite(target) || target <= 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = format(target || 0);
+    return el;
+  }
+  const start = performance.now();
+  el.textContent = '0';
+  (function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    el.textContent = format(target * (1 - (1 - t) ** 3));
+    if (t < 1) requestAnimationFrame(frame);
+  })(start);
+  return el;
+}
+
 export function toast(message, isError = false, action = null) {
   const el = document.getElementById('toast');
   const popover = typeof el.showPopover === 'function';
