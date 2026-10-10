@@ -71,6 +71,9 @@ You can override any of it with `books watch` / `books unwatch`.
   them against your taste — genres and moods weighted by how much you liked each
   book, favourite authors, usual length — saying why each was picked.
 - **Adding a book** now lets you rate it, date it and add a note before it's saved.
+- **Two looks.** *Aurora* (the default): a night sky of drifting colour, glass
+  panels, a violet-to-amber gradient and a collage of your own covers behind your
+  name. *Classic*: the warm, paper-and-ink original. Switch in the sidebar.
 - **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
   everything, CSV for one shelf) in Settings.
 - **People.** *+ Add a person* in the sidebar gives someone their own shelf.
