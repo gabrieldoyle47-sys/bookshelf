@@ -948,6 +948,50 @@
       "readOn": null,
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:620124",
+      "hardcoverId": "620124",
+      "title": "Light Bringer",
+      "authors": [
+        {
+          "id": "232665",
+          "name": "Pierce Brown"
+        }
+      ],
+      "series": {
+        "id": "1033",
+        "name": "Red Rising Saga",
+        "position": 6,
+        "booksCount": 14
+      },
+      "pages": 704,
+      "released": "2023-01-01",
+      "releaseYear": 2023,
+      "cover": "https://assets.hardcover.app/edition/30411196/22b4dc2f6745ce1341d52bbd3dbc0555a4d8ffe3.jpeg",
+      "slug": "light-bringer",
+      "genres": [
+        "Science Fiction",
+        "Fantasy",
+        "Space",
+        "Dystopian",
+        "Young Adult",
+        "Dystopia"
+      ],
+      "moods": [
+        "dark",
+        "Adventurous",
+        "tense",
+        "emotional",
+        "sad"
+      ],
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-10-09",
+      "readOn": null,
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
