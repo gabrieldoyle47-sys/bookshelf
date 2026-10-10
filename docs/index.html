@@ -8,12 +8,16 @@
 <!-- Newsreader for titles and headings; everything else uses the system font. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500..700;1,6..72,400..500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500..700;1,6..72,400..500&family=Fraunces:opsz,wght,SOFT@9..144,500..800,0..100&family=Plus+Jakarta+Sans:wght@400..800&display=swap">
 <link rel="stylesheet" href="./app/ui/style.css">
+<!-- Aurora: the second look, scoped to html[data-style="aurora"]. -->
+<link rel="stylesheet" href="./app/ui/aurora.css">
 <script>
   // Apply a chosen theme before the first paint, so there is no flash of the
   // other one. "auto" (or nothing saved) follows the device.
   try { var t = localStorage.getItem('bookshelf.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+  // The look: Aurora unless someone chose Classic.
+  try { document.documentElement.dataset.style = localStorage.getItem('bookshelf.style') === 'classic' ? 'classic' : 'aurora'; } catch (e) { document.documentElement.dataset.style = 'aurora'; }
 </script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%23a2461f'/><path d='M7 6.5A1.2 1.2 0 0 1 8.2 5.3H17v11H8.2A1.2 1.2 0 0 0 7 17.5zM7 17.5a1.2 1.2 0 0 0 1.2 1.2H17v-2.4' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/></svg>">
 
@@ -41,7 +45,10 @@
       <div id="nav" class="nav"></div>
       <div class="sidebar-foot">
         <button id="open-settings" class="link-btn"><span class="ico ico-settings" aria-hidden="true"></span>Settings</button>
-        <div id="theme-switch" class="theme-switch" role="radiogroup" aria-label="Theme"></div>
+        <div class="row switches">
+          <div id="theme-switch" class="theme-switch" role="radiogroup" aria-label="Theme"></div>
+          <div id="style-switch" class="style-switch" role="radiogroup" aria-label="Look"></div>
+        </div>
         <span id="sync-state" class="sync" aria-live="polite"></span>
       </div>
     </nav>

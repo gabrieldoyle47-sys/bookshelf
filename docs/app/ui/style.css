@@ -2116,3 +2116,5 @@ select:disabled { cursor: not-allowed; }
 .spotlight-row .sl-card { width: 100%; }
 @media (min-width: 1100px) { .spotlight-row .carousel-item { width: calc(50% - .45rem); } }
 @media (max-width: 560px) { .spotlight-row .carousel-item { width: 88%; } }
+.switches { gap: .3rem; margin: .2rem 0 .1rem; padding: 0 .6rem; flex-wrap: wrap; }
+.switches .theme-switch, .switches .style-switch { margin: 0; }

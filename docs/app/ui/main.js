@@ -92,6 +92,7 @@ async function boot() {
   });
   wireScroll();
   wireThemeSwitch();
+  wireStyleSwitch();
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
@@ -192,6 +193,23 @@ function tablistKeys(e) {
   // The profile tabs change the route, and render() puts focus back on the
   // redrawn strip.
   tabs[next].click();
+}
+
+/** Aurora / Classic: the two looks, remembered per browser. */
+function wireStyleSwitch() {
+  const box = document.getElementById('style-switch');
+  if (!box) return;
+  const KEY = 'bookshelf.style';
+  const paint = () => fill(box, [['aurora', 'Aurora'], ['classic', 'Classic']].map(([id, label]) => h('button', {
+    class: 'style-opt', type: 'button', role: 'radio',
+    'aria-checked': String((document.documentElement.dataset.style ?? 'aurora') === id), title: `${label} look`,
+    onclick: () => {
+      try { localStorage.setItem(KEY, id); } catch { /* private mode */ }
+      document.documentElement.dataset.style = id;
+      paint();
+    },
+  }, label)));
+  paint();
 }
 
 /** Auto / Light / Dark, remembered per browser. */
