@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-09",
+    "checkedAt": "2026-10-10",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -244,7 +244,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 456,
+        "usersCount": 459,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -257,7 +257,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 263,
+        "usersCount": 264,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -269,7 +269,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-09",
+    "checkedAt": "2026-10-10",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -679,7 +679,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/33314138/ade9d597-c8d7-4e6c-9416-09409365b590.jpg",
-        "usersCount": 3,
+        "usersCount": 4,
         "series": {
           "id": "304605",
           "name": "Hoid's Storybook Collection",
@@ -757,7 +757,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 233,
+        "usersCount": 235,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -770,7 +770,7 @@
         "releaseDate": "2032-01-01",
         "releaseYear": 2032,
         "image": null,
-        "usersCount": 186,
+        "usersCount": 188,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -821,7 +821,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-09",
+    "checkedAt": "2026-10-10",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -969,7 +969,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-09",
+    "checkedAt": "2026-10-10",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1027,7 +1027,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-09",
+    "checkedAt": "2026-10-10",
     "books": {
       "355758": {
         "title": "Australia",
