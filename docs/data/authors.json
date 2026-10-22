@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -10,7 +10,7 @@
       },
       "153090": {
         "title": "Queen of Shadows",
-        "releaseDate": "2015-01-01"
+        "releaseDate": "2015-09-01"
       },
       "183545": {
         "title": "Empire of Storms",
@@ -196,6 +196,10 @@
         "title": "Throne of Glass, Books 0.1-4",
         "releaseDate": "2016-01-01"
       },
+      "2516589": {
+        "title": "The DC Icons Series Graphic Novel Box Set",
+        "releaseDate": "2023-11-07"
+      },
       "2710497": {
         "title": "House of Flame and Shadow, Part 2 of 2",
         "releaseDate": "2025-04-16"
@@ -244,7 +248,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 517,
+        "usersCount": 524,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -257,7 +261,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 298,
+        "usersCount": 301,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -269,7 +273,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -365,7 +369,7 @@
       },
       "427707": {
         "title": "Mistborn Trilogy",
-        "releaseDate": "2009-01-01"
+        "releaseDate": "2009-11-03"
       },
       "427735": {
         "title": "Legion",
@@ -421,7 +425,7 @@
       },
       "427881": {
         "title": "Mistborn: Secret History",
-        "releaseDate": "2016-01-01"
+        "releaseDate": "2016-01-26"
       },
       "427888": {
         "title": "Bastille vs. the Evil Librarians",
@@ -489,7 +493,7 @@
       },
       "434359": {
         "title": "Evershore",
-        "releaseDate": "2021-12-28"
+        "releaseDate": "1988-01-01"
       },
       "446511": {
         "title": "Starsight",
@@ -692,7 +696,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": null,
-        "usersCount": 170,
+        "usersCount": 172,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -718,7 +722,7 @@
         "releaseDate": "2028-12-01",
         "releaseYear": 2028,
         "image": null,
-        "usersCount": 152,
+        "usersCount": 154,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -731,7 +735,7 @@
         "releaseDate": "2029-12-01",
         "releaseYear": 2029,
         "image": null,
-        "usersCount": 102,
+        "usersCount": 104,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -744,7 +748,7 @@
         "releaseDate": "2030-12-01",
         "releaseYear": 2030,
         "image": null,
-        "usersCount": 92,
+        "usersCount": 94,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -783,7 +787,7 @@
         "releaseDate": "2033-01-01",
         "releaseYear": 2033,
         "image": null,
-        "usersCount": 89,
+        "usersCount": 90,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -821,7 +825,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -973,7 +977,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1010,6 +1014,18 @@
       "2460032": {
         "title": "Scion",
         "releaseDate": "2026-09-01"
+      },
+      "3058278": {
+        "title": "The Shadow of What Was Lost",
+        "releaseDate": "2014-08-03"
+      },
+      "3058279": {
+        "title": "An Echo of Things to Come",
+        "releaseDate": "2017-08-24"
+      },
+      "3058280": {
+        "title": "The Light of All That Falls",
+        "releaseDate": "2019-12-10"
       }
     },
     "forthcoming": [
@@ -1019,7 +1035,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 322,
+        "usersCount": 324,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1031,7 +1047,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "355758": {
         "title": "Australia",
@@ -1063,7 +1079,7 @@
       },
       "502042": {
         "title": "The Things We Leave Unfinished",
-        "releaseDate": "2021-01-01"
+        "releaseDate": "2021-02-23"
       },
       "506182": {
         "title": "1001 Dark Nights: Bundle Six",
@@ -1099,7 +1115,7 @@
       },
       "790895": {
         "title": "In The Likely Event",
-        "releaseDate": "2023-01-01"
+        "releaseDate": "2023-08-01"
       },
       "804157": {
         "title": "A Little Too Close",
@@ -1131,7 +1147,7 @@
       },
       "1390320": {
         "title": "Variation: A Novel",
-        "releaseDate": "2024-01-01"
+        "releaseDate": "2024-11-19"
       },
       "1454239": {
         "title": "Ignite",
@@ -1147,7 +1163,7 @@
       },
       "1820307": {
         "title": "Reason To Believe",
-        "releaseDate": "2018-01-01"
+        "releaseDate": "2022-04-26"
       },
       "1906591": {
         "title": "Fourth Wing (Part 2 of 2) [Dramatized Adaptation]",
@@ -1169,9 +1185,21 @@
         "title": "Peculiar Stars",
         "releaseDate": "2026-11-17"
       },
+      "2722083": {
+        "title": "The Renegades Series Collection by Rebecca Yarros",
+        "releaseDate": "2025-02-27"
+      },
       "2769384": {
         "title": "Threshing Day",
         "releaseDate": "2026-09-29"
+      },
+      "2795005": {
+        "title": "Flight & Glory Series Collection 5 Books, Vol. 1.0",
+        "releaseDate": "2024-04-23"
+      },
+      "2875357": {
+        "title": "The Last Letter & Great and Precious Things",
+        "releaseDate": "2026-06-18"
       },
       "2898212": {
         "title": "Fourth Wing (Part 1 of 2) [Dramatized Adaptation]",
@@ -1180,6 +1208,10 @@
       "2902669": {
         "title": "Iron Flame (Part 2 of 2) [Dramatized Adaptation]",
         "releaseDate": "2024-05-17"
+      },
+      "2941784": {
+        "title": "Fourth Wing: The Official Coloring Book",
+        "releaseDate": "2025-09-09"
       },
       "3027103": {
         "title": "Australia",
