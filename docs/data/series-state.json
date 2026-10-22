@@ -2,7 +2,7 @@
   "997": {
     "id": "997",
     "name": "The Stormlight Archive",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "374131": {
         "position": 2,
@@ -121,7 +121,7 @@
   "1033": {
     "id": "1033",
     "name": "Red Rising Saga",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "378044": {
         "position": 2,
@@ -177,7 +177,7 @@
   "1275": {
     "id": "1275",
     "name": "A Court of Thorns and Roses",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "428290": {
         "position": 1,
@@ -254,7 +254,7 @@
   "2211": {
     "id": "2211",
     "name": "Crescent City",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "429093": {
         "position": 2,
@@ -282,7 +282,7 @@
   "5509": {
     "id": "5509",
     "name": "Throne of Glass",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "39629": {
         "position": 1,
@@ -294,7 +294,7 @@
       "153090": {
         "position": 4,
         "title": "Queen of Shadows",
-        "releaseDate": "2015-01-01",
+        "releaseDate": "2015-09-01",
         "releaseYear": 2015,
         "image": "https://assets.hardcover.app/external_data/60670456/1876238af5e412691576aea3dd52f14d12025e19.jpeg"
       },
@@ -387,7 +387,7 @@
   "5982": {
     "id": "5982",
     "name": "The Licanius Trilogy",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "441081": {
         "position": 2,
@@ -415,7 +415,7 @@
   "10001": {
     "id": "10001",
     "name": "The Mistborn Saga: The Original Trilogy",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "103241": {
         "position": 3,
@@ -448,7 +448,7 @@
       "427881": {
         "position": 3.5,
         "title": "Mistborn: Secret History",
-        "releaseDate": "2016-01-01",
+        "releaseDate": "2016-01-26",
         "releaseYear": 2016,
         "image": "https://assets.hardcover.app/edition/30447176/87184eb0-181f-4da0-8691-6e55c52c1457.jpeg"
       }
@@ -457,7 +457,7 @@
   "35077": {
     "id": "35077",
     "name": "Hierarchy",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "594985": {
         "position": 1,
@@ -485,7 +485,7 @@
   "41764": {
     "id": "41764",
     "name": "The Empyrean",
-    "checkedAt": "2026-10-21",
+    "checkedAt": "2026-10-22",
     "books": {
       "714600": {
         "position": 1,
@@ -499,7 +499,7 @@
         "title": "Iron Flame",
         "releaseDate": "2023-01-01",
         "releaseYear": 2023,
-        "image": "https://assets.hardcover.app/edition/31265393/4104bc2a10d4f5b793e5134e22e0afba1209059f.jpeg"
+        "image": "https://assets.hardcover.app/edition/30763550/b1fa9e1b-34c1-478e-80e2-21b813c3edd3.jpg"
       },
       "1061079": {
         "position": 4,
