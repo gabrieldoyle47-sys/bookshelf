@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-23",
+    "checkedAt": "2026-10-24",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -248,7 +248,7 @@
         "releaseDate": "2026-10-27",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/30390459/ee9f70bd-d62e-4636-a0b6-ad98746d065a.jpg",
-        "usersCount": 530,
+        "usersCount": 538,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -261,7 +261,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 306,
+        "usersCount": 312,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -273,7 +273,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-23",
+    "checkedAt": "2026-10-24",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -696,7 +696,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": null,
-        "usersCount": 173,
+        "usersCount": 176,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -761,7 +761,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 238,
+        "usersCount": 239,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -825,7 +825,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-23",
+    "checkedAt": "2026-10-24",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -981,7 +981,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-23",
+    "checkedAt": "2026-10-24",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1019,10 +1019,6 @@
         "title": "Scion",
         "releaseDate": "2026-09-01"
       },
-      "3058278": {
-        "title": "The Shadow of What Was Lost",
-        "releaseDate": "2014-08-03"
-      },
       "3058279": {
         "title": "An Echo of Things to Come",
         "releaseDate": "2017-08-24"
@@ -1039,7 +1035,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 327,
+        "usersCount": 329,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1051,11 +1047,11 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-23",
+    "checkedAt": "2026-10-24",
     "books": {
       "355758": {
         "title": "Australia",
-        "releaseDate": "2020-02-02"
+        "releaseDate": "2020-02-04"
       },
       "472164": {
         "title": "Wilder",
@@ -1216,10 +1212,6 @@
       "2941784": {
         "title": "Fourth Wing: The Official Coloring Book",
         "releaseDate": "2025-09-09"
-      },
-      "3027103": {
-        "title": "Australia",
-        "releaseDate": "2020-02-04"
       }
     },
     "forthcoming": [
