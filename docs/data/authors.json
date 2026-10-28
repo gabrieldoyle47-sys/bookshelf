@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-27",
+    "checkedAt": "2026-10-28",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -62,7 +62,7 @@
       },
       "458947": {
         "title": "A Court of Wings and Ruin",
-        "releaseDate": "0009-01-01"
+        "releaseDate": "2017-05-02"
       },
       "459744": {
         "title": "A Court of Frost and Starlight",
@@ -252,7 +252,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 328,
+        "usersCount": 333,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -264,7 +264,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-27",
+    "checkedAt": "2026-10-28",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -687,7 +687,7 @@
         "releaseDate": "2026-12-01",
         "releaseYear": 2026,
         "image": null,
-        "usersCount": 181,
+        "usersCount": 183,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -726,7 +726,7 @@
         "releaseDate": "2029-12-01",
         "releaseYear": 2029,
         "image": null,
-        "usersCount": 108,
+        "usersCount": 109,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -739,7 +739,7 @@
         "releaseDate": "2030-12-01",
         "releaseYear": 2030,
         "image": null,
-        "usersCount": 98,
+        "usersCount": 100,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -816,7 +816,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-27",
+    "checkedAt": "2026-10-28",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -972,7 +972,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-27",
+    "checkedAt": "2026-10-28",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1026,7 +1026,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 338,
+        "usersCount": 341,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1038,7 +1038,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-27",
+    "checkedAt": "2026-10-28",
     "books": {
       "355758": {
         "title": "Australia",
@@ -1212,7 +1212,7 @@
         "releaseDate": "2026-11-17",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
-        "usersCount": 31,
+        "usersCount": 33,
         "series": null
       }
     ]
