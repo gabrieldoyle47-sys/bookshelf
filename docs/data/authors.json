@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-10-29",
+    "checkedAt": "2026-10-30",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -243,6 +243,10 @@
       "3067710": {
         "title": "The Complete Throne of Glass Collection Full Series",
         "releaseDate": "2021-01-01"
+      },
+      "3075133": {
+        "title": "A Court of Splintered Harmony",
+        "releaseDate": "2026-10-27"
       }
     },
     "forthcoming": [
@@ -252,7 +256,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 338,
+        "usersCount": 347,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -264,7 +268,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-10-29",
+    "checkedAt": "2026-10-30",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -389,10 +393,6 @@
       "427830": {
         "title": "Redemption",
         "releaseDate": "2005-05-01"
-      },
-      "427831": {
-        "title": "Legion and the Emperor's Soul",
-        "releaseDate": "2013-01-01"
       },
       "427840": {
         "title": "Shadows for Silence in the Forests of Hell",
@@ -550,6 +550,10 @@
         "title": "Skyward Flight: The Collection: Sunreach / ReDawn / Evershore",
         "releaseDate": "2022-01-01"
       },
+      "543049": {
+        "title": "The Complete Wheel of Time",
+        "releaseDate": "2012-04-08"
+      },
       "602482": {
         "title": "Tress of the Emerald Sea",
         "releaseDate": "2023-01-01"
@@ -700,7 +704,7 @@
         "releaseDate": "2027-12-31",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 42,
+        "usersCount": 43,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -713,7 +717,7 @@
         "releaseDate": "2028-12-01",
         "releaseYear": 2028,
         "image": null,
-        "usersCount": 158,
+        "usersCount": 159,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -726,7 +730,7 @@
         "releaseDate": "2029-12-01",
         "releaseYear": 2029,
         "image": null,
-        "usersCount": 109,
+        "usersCount": 110,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -739,7 +743,7 @@
         "releaseDate": "2030-12-01",
         "releaseYear": 2030,
         "image": null,
-        "usersCount": 100,
+        "usersCount": 101,
         "series": {
           "id": "5452",
           "name": "The Mistborn Saga",
@@ -752,7 +756,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 240,
+        "usersCount": 241,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -765,7 +769,7 @@
         "releaseDate": "2032-01-01",
         "releaseYear": 2032,
         "image": null,
-        "usersCount": 192,
+        "usersCount": 193,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -778,7 +782,7 @@
         "releaseDate": "2033-01-01",
         "releaseYear": 2033,
         "image": null,
-        "usersCount": 92,
+        "usersCount": 93,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -791,7 +795,7 @@
         "releaseDate": "2034-01-01",
         "releaseYear": 2034,
         "image": null,
-        "usersCount": 182,
+        "usersCount": 183,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -804,7 +808,7 @@
         "releaseDate": "2035-01-01",
         "releaseYear": 2035,
         "image": null,
-        "usersCount": 183,
+        "usersCount": 184,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -816,7 +820,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-10-29",
+    "checkedAt": "2026-10-30",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -972,7 +976,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-10-29",
+    "checkedAt": "2026-10-30",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1026,7 +1030,7 @@
         "releaseDate": "2027-01-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 344,
+        "usersCount": 346,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1038,7 +1042,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-10-29",
+    "checkedAt": "2026-10-30",
     "books": {
       "355758": {
         "title": "Australia",
