@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-11-04",
+    "checkedAt": "2026-11-05",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -248,7 +248,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 380,
+        "usersCount": 383,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -260,7 +260,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-11-04",
+    "checkedAt": "2026-11-05",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -799,7 +799,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-11-04",
+    "checkedAt": "2026-11-05",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -943,7 +943,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-11-04",
+    "checkedAt": "2026-11-05",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -997,7 +997,7 @@
         "releaseDate": "2027-05-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 357,
+        "usersCount": 362,
         "series": {
           "id": "35077",
           "name": "Hierarchy",
@@ -1009,7 +1009,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-11-04",
+    "checkedAt": "2026-11-05",
     "books": {
       "355758": {
         "title": "Australia",
@@ -1183,7 +1183,7 @@
         "releaseDate": "2026-11-17",
         "releaseYear": 2026,
         "image": "https://assets.hardcover.app/edition/32909815/7f003832-5236-47b8-a020-1f07d9dbc634.jpg",
-        "usersCount": 36,
+        "usersCount": 38,
         "series": null
       }
     ]
