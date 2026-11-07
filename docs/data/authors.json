@@ -2,7 +2,7 @@
   "187135": {
     "id": "187135",
     "name": "Sarah J. Maas",
-    "checkedAt": "2026-11-06",
+    "checkedAt": "2026-11-07",
     "books": {
       "39629": {
         "title": "Throne of Glass",
@@ -248,7 +248,7 @@
         "releaseDate": "2027-01-12",
         "releaseYear": 2027,
         "image": "https://assets.hardcover.app/edition/32759989/3be96479-6815-43b6-9936-52b7b19bf167.jpg",
-        "usersCount": 387,
+        "usersCount": 394,
         "series": {
           "id": "1275",
           "name": "A Court of Thorns and Roses",
@@ -260,7 +260,7 @@
   "204214": {
     "id": "204214",
     "name": "Brandon Sanderson",
-    "checkedAt": "2026-11-06",
+    "checkedAt": "2026-11-07",
     "books": {
       "7243": {
         "title": "The Shattered Lens",
@@ -670,7 +670,7 @@
         "releaseDate": "2027-12-01",
         "releaseYear": 2027,
         "image": null,
-        "usersCount": 189,
+        "usersCount": 191,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -735,7 +735,7 @@
         "releaseDate": "2031-12-01",
         "releaseYear": 2031,
         "image": null,
-        "usersCount": 245,
+        "usersCount": 247,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -748,7 +748,7 @@
         "releaseDate": "2032-01-01",
         "releaseYear": 2032,
         "image": null,
-        "usersCount": 196,
+        "usersCount": 198,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -761,7 +761,7 @@
         "releaseDate": "2033-01-01",
         "releaseYear": 2033,
         "image": null,
-        "usersCount": 96,
+        "usersCount": 98,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -774,7 +774,7 @@
         "releaseDate": "2034-01-01",
         "releaseYear": 2034,
         "image": null,
-        "usersCount": 186,
+        "usersCount": 188,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -787,7 +787,7 @@
         "releaseDate": "2035-01-01",
         "releaseYear": 2035,
         "image": null,
-        "usersCount": 187,
+        "usersCount": 189,
         "series": {
           "id": "997",
           "name": "The Stormlight Archive",
@@ -799,7 +799,7 @@
   "232665": {
     "id": "232665",
     "name": "Pierce Brown",
-    "checkedAt": "2026-11-06",
+    "checkedAt": "2026-11-07",
     "books": {
       "378044": {
         "title": "Golden Son",
@@ -943,7 +943,7 @@
   "238975": {
     "id": "238975",
     "name": "James Islington",
-    "checkedAt": "2026-11-06",
+    "checkedAt": "2026-11-07",
     "books": {
       "441081": {
         "title": "An Echo of Things to Come",
@@ -1009,7 +1009,7 @@
   "252677": {
     "id": "252677",
     "name": "Rebecca Yarros",
-    "checkedAt": "2026-11-06",
+    "checkedAt": "2026-11-07",
     "books": {
       "355758": {
         "title": "Australia",
