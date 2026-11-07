@@ -10,7 +10,7 @@
 
 import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
 import { readOnOf, readYearOf, readingEstimate, today } from '../core/model.js';
-import { bookshelf } from './art.js';
+import { bookshelf, shelfPalette } from './art.js';
 import { avatar } from './together.js';
 import { carousel } from './carousel.js';
 import { plural } from './views.js';
@@ -33,18 +33,15 @@ export function profileHero(ctx, profile, library, { tally, actions }) {
     if (ctx.state.navigated) countUp(num, n);
     return h('span', { class: 'ph-stat' }, num, ` ${label}`);
   };
-  const shelf = bookshelf(finished, (b) => ctx.actions.openBook(b, profile), { label: `${profile.name}'s finished books` });
+  const shelf = bookshelf(finished, (b) => ctx.actions.openBook(b, profile), {
+    label: `${profile.name}'s finished books`,
+    // Same colours as the bookshelf page, worked out across the whole shelf.
+    palette: shelfPalette(books),
+  });
   // Most recent on the right, where the eye lands; start scrolled there.
   if (shelf) requestAnimationFrame(() => { const row = shelf.querySelector('.shelf-row'); if (row) row.scrollLeft = row.scrollWidth; });
 
-  // A wall of their own covers behind the name - an artist header, made of
-  // the books they have read. Shown by the Aurora look only.
-  const collageBooks = [...finished].reverse().concat(books.filter((b) => b.status !== 'read')).filter((b) => b.cover).slice(0, 18);
-  const collage = collageBooks.length >= 4 ? h('div', { class: 'ph-collage', 'aria-hidden': 'true' },
-    collageBooks.map((b) => h('img', { src: b.cover, alt: '', loading: 'lazy', decoding: 'async' }))) : null;
-
   return h('header', { class: 'profile-hero', style: `--who:${profile.colour ?? 'var(--accent)'}` },
-    collage,
     h('div', { class: 'ph-top' },
       avatar(profile, { size: 'xl' }),
       h('div', { class: 'ph-name' },

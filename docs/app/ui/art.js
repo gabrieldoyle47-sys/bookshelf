@@ -9,6 +9,7 @@
  */
 
 import { h } from './dom.js';
+import { arrangeShelf, shelfOrder } from '../core/arrange.js';
 
 /* ---------------------------------------------------------- illustrations */
 
@@ -86,11 +87,55 @@ export function emptyArt(name, text, ...extra) {
 /* ------------------------------------------------------------- bookshelf */
 
 /**
- * Cloth colours for spines. Picked by hashing the title, so a book keeps its
- * colour forever; deep enough that light gold lettering reads in both themes.
+ * Cloth colours for spines, deep enough that light gold lettering reads in
+ * both themes.
  */
 const CLOTH = ['#7a2e2e', '#2f4858', '#3f5e3a', '#9a6b1f', '#2c6e6a', '#5b3a63',
-  '#4a5568', '#a4532b', '#1f3b5a', '#6b4f2a', '#6d2c4b', '#365f7a', '#54632a', '#3b3355'];
+  '#4a5568', '#a4532b', '#1f3b5a', '#6b4f2a', '#6d2c4b', '#365f7a', '#54632a', '#3b3355',
+  '#8a3b4f', '#2e5e4e', '#6a4c93', '#7c5a1e', '#25576d', '#9b4a2a'];
+
+/** Spine designs; a series shares one, like a matching box set. */
+const FINISHES = ['bands', 'label', 'stripe', 'dots'];
+
+/**
+ * Distinct cloth colours, ordered so each sits far from the last in hue -
+ * warm, cool, warm - and deep enough for light lettering in either theme.
+ */
+const SHELF_CLOTH = ['#8a2d2d', '#1f4e79', '#b8861f', '#2f6b4f', '#6a3d7a', '#b4532a', '#2c7a7b',
+  '#8a2f55', '#3b5b8c', '#6b7a2a', '#4b3a8c', '#9b6a3c', '#245a4a', '#a23b5c'];
+
+/**
+ * Colours for a whole shelf at once. Series (and standalone authors) take
+ * colours in the order they stand on the shelf, so neighbours always differ
+ * and no two series share one until the palette runs out. Worked out from
+ * the shelf's own arrangement, so the bookshelf page and the profile
+ * header's strip agree.
+ */
+export function shelfPalette(books) {
+  const map = new Map();
+  for (const b of shelfOrder(arrangeShelf(books ?? []))) {
+    const key = paletteKey(b);
+    if (!map.has(key)) map.set(key, SHELF_CLOTH[map.size % SHELF_CLOTH.length]);
+  }
+  return (book) => ({ ...spineStyle(book), cloth: map.get(paletteKey(book)) ?? spineStyle(book).cloth });
+}
+
+const paletteKey = (b) => (b.series?.id ? `series:${b.series.id}`
+  : `author:${b.authors?.[0]?.id ?? b.authors?.[0]?.name ?? b.title}`);
+
+/**
+ * A book's colour and finish. Every book in a series shares both, so a set
+ * reads as a set at a glance; a standalone takes its author's colour and
+ * the plain finish. Hashed from the series (or author), so it never changes.
+ */
+export function spineStyle(book) {
+  if (book.series?.id) {
+    const n = hash(`series:${book.series.id}`);
+    return { cloth: CLOTH[n % CLOTH.length], finish: FINISHES[(n >>> 8) % FINISHES.length] };
+  }
+  const who = book.authors?.[0]?.id ?? book.authors?.[0]?.name ?? book.title;
+  return { cloth: CLOTH[hash(`author:${who}`) % CLOTH.length], finish: 'plain' };
+}
 
 function hash(s) {
   let n = 2166136261;
@@ -103,15 +148,15 @@ function hash(s) {
  * for longer books, a gold band on the ones they rated five stars. It is the
  * picture of a reading life that a list never gives you.
  */
-export function bookshelf(books, onOpen, { label = 'Your shelf' } = {}) {
+export function bookshelf(books, onOpen, { label = 'Your shelf', palette = spineStyle } = {}) {
   if (!books.length) return null;
   const longest = Math.max(400, ...books.map((b) => b.pages ?? 0));
   const spines = books.map((b) => {
     const pages = Math.min(b.pages ?? 320, 1400);
     const t = pages / Math.min(longest, 1400);
-    const colour = CLOTH[hash(b.title) % CLOTH.length];
+    const { cloth: colour, finish } = palette(b);
     return h('button', {
-      class: `spine${b.rating >= 5 ? ' gilt' : ''}`, type: 'button',
+      class: `spine ${finish}${b.rating >= 5 ? ' gilt' : ''}`, type: 'button',
       // Mouse and touch only: every book here is also in the Finished list,
       // and fifty Tab stops would stand between a keyboard user and the page.
       tabindex: '-1',
@@ -124,6 +169,35 @@ export function bookshelf(books, onOpen, { label = 'Your shelf' } = {}) {
   return h('div', { class: 'bookshelf', role: 'group', 'aria-label': label },
     h('div', { class: 'shelf-row' }, spines),
     h('div', { class: 'shelf-plank', 'aria-hidden': 'true' }));
+}
+
+/* ------------------------------------------------------------ ornaments */
+
+const ORNAMENTS = {
+  // A potted plant with a trailing leaf.
+  plant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 130">
+    <path d="M14 98h36l-4 30H18z" fill="#b5653d"/><path d="M12 94h40v7H12z" fill="#c97a4f"/>
+    <path d="M32 96C30 70 18 58 8 56c4 14 12 26 24 40z" fill="#3f7d4c"/>
+    <path d="M32 96c2-28 14-44 26-46-2 18-12 34-26 46z" fill="#4f9a5c"/>
+    <path d="M32 96c-1-22 2-40 8-52 4 16 0 34-8 52z" fill="#367043"/>
+    <path d="M33 96c-6-16-4-30 0-40 6 10 6 26 0 40z" fill="#5fae6b"/>
+    <path d="M50 100c6 6 8 14 6 22" fill="none" stroke="#4f9a5c" stroke-width="3" stroke-linecap="round"/></svg>`,
+  // A candle in a brass holder; the flame flickers in CSS.
+  candle: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 130">
+    <ellipse cx="20" cy="124" rx="17" ry="5" fill="#b8893a"/><path d="M8 118h24v6H8z" fill="#d8b261"/>
+    <rect x="12" y="66" width="16" height="54" rx="2" fill="#f4ead6"/><path d="M12 70c4 3 12 3 16 0v-4H12z" fill="#e6d8bc"/>
+    <path d="M20 66v-6" stroke="#3b2a1b" stroke-width="1.6"/>
+    <path class="flame" d="M20 36c6 8 7 15 0 22-7-7-6-14 0-22z" fill="#ffb347"/>
+    <path class="flame" d="M20 46c3 4 3 8 0 11-3-3-3-7 0-11z" fill="#fff3c4"/></svg>`,
+};
+
+/** A decorative object for the end of a shelf. Hidden from screen readers. */
+export function ornament(name) {
+  const doc = new DOMParser().parseFromString(ORNAMENTS[name], 'image/svg+xml');
+  const svg = document.importNode(doc.documentElement, true);
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  return h('span', { class: `ornament ${name}`, 'aria-hidden': 'true' }, svg);
 }
 
 /* ------------------------------------------------------------- celebrate */

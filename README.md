@@ -62,6 +62,12 @@ You can override any of it with `books watch` / `books unwatch`.
 - **Release days in your calendar.** *Add release to calendar* on any upcoming
   book opens a calendar invite (an all-day event with a 9am reminder); on an
   iPhone or Mac it goes straight into Apple Calendar.
+- **The bookshelf.** Clicking a person opens their bookshelf: every book standing
+  in a wooden case — a series together and in order, then each author's books
+  together, then authors gathered by genre behind an engraved bookend. Each series
+  has its own cloth colour and finish; books being read carry a ribbon. Hover for
+  a peek, click to open. Filter by read / reading / to read, or arrange as a rainbow.
+  The list view is the *Books* tab.
 - **Your shelf, drawn.** Each shelf opens with a bookshelf of everything you've
   finished — taller, thicker spines for longer books, a gold band for 5★ — and a
   spotlight on what you're reading, with progress and a finish-date estimate.
@@ -71,9 +77,6 @@ You can override any of it with `books watch` / `books unwatch`.
   them against your taste — genres and moods weighted by how much you liked each
   book, favourite authors, usual length — saying why each was picked.
 - **Adding a book** now lets you rate it, date it and add a note before it's saved.
-- **Two looks.** *Aurora* (the default): a night sky of drifting colour, glass
-  panels, a violet-to-amber gradient and a collage of your own covers behind your
-  name. *Classic*: the warm, paper-and-ink original. Switch in the sidebar.
 - **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
   everything, CSV for one shelf) in Settings.
 - **People.** *+ Add a person* in the sidebar gives someone their own shelf.

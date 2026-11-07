@@ -19,6 +19,7 @@ import { togetherView, groupLabel, avatar } from './together.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
+import { libraryView } from './library.js';
 import { celebrate, art } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -26,7 +27,7 @@ const state = {
   profiles: [], libraries: {}, seriesState: {}, authorState: {}, bookState: {}, events: [],
   // Suggestions per profile, kept for the visit: { status, items, error }.
   suggestions: {},
-  route: { view: 'profile', profileId: null, tab: 'shelf' },
+  route: { view: 'profile', profileId: null, tab: 'library' },
   canWrite: false,
 };
 
@@ -37,7 +38,8 @@ const ctx = { state, actions: {} };
 ctx.actions.rerender = () => render();
 
 const PROFILE_TABS = [
-  ['shelf', 'Shelf'], ['recs', 'Recommendations'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
+  // The bookshelf is where a profile opens; the list view is "Books".
+  ['library', 'Bookshelf'], ['shelf', 'Books'], ['recs', 'Recommendations'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
 ];
 
 /* ------------------------------------------------------------------- boot */
@@ -92,7 +94,6 @@ async function boot() {
   });
   wireScroll();
   wireThemeSwitch();
-  wireStyleSwitch();
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
@@ -195,23 +196,6 @@ function tablistKeys(e) {
   tabs[next].click();
 }
 
-/** Aurora / Classic: the two looks, remembered per browser. */
-function wireStyleSwitch() {
-  const box = document.getElementById('style-switch');
-  if (!box) return;
-  const KEY = 'bookshelf.style';
-  const paint = () => fill(box, [['aurora', 'Aurora'], ['classic', 'Classic']].map(([id, label]) => h('button', {
-    class: 'style-opt', type: 'button', role: 'radio',
-    'aria-checked': String((document.documentElement.dataset.style ?? 'aurora') === id), title: `${label} look`,
-    onclick: () => {
-      try { localStorage.setItem(KEY, id); } catch { /* private mode */ }
-      document.documentElement.dataset.style = id;
-      paint();
-    },
-  }, label)));
-  paint();
-}
-
 /** Auto / Light / Dark, remembered per browser. */
 function wireThemeSwitch() {
   const box = document.getElementById('theme-switch');
@@ -250,10 +234,10 @@ function readRoute() {
     // An old bookmark or a typo lands on a real page, and the sidebar and
     // tabs then highlight what is actually showing.
     const profileId = state.profiles.some((p) => p.id === parts[1]) ? parts[1] : state.profiles[0]?.id ?? null;
-    const tab = PROFILE_TABS.some(([id]) => id === parts[2]) ? parts[2] : 'shelf';
+    const tab = PROFILE_TABS.some(([id]) => id === parts[2]) ? parts[2] : 'library';
     state.route = { view: 'profile', profileId, tab };
   } else {
-    state.route = { view: 'profile', profileId: state.profiles[0]?.id ?? null, tab: 'shelf' };
+    state.route = { view: 'profile', profileId: state.profiles[0]?.id ?? null, tab: 'library' };
   }
 }
 
@@ -305,7 +289,7 @@ function render() {
   if (tabFocused) selected?.focus();
 
   const views = {
-    shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
+    library: libraryView, shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
   };
   main.append((views[tab] ?? shelfView)(ctx, profile));
 }
@@ -315,8 +299,8 @@ function render() {
  * Strava pattern, in thumb reach - instead of a strip at the top that has to
  * be scrolled sideways to find "Stats".
  */
-const TAB_ICONS = { shelf: 'ico-books', recs: 'ico-sparkle', upcoming: 'ico-calendar', new: 'ico-bell', stats: 'ico-chart' };
-const SHORT = { shelf: 'Shelf', recs: 'For you', upcoming: 'Upcoming', new: 'News', stats: 'Stats' };
+const TAB_ICONS = { library: 'ico-shelf', shelf: 'ico-books', recs: 'ico-sparkle', upcoming: 'ico-calendar', new: 'ico-bell', stats: 'ico-chart' };
+const SHORT = { library: 'Shelf', shelf: 'Books', recs: 'For you', upcoming: 'Upcoming', new: 'News', stats: 'Stats' };
 
 function bottomNav(profile, current) {
   const badges = { recs: newRecCount(state.libraries[profile.id]), new: unseenNews(profile) };
