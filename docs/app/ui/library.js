@@ -4,7 +4,7 @@
  * Every book standing in a wooden case, arranged the way a person would shelve
  * them (core/arrange.js): a series together and in order, an author's books
  * together, authors gathered by genre - each genre opening with an engraved
- * bookend. Spines are coloured and finished per series, so a set reads as a
+ * bookend. Spines are coloured per series, so a set reads as a
  * set. Books being read stand proud with a ribbon; books not yet read are
  * crisp and new.
  *
@@ -83,57 +83,77 @@ export function libraryView(ctx, profile) {
     const spine = (b) => spineEl(ctx, profile, b, colourOf(b), withMotion ? i++ : null);
 
     if (!books.length) {
-      fill(caseBox, bookcase([h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' })]));
+      fill(caseBox, bookcase([h('div', { class: 'shelf-block' }, h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' }))]));
       return;
     }
 
-    let items;
+    const groupEl = (g, authorName) => h('div', { class: 'shelf-group', title: g.name ?? `${authorName} — standalones` },
+      g.books.map(spine),
+      // A label on the plank under a series - only where it can be read.
+      g.name && g.books.length >= 3 ? h('span', { class: 'shelf-mark', text: g.name }) : null);
+    const groupsOf = (list) => arrangeShelf(list).flatMap((section) =>
+      section.authors.flatMap((author) => author.groups.map((g) => groupEl(g, author.name))));
+
+    // Every block starts on a shelf of its own and ends with an ornament.
+    // Two per shelf, so every ornament gets a turn on screen.
+    const ornaments = [['plant', 'cat'], ['candle', 'globe'], ['hourglass', 'plant']];
+    let o = 0;
+    const blocks = [];
     if (prefs.arrange === 'rainbow') {
       // Sorted by spine colour: a shelf you'd photograph.
       const sorted = [...books].sort((a, b) => hue(colourOf(a).cloth) - hue(colourOf(b).cloth));
-      items = [bookend('Rainbow'), h('div', { class: 'shelf-group' }, sorted.map(spine))];
+      blocks.push(shelfBlock('Rainbow', sorted.length, [h('div', { class: 'shelf-group' }, sorted.map(spine))], ornament('plant')));
     } else {
-      // Each genre opens with a bookend carrying its name; then each author's
-      // series and standalones, in order (core/arrange.js).
-      items = arrangeShelf(books).flatMap((section) => [
-        bookend(section.genre, section.count),
-        ...section.authors.flatMap((author) => author.groups.map((g) => h('div', {
-          class: 'shelf-group', title: g.name ?? `${author.name} — standalones`,
-        },
-          g.books.map(spine),
-          // A label on the plank under a series - only where it can be read.
-          g.name && g.books.length >= 3 ? h('span', { class: 'shelf-mark', text: g.name }) : null))),
-      ]);
+      // What you have read or are reading, one shelf per genre (core/arrange.js):
+      // a series together and in order, then the author's books, then genre.
+      const done = books.filter((b) => b.status !== 'tbr');
+      for (const section of arrangeShelf(done)) {
+        blocks.push(shelfBlock(section.genre, section.count,
+          section.authors.flatMap((author) => author.groups.map((g) => groupEl(g, author.name))),
+          ornaments[o++ % ornaments.length].map(ornament)));
+      }
+      // The to-read pile on its own shelf, in the same order of series and author.
+      const pile = books.filter((b) => b.status === 'tbr');
+      if (pile.length) {
+        blocks.push(shelfBlock('To read', pile.length, groupsOf(pile), [ornament('mug'), ornament('hourglass')], 'pile'));
+      } else if (prefs.filter === 'all') {
+        // An empty pile still gets its shelf - and a way to fill it.
+        blocks.push(shelfBlock('To read', 0, [h('div', { class: 'pile-empty' },
+          h('span', { text: 'Nothing on the pile yet.' }),
+          h('button', { class: 'btn secondary small', type: 'button', onclick: () => ctx.actions.goSuggest(profile) },
+            h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }), 'Suggest a book'))], [ornament('mug')], 'pile'));
+      }
     }
-    // Ornaments at the end, so a short shelf looks lived-in rather than empty.
-    items.push(lyingStack(books, colourOf), ornament('plant'), ornament('candle'));
-    fill(caseBox, bookcase(items));
+    fill(caseBox, bookcase(blocks));
   }
 
   paint(animate);
   return h('div', { class: 'library' }, head, tools, caseBox, legend());
 }
 
-/** The case: a carved top, shelves that wrap, a plinth. */
-function bookcase(items) {
+/**
+ * The case: a carved top strung with fairy lights, an ivy pot whose vine
+ * trails down the side, the shelves, and a plinth.
+ */
+function bookcase(blocks) {
+  const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
   return h('div', { class: 'case' },
-    h('div', { class: 'case-crown', 'aria-hidden': 'true' }),
-    h('div', { class: 'case-shelves' }, items),
+    h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
+    h('div', { class: 'ivy', 'aria-hidden': 'true' }, ornament('ivyPot'), h('div', { class: 'ivy-vine' })),
+    h('div', { class: 'case-shelves' }, blocks),
     h('div', { class: 'case-plinth', 'aria-hidden': 'true' }));
 }
 
-/** A bookend engraved with the genre that follows it. */
+/** One stretch of shelving: a bookend with its name, the books, an ornament. */
+function shelfBlock(title, count, groups, decoration, kind = '') {
+  return h('section', { class: `shelf-block ${kind}`, 'aria-label': `${title}, ${count} book${count === 1 ? '' : 's'}` },
+    bookend(title, count), groups, decoration);
+}
+
+/** A bookend engraved with the name of the shelf that follows it. */
 function bookend(title, count) {
   return h('div', { class: 'bookend', role: 'heading', 'aria-level': '2', 'aria-label': count ? `${title}, ${count} books` : title },
     h('span', { class: 'bookend-text', text: title }));
-}
-
-/** A few books lying flat - in the shelf's own colours. */
-function lyingStack(books, colourOf) {
-  const picks = books.slice(-3).map((b) => colourOf(b).cloth);
-  while (picks.length < 3) picks.push('#6b4f2a');
-  return h('span', { class: 'ornament lying', 'aria-hidden': 'true' },
-    picks.map((c, n) => h('span', { class: 'lying-book', style: `--cloth:${c};--n:${n}` })));
 }
 
 /** A spine for the bookshelf page: same family as the profile header's, with more to say. */

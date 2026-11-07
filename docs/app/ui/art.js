@@ -94,9 +94,6 @@ const CLOTH = ['#7a2e2e', '#2f4858', '#3f5e3a', '#9a6b1f', '#2c6e6a', '#5b3a63',
   '#4a5568', '#a4532b', '#1f3b5a', '#6b4f2a', '#6d2c4b', '#365f7a', '#54632a', '#3b3355',
   '#8a3b4f', '#2e5e4e', '#6a4c93', '#7c5a1e', '#25576d', '#9b4a2a'];
 
-/** Spine designs; a series shares one, like a matching box set. */
-const FINISHES = ['bands', 'label', 'stripe', 'dots'];
-
 /**
  * Distinct cloth colours, ordered so each sits far from the last in hue -
  * warm, cool, warm - and deep enough for light lettering in either theme.
@@ -124,14 +121,16 @@ const paletteKey = (b) => (b.series?.id ? `series:${b.series.id}`
   : `author:${b.authors?.[0]?.id ?? b.authors?.[0]?.name ?? b.title}`);
 
 /**
- * A book's colour and finish. Every book in a series shares both, so a set
- * reads as a set at a glance; a standalone takes its author's colour and
- * the plain finish. Hashed from the series (or author), so it never changes.
+ * A book's colour. Every book in a series shares one, so a set reads as a
+ * set at a glance; a standalone takes its author's colour. Hashed from the
+ * series (or author), so it never changes.
  */
 export function spineStyle(book) {
   if (book.series?.id) {
     const n = hash(`series:${book.series.id}`);
-    return { cloth: CLOTH[n % CLOTH.length], finish: FINISHES[(n >>> 8) % FINISHES.length] };
+    // One plain finish for every book: decoration on a spine should mean
+    // something, and the only thing it means here is a five-star rating.
+    return { cloth: CLOTH[n % CLOTH.length], finish: 'plain' };
   }
   const who = book.authors?.[0]?.id ?? book.authors?.[0]?.name ?? book.title;
   return { cloth: CLOTH[hash(`author:${who}`) % CLOTH.length], finish: 'plain' };
@@ -189,6 +188,47 @@ const ORNAMENTS = {
     <path d="M20 66v-6" stroke="#3b2a1b" stroke-width="1.6"/>
     <path class="flame" d="M20 36c6 8 7 15 0 22-7-7-6-14 0-22z" fill="#ffb347"/>
     <path class="flame" d="M20 46c3 4 3 8 0 11-3-3-3-7 0-11z" fill="#fff3c4"/></svg>`,
+  // A cat asleep, curled up; the tail tip twitches.
+  cat: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 70">
+    <ellipse cx="60" cy="64" rx="48" ry="5" fill="#000" opacity=".25"/>
+    <path d="M18 60c0-22 18-36 42-36s40 12 40 30c0 4-2 6-6 6H22c-3 0-4-0-4 0z" fill="#3b3a3f"/>
+    <path d="M28 44c-6-4-10-12-8-20l8 8c4-2 8-2 12-1l6-9c3 8 1 16-4 21" fill="#3b3a3f"/>
+    <path d="M24 26l3 7M42 23l-2 8" stroke="#e8a6b0" stroke-width="2" stroke-linecap="round"/>
+    <path d="M26 44c2 2 5 2 7 0M36 44c2 2 5 2 7 0" stroke="#c9c2cf" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M60 34c14-4 28 2 32 14" stroke="#4a4950" stroke-width="2" fill="none" opacity=".6"/>
+    <path class="tail" d="M98 56c10 0 16-8 12-16-2-4-8-4-8 0 0 3 3 3 3 6 0 4-4 6-9 6z" fill="#3b3a3f"/></svg>`,
+  // A mug of tea, steam rising.
+  mug: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100">
+    <path class="steam" d="M22 40c-4-6 4-10 0-16s4-10 0-16" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".45"/>
+    <path class="steam s2" d="M34 42c-4-6 4-10 0-16s4-10 0-16" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".35"/>
+    <path d="M10 50h36v36c0 6-5 10-10 10H20c-5 0-10-4-10-10z" fill="#e7dcc8"/>
+    <path d="M46 58h4a8 8 0 0 1 0 16h-4" stroke="#e7dcc8" stroke-width="5" fill="none"/>
+    <path d="M10 50h36v8H10z" fill="#7a2e2e"/><ellipse cx="28" cy="50" rx="18" ry="3" fill="#6b4226"/></svg>`,
+  // An hourglass; the sand runs.
+  hourglass: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 110">
+    <rect x="4" y="4" width="42" height="7" rx="2" fill="#7a5530"/><rect x="4" y="99" width="42" height="7" rx="2" fill="#7a5530"/>
+    <rect x="7" y="11" width="3" height="88" fill="#9c6f40"/><rect x="40" y="11" width="3" height="88" fill="#9c6f40"/>
+    <path d="M13 12h24c0 20-10 26-10 43 0 17 10 23 10 43H13c0-20 10-26 10-43 0-17-10-23-10-43z" fill="rgb(210 230 240 / .28)" stroke="rgb(255 255 255 / .5)"/>
+    <path class="sand-top" d="M16 22h18c-2 12-7 18-9 26-2-8-7-14-9-26z" fill="#e3c176"/>
+    <path d="M24.5 55v38" class="sand-stream" stroke="#e3c176" stroke-width="1.4"/>
+    <path d="M15 96c3-10 7-14 10-14s7 4 10 14z" fill="#e3c176"/></svg>`,
+  // A little globe on a brass stand.
+  globe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 110">
+    <ellipse cx="35" cy="104" rx="20" ry="4" fill="#b8893a"/><path d="M30 92h10l3 12H27z" fill="#d8b261"/>
+    <path d="M12 46a26 26 0 0 0 46 18" stroke="#d8b261" stroke-width="3" fill="none"/>
+    <g class="globe-spin"><circle cx="38" cy="42" r="23" fill="#2c6e8a"/>
+    <path d="M26 30c6-4 10 0 9 6s6 8 3 13-9 2-11 8c-6-6-8-18-1-27zM44 24c6 1 12 6 14 12-5 1-7-3-11-2s-6-6-3-10zM46 52c5-2 9 2 10 6-4 4-9 6-12 4 0-4 0-8 2-10z" fill="#6fae6a"/></g>
+    <circle cx="38" cy="42" r="23" fill="none" stroke="rgb(0 0 0 / .25)" stroke-width="2"/>
+    <path d="M38 92V66" stroke="#d8b261" stroke-width="3"/></svg>`,
+  // The pot that sits on top of the case; the vine is drawn in CSS down the side.
+  ivyPot: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 80">
+    <path d="M22 44h46l-6 34H28z" fill="#b5653d"/><path d="M18 38h54v8H18z" fill="#c97a4f"/>
+    <path d="M44 40c-6-14-20-18-30-14 6 10 18 16 30 14z" fill="#3f7d4c"/>
+    <path d="M46 40c4-16 18-24 30-22-4 12-16 20-30 22z" fill="#4f9a5c"/>
+    <path d="M45 40c-2-14 2-26 8-32 3 12 0 24-8 32z" fill="#5fae6b"/>
+    <path d="M30 40c-10 4-18 14-20 24M60 40c10 6 18 16 22 30" stroke="#3f7d4c" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <ellipse cx="10" cy="64" rx="6" ry="4" fill="#4f9a5c" transform="rotate(-40 10 64)"/>
+    <ellipse cx="82" cy="70" rx="6" ry="4" fill="#3f7d4c" transform="rotate(40 82 70)"/></svg>`,
 };
 
 /** A decorative object for the end of a shelf. Hidden from screen readers. */

@@ -18,8 +18,12 @@
 
 import { cleanTags } from './model.js';
 
+// Umbrella genres: true of so many books that they make poor shelves.
+// "Science Fiction" is one - Hardcover's readers tag plenty of epic fantasy
+// with it, which put James Islington beside Red Rising instead of Sanderson.
 const BROAD = new Set(['fantasy', 'science fiction & fantasy', 'fiction', 'young adult', 'adult',
-  'literature & fiction', 'adventure', 'action & adventure', 'teen & young adult', 'young adult fiction']);
+  'literature & fiction', 'adventure', 'action & adventure', 'teen & young adult', 'young adult fiction',
+  'science fiction']);
 
 const authorKey = (b) => b.authors?.[0]?.id ?? b.authors?.[0]?.name ?? 'unknown';
 
