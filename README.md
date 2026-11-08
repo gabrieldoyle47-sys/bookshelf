@@ -69,21 +69,24 @@ You can override any of it with `books watch` / `books unwatch`.
   pair of headphones.
   Hover for a peek, click to open. Filter by read / reading / to read, or arrange
   as a rainbow. The list view is the *Books* tab.
-- **Rearranging.** *Rearrange* lets you drag books, ornaments and trophies anywhere
-  on the shelves (mouse or finger); *Save shelf* keeps the order with that person's
-  shelf, and new books still slot in beside their series. Double-click any ornament
-  to swap it for one of nineteen others — plant, candle, sleeping or sitting cat,
-  robin, owl, goldfish bowl, tulips, mantel clock, lantern and more — or take it
-  off the shelf. *Reset* goes back to the automatic order.
-- **The trophy cabinet.** A small glass-fronted cabinet hanging under the case holds a trophy for
-  every series you have finished completely: a trinket for its genre (a sword for
-  epic fantasy, a rose for romance, a rocket for science fiction…), in the series'
-  own spine colour, with its name on a brass plaque. Click one for the series page.
-- **The room.** A floor-to-ceiling window beside the case, running off the edge of
-  the page, shows the sky as it is outside — dawn, day, dusk or night, worked out
-  from the date — and lets a faint stream of light fall across the right of the
-  shelves. A brass floor lamp on the other side reaches over the top and comes on
-  after dark (click it to switch it yourself).
+- **Arranging.** *By genre*, *By author* (a shelf for each author with two or
+  more books, the rest together) or *Rainbow*. *Rearrange* lets you drag books,
+  ornaments and trophies anywhere (mouse or finger), put up to two ornaments on top
+  of the case, and rename, move, add or remove shelves from the bar above each one —
+  "Dystopian" can become "Sci-fi", and it still collects the same books. *Save shelf*
+  keeps it with that person's shelf, separately for each arrangement; new books
+  still slot in beside their series. Double-click any ornament to swap it for one of
+  nineteen others, or take it off the shelf. *Reset* goes back to the automatic order.
+- **The trophy cabinet.** A small glass-fronted cabinet hanging under the case holds
+  a trophy for every series you have finished completely: a trinket for its genre,
+  in the series' own spine colour, with its name on a brass plaque.
+- **The room.** The bookshelf stands in a small illustrated room, on a floor with a
+  rug, under a basket of trailing ivy, beside a brass floor lamp that comes on after
+  dark. The three scene icons in the sidebar change the room — a fireplace with a fire
+  going and a wingback chair, a dark bedroom on a stormy night with rain and lightning
+  in the window, or a café with a chalkboard, counter, pendant lights and tiles — and
+  play its sound when sound is on. With none chosen it's a reading room with a window
+  whose sky follows the time of day and lets a faint stream of light across the shelves.
 - **Opening a book.** Click a book anywhere and it opens: the cover swings back and
   the details are on the pages — rating, note, start and finish dates, days taken,
   pace, listening hours and narrator — with *Edit* leading to the usual panel.
@@ -133,15 +136,10 @@ You can override any of it with `books watch` / `books unwatch`.
   hours, a heatmap of the days you had a book open and your longest streak, how
   your taste moved month by month, personal records, a passport stamp for each
   country your authors come from, your favourites, and a card to save or copy.
-- **Themes.** Each person picks a theme when they're added (or later, from their
-  menu or the palette button on their shelf). Beyond Classic, a theme's two colours
-  tint the background, sidebar, cards and borders, dress the buttons, chips and
-  tabs, and glow faintly across the top of the page; it also chooses the wood of
-  their bookcase and a faint wallpaper.
-- **Sound, if you want it.** Off by default. A speaker in the sidebar turns on a
-  few quiet sounds (a page turning, a soft chime); three icons beside it — a flame,
-  a rain cloud and a cup — play a
-  crackling fire, rain or a café to read by, with a volume slider.
+- **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
+  sound on or off: a few quiet effects (a page turning, a soft chime) and the chosen
+  scene's background — a crackling fire, rain with distant thunder, or a café — with
+  a volume slider.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation

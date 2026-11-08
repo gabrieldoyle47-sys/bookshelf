@@ -19,16 +19,18 @@
  */
 
 import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp, toast } from './dom.js';
-import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable } from '../core/arrange.js';
+import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable, keyOfShelf } from '../core/arrange.js';
 import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/model.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
-import { roomWindow, floorLamp, lightRoom } from './room.js';
-import { enableDrag, readShelves } from './shelfdrag.js';
+import { roomBack, hangingBasket, floorLamp, lightRoom } from './room.js';
+import { getScene } from './sound.js';
+import { enableDrag, readShelves, readTop } from './shelfdrag.js';
+import { THEMES_ON } from './themes.js';
 
 const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read']];
-const ARRANGE = [['shelf', 'By series & genre'], ['rainbow', 'Rainbow']];
+const ARRANGE = [['shelf', 'By genre'], ['author', 'By author'], ['rainbow', 'Rainbow']];
 const prefs = { filter: 'all', arrange: 'shelf' };
 try { Object.assign(prefs, JSON.parse(sessionStorage.getItem('bookshelf.library') ?? '{}')); } catch { /* private mode */ }
 const savePrefs = () => { try { sessionStorage.setItem('bookshelf.library', JSON.stringify(prefs)); } catch { /* ignore */ } };
@@ -64,7 +66,8 @@ export function libraryView(ctx, profile) {
         stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'))),
     h('div', { class: 'spacer' }),
     h('div', { class: 'lib-actions' },
-      canWrite ? h('button', { class: 'icon-btn lib-theme', type: 'button', title: 'Colour and theme',
+      // Themes are switched off while the room is worked out (themes.js).
+      canWrite && THEMES_ON ? h('button', { class: 'icon-btn lib-theme', type: 'button', title: 'Colour and theme',
         'aria-label': `${profile.name}’s colour and theme`, onclick: () => ctx.actions.openEditProfile(profile) },
       h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' })) : null,
       booksBtn, addBtn));
@@ -92,8 +95,11 @@ export function libraryView(ctx, profile) {
       colour: colourOf(books[0] ?? { series: { id: s.id } }).cloth }];
   }));
 
+  // Each arrangement - by genre, by author - keeps its own saved layout.
+  const mode = () => (prefs.arrange === 'author' ? 'author' : 'genre');
+  const savedLayout = () => (mode() === 'author' ? library.shelfLayoutAuthor : library.shelfLayout);
   /** The shelves as they stand: the saved arrangement brought up to date, or the automatic one. */
-  const currentLayout = () => placeTrophies(mergeLayout(library.shelfLayout, all), [...trophies.keys()]);
+  const currentLayout = () => placeTrophies(mergeLayout(savedLayout(), all, mode()), [...trophies.keys()]);
 
   let editing = null; // a working copy of the layout while rearranging
   const caseBox = h('div', { class: 'bookcase' });
@@ -117,9 +123,10 @@ export function libraryView(ctx, profile) {
     if (editing) {
       fill(tools,
         h('p', { class: 'edit-hint' }, h('strong', { text: 'Rearranging. ' }),
-          'Drag books, ornaments and trophies anywhere. Double-click an ornament to swap it.'),
+          'Drag books, ornaments and trophies anywhere — up to two ornaments can go on top of the case. Rename, move or remove a shelf from the bar above it. Double-click an ornament to swap it.'),
         h('div', { class: 'spacer' }),
         h('div', { class: 'row edit-actions' },
+          h('button', { class: 'btn secondary small', type: 'button', onclick: addShelf }, '+ Shelf'),
           h('button', { class: 'btn secondary small', type: 'button', onclick: addOrnament }, '+ Ornament'),
           h('button', { class: 'btn secondary small', type: 'button', onclick: resetLayout,
             title: 'Put everything back in the automatic order' }, 'Reset'),
@@ -131,7 +138,7 @@ export function libraryView(ctx, profile) {
       chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books'),
       h('div', { class: 'spacer' }),
       chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'),
-      canWrite && prefs.arrange === 'shelf' ? h('button', {
+      canWrite && prefs.arrange !== 'rainbow' ? h('button', {
         class: 'btn secondary small rearrange-btn', type: 'button', onclick: startEditing,
         title: 'Move books and ornaments by hand',
       }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Rearrange') : null);
@@ -154,12 +161,12 @@ export function libraryView(ctx, profile) {
   async function saveEditing(e) {
     const button = e.currentTarget;
     button.disabled = true;
-    if (await ctx.actions.saveShelfLayout(profile, editing)) toast('Shelf saved — new books will slot in beside their series.');
+    if (await ctx.actions.saveShelfLayout(profile, editing, mode())) toast('Shelf saved — new books will slot in beside their series.');
     else button.disabled = false;
   }
   async function resetLayout() {
-    if (!confirm('Put every book and ornament back in the automatic order?')) return;
-    if (library.shelfLayout) await ctx.actions.saveShelfLayout(profile, null);
+    if (!confirm('Put every book, ornament and shelf back in the automatic order?')) return;
+    if (savedLayout()) await ctx.actions.saveShelfLayout(profile, null, mode());
     else stopEditing();
   }
   function addOrnament() {
@@ -182,7 +189,53 @@ export function libraryView(ctx, profile) {
     const layout = currentLayout();
     if (kind) layout.ornaments[id] = kind;
     else removeOrnament(layout, id);
-    await ctx.actions.saveShelfLayout(profile, layout);
+    await ctx.actions.saveShelfLayout(profile, layout, mode());
+  }
+
+  /* -- shelves themselves: add, rename, move, remove (while rearranging) -- */
+
+  /** The order on screen first, so a shelf change never undoes a drag. */
+  const syncFromScreen = () => {
+    const wrap = caseBox.querySelector('.case-wrap');
+    if (wrap) editing = { ...editing, shelves: readShelves(wrap, editing.shelves), top: readTop(wrap) };
+  };
+  function addShelf() {
+    syncFromScreen();
+    const at = Math.max(0, editing.shelves.findIndex((sh) => sh.kind === 'pile'));
+    editing.shelves.splice(at, 0, { title: 'New shelf', kind: 'genre', key: `own:${Date.now().toString(36)}`, keys: ['e:New shelf'] });
+    paint(false);
+    toast('A new shelf is above the to-read pile — rename it from the bar above it, and drag books onto it.');
+  }
+  function renameShelf(n, title) {
+    syncFromScreen();
+    const clean = String(title ?? '').trim().slice(0, 40);
+    if (!clean) return;
+    const shelf = editing.shelves[n];
+    // The shelf keeps its key, so it goes on gathering the books it was made for.
+    editing.shelves[n] = { ...shelf, key: shelf.key ?? keyOfShelf(shelf), title: clean,
+      keys: shelf.keys.map((k) => (k.startsWith('e:') ? `e:${clean}` : k)) };
+    paint(false);
+  }
+  function moveShelf(n, by) {
+    syncFromScreen();
+    const to = n + by;
+    const target = editing.shelves[to];
+    if (!target || target.kind === 'cabinet') return;
+    const list = [...editing.shelves];
+    [list[n], list[to]] = [list[to], list[n]];
+    editing = { ...editing, shelves: list };
+    paint(false);
+  }
+  function removeShelf(n) {
+    syncFromScreen();
+    const shelf = editing.shelves[n];
+    const keep = shelf.keys.filter((k) => !k.startsWith('e:'));
+    // Whatever was on it moves to the shelf above (or below, for the first).
+    const into = editing.shelves[n - 1] && editing.shelves[n - 1].kind !== 'cabinet' ? n - 1 : n + 1;
+    const list = editing.shelves.map((sh, k) => (k === into ? { ...sh, keys: [...sh.keys, ...keep] } : sh)).filter((_, k) => k !== n);
+    editing = { ...editing, shelves: list };
+    paint(false);
+    if (keep.some((k) => k.startsWith('b:'))) toast(`Removed “${shelf.title}” — its books moved to the next shelf.`);
   }
 
   /* ---------------------------------------------------------------- drawing */
@@ -256,18 +309,23 @@ export function libraryView(ctx, profile) {
           h('button', { class: 'btn secondary small', type: 'button', onclick: () => ctx.actions.goSuggest(profile) },
             h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }), 'Suggest a book')));
       }
-      return shelfBlock(shelf.title, books.length, items, null, shelf.kind, n);
+      const block = shelfBlock(shelf.title, books.length, items, null, shelf.kind, n);
+      if (editing) block.prepend(shelfBar(shelf, n));
+      return block;
     }).filter(Boolean);
 
     // The trophy cabinet hangs under the case rather than standing in it.
     const cabinet = blocks.find((b) => b.classList.contains('cabinet')) ?? null;
     const shelves = blocks.filter((b) => b !== cabinet);
-    fill(caseBox, bookcase(shelves.length ? shelves : [emptyBlock()], relight, cabinet));
+    // Up to two ornaments on top of the case.
+    const top = h('div', { class: 'case-top', dataset: { zone: 'top', accept: 'o', max: '2' } },
+      (layout.top ?? []).map((k) => ornamentEl(k.slice(2))));
+    fill(caseBox, bookcase(shelves.length ? shelves : [emptyBlock()], relight, cabinet, top));
     relight();
     requestAnimationFrame(() => tidyLines(caseBox, Boolean(editing)));
     if (editing) {
       const wrap = caseBox.querySelector('.case-wrap');
-      enableDrag(wrap, { onDrop: () => { editing = { ...editing, shelves: readShelves(wrap, editing.shelves) }; } });
+      enableDrag(wrap, { onDrop: () => { editing = { ...editing, shelves: readShelves(wrap, editing.shelves), top: readTop(wrap) }; } });
     }
   }
 
@@ -291,6 +349,33 @@ export function libraryView(ctx, profile) {
       onclick: () => { if (!editing) location.hash = `#/series/${t.id}`; },
     }, trinketArt(t.kind, t.colour), h('span', { class: 'trophy-plaque' }, h('span', { text: t.name })));
   }
+
+  /** The bar over a shelf while rearranging: its name to edit, and move up, move down, remove. */
+  function shelfBar(shelf, n) {
+    const shelvesNow = editing.shelves;
+    const name = h('input', { type: 'text', class: 'shelf-name', value: shelf.title, maxlength: '40', 'aria-label': 'Shelf name',
+      onchange: (e) => renameShelf(n, e.target.value),
+      onkeydown: (e) => { if (e.key === 'Enter') e.target.blur(); } });
+    const canUp = n > 0;
+    const canDown = shelvesNow[n + 1] && shelvesNow[n + 1].kind !== 'cabinet';
+    return h('div', { class: 'shelf-bar', dataset: { bar: '1' } },
+      name,
+      h('button', { class: 'bar-btn', type: 'button', title: 'Move this shelf up', 'aria-label': 'Move shelf up', disabled: !canUp, onclick: () => moveShelf(n, -1) }, '↑'),
+      h('button', { class: 'bar-btn', type: 'button', title: 'Move this shelf down', 'aria-label': 'Move shelf down', disabled: !canDown, onclick: () => moveShelf(n, 1) }, '↓'),
+      shelf.kind === 'pile' ? null : h('button', { class: 'bar-btn danger', type: 'button', title: 'Remove this shelf', 'aria-label': 'Remove shelf',
+        onclick: () => removeShelf(n) }, '✕'));
+  }
+
+  // Picking another scene in the sidebar redraws the room behind the case.
+  const onScene = () => {
+    if (!root.isConnected) return removeEventListener('bookshelf:scene', onScene);
+    const room = caseBox.querySelector('.room');
+    if (!room) return;
+    room.dataset.scene = getScene() ?? 'reading';
+    room.querySelector('.room-back')?.replaceWith(roomBack(getScene()));
+    relight();
+  };
+  addEventListener('bookshelf:scene', onScene);
 
   const emptyBlock = () => h('div', { class: 'shelf-block' }, h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' }));
 
@@ -330,6 +415,7 @@ const nextOrnamentId = (layout) => String(Math.max(0, ...Object.keys(layout.orna
 function removeOrnament(layout, id) {
   delete layout.ornaments[id];
   for (const s of layout.shelves) s.keys = s.keys.filter((k) => k !== `o:${id}`);
+  layout.top = (layout.top ?? []).filter((k) => k !== `o:${id}`);
 }
 
 /**
@@ -359,30 +445,32 @@ function ornamentMenu(anchor, current, onPick) {
 }
 
 /**
- * The case: a carved top strung with fairy lights, an ivy pot whose vine
- * trails down the side nearest the window, the shelves, and a plinth. Beside
- * it, a floor-to-ceiling window on the left (half out of view) and a floor
- * lamp on the right whose arm reaches over the top; under it, the trophy
- * cabinet, hanging from the plinth.
+ * The case, standing in its room (room.js): a carved top strung with fairy
+ * lights and holding up to two ornaments, a basket of trailing ivy hung beside
+ * it, the shelves, a plinth, and the floor lamp. Behind it, the scene; under
+ * it, the trophy cabinet hanging from the plinth.
  */
-function bookcase(blocks, relight, cabinet = null) {
+function bookcase(blocks, relight, cabinet = null, top = null) {
   const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
   const motes = Array.from({ length: 9 }, (_, n) => h('i', { class: 'mote', style: `--n:${n}` }));
-  return h('div', { class: 'case-wrap' },
-    h('div', { class: 'case' },
-      roomWindow(),
-      h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
-      h('div', { class: 'ivy', 'aria-hidden': 'true' }, ornament('ivyPot'), h('div', { class: 'ivy-vine' })),
-      h('div', { class: 'case-shelves' }, blocks),
-      // The light from the window, falling across to the right-hand side.
-      h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
-      h('div', { class: 'case-light', 'aria-hidden': 'true' }),
-      h('div', { class: 'case-plinth', 'aria-hidden': 'true' }),
-      floorLamp(relight)),
-    cabinet ? h('div', { class: 'cabinet-hang' },
-      h('span', { class: 'hang-chain left', 'aria-hidden': 'true' }),
-      h('span', { class: 'hang-chain right', 'aria-hidden': 'true' }),
-      cabinet) : null);
+  const scene = getScene();
+  return h('div', { class: 'room', dataset: { scene: scene ?? 'reading' } },
+    h('div', { class: 'case-wrap' },
+      h('div', { class: 'case' },
+        roomBack(scene),
+        h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
+        top,
+        hangingBasket(),
+        h('div', { class: 'case-shelves' }, blocks),
+        // The light from the window, falling across to the right-hand side.
+        h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
+        h('div', { class: 'case-light', 'aria-hidden': 'true' }),
+        h('div', { class: 'case-plinth', 'aria-hidden': 'true' }),
+        floorLamp(relight)),
+      cabinet ? h('div', { class: 'cabinet-hang' },
+        h('span', { class: 'hang-chain left', 'aria-hidden': 'true' }),
+        h('span', { class: 'hang-chain right', 'aria-hidden': 'true' }),
+        cabinet) : null));
 }
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */

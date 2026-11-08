@@ -9,6 +9,13 @@
  */
 
 import { h } from './dom.js';
+
+/**
+ * Themes are switched off while the bookshelf's room and its scenes are
+ * worked out - the two need designing together. Everything below still
+ * works; set this to true to bring them back.
+ */
+export const THEMES_ON = false;
 import { PROFILE_THEMES } from '../core/model.js';
 
 // Small repeating motifs, one tile each. `C` is replaced by the theme's own

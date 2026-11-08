@@ -1,14 +1,16 @@
 /**
  * Sound, kept calm and off unless asked for.
  *
- * Two separate things, each with its own switch in the sidebar:
+ * One switch, the speaker in the sidebar, turns all of it on or off (off by
+ * default):
  *
  *   Little sounds - a page turning when a book opens or closes, a soft chime
  *   when one is finished or picked from the jar, a quiet tick when something
- *   is set down on the shelf. Off by default.
+ *   is set down on the shelf.
  *
- *   Background - a crackling fire, rain, or a café's murmur, for reading by.
- *   Picked from three icons, with a volume slider.
+ *   Background - a crackling fire, rain, or a café's murmur, which goes with
+ *   the scene chosen for the bookshelf's room (room.js) by the three icons
+ *   beside the speaker. A volume slider appears while one is playing.
  *
  * Everything is made on the spot with Web Audio - filtered noise and a few
  * sine tones - so there are no files to download, and nothing plays until
@@ -16,7 +18,7 @@
  * device.
  */
 
-import { h } from './dom.js';
+import { h, toast } from './dom.js';
 
 const KEY = 'bookshelf.sound';
 const prefs = { effects: false, ambient: null, volume: 0.5 };
@@ -122,7 +124,19 @@ const AMBIENT = {
       s.connect(f).connect(dg).connect(out); s.start();
     };
     const timer = setInterval(() => { for (let i = 0; i < 3; i++) if (Math.random() < 0.6) setTimeout(drop, Math.random() * 120); }, 120);
-    return () => { clearInterval(timer); src.stop(); };
+    // Thunder, far off: a slow low roll every half minute or so.
+    let rumble;
+    const thunder = () => {
+      const s = c.createBufferSource(); s.buffer = noise(5, 'brown');
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 160;
+      const g2 = c.createGain(); const t = c.currentTime;
+      g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.5, t + 0.6);
+      g2.gain.exponentialRampToValueAtTime(0.15, t + 2); g2.gain.exponentialRampToValueAtTime(0.0001, t + 4.8);
+      s.connect(f).connect(g2).connect(out); s.start();
+      rumble = setTimeout(thunder, 22000 + Math.random() * 26000);
+    };
+    rumble = setTimeout(thunder, 9000);
+    return () => { clearInterval(timer); clearTimeout(rumble); src.stop(); };
   },
   // Fire: a low roar, and crackles at uneven intervals.
   fire(c, out) {
@@ -186,7 +200,7 @@ function startAmbient(kind) {
   gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, prefs.volume), c.currentTime + 2);
   gain.connect(c.destination);
   const stop = AMBIENT[kind](c, gain);
-  bed = { stop, gain };
+  bed = { stop, gain, kind };
 }
 
 function stopAmbient() {
@@ -202,11 +216,21 @@ function stopAmbient() {
 
 /* ---------------------------------------------------------------- controls */
 
-const KINDS = [['fire', 'ico-fire', 'Crackling fire'], ['rain', 'ico-rain', 'Rain'], ['cafe', 'ico-cup', 'Coffee shop']];
+const SCENES = [['fire', 'ico-fire', 'Fireplace'], ['rain', 'ico-rain', 'Stormy night'], ['cafe', 'ico-cup', 'Coffee shop']];
+
+/** The scene the bookshelf's room shows: 'fire', 'rain', 'cafe', or null for the reading room. */
+export const getScene = () => prefs.ambient ?? null;
+
+/** Play the scene's background, if sound is on; otherwise make sure it is quiet. */
+function syncAmbient() {
+  if (prefs.effects && prefs.ambient) { if (bed?.kind !== prefs.ambient) startAmbient(prefs.ambient); } else stopAmbient();
+}
 
 /**
- * The sidebar controls: a speaker for the little sounds, three icons for the
- * background, and its volume.
+ * The sidebar controls. The speaker turns all sound on or off. The three
+ * icons choose the scene in the bookshelf's room - a fireplace, a rainy day,
+ * a coffee shop - and with sound on, its sound; picking the chosen one again
+ * goes back to the plain reading room.
  */
 export function soundControls() {
   const box = h('div', { class: 'sound-controls' });
@@ -214,20 +238,25 @@ export function soundControls() {
     box.replaceChildren(h('div', { class: 'sound-pill' },
       h('button', {
         class: 'sound-opt speaker', type: 'button', 'aria-pressed': String(prefs.effects),
-        title: prefs.effects ? 'Little sounds on' : 'Little sounds off', 'aria-label': 'Little sounds',
-        onclick: () => { prefs.effects = !prefs.effects; save(); paint(); play('tick'); },
+        title: prefs.effects ? 'Sound on' : 'Sound off', 'aria-label': 'Sound',
+        onclick: () => { prefs.effects = !prefs.effects; save(); syncAmbient(); paint(); play('tick'); },
       }, h('span', { class: `ico ${prefs.effects ? 'ico-sound' : 'ico-mute'}`, 'aria-hidden': 'true' })),
       h('span', { class: 'sound-sep', 'aria-hidden': 'true' }),
-      ...KINDS.map(([id, icon, label]) => h('button', {
+      ...SCENES.map(([id, icon, label]) => h('button', {
         class: 'sound-opt', type: 'button', 'aria-pressed': String(prefs.ambient === id), title: label, 'aria-label': label,
         onclick: () => {
           prefs.ambient = prefs.ambient === id ? null : id;
           save();
-          if (prefs.ambient) startAmbient(prefs.ambient); else stopAmbient();
+          syncAmbient();
           paint();
+          dispatchEvent(new CustomEvent('bookshelf:scene', { detail: getScene() }));
+          if (prefs.ambient && !prefs.effects && !hinted) {
+            hinted = true;
+            toast('Sound is off — the speaker turns it on.');
+          }
         },
       }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' })))),
-      prefs.ambient ? h('input', {
+      prefs.ambient && prefs.effects ? h('input', {
         class: 'sound-volume', type: 'range', min: '0.05', max: '1', step: '0.05', value: String(prefs.volume), 'aria-label': 'Background volume',
         oninput: (e) => {
           prefs.volume = Number(e.target.value);
@@ -237,11 +266,12 @@ export function soundControls() {
       }) : '');
   };
   paint();
-  // A background chosen on an earlier visit resumes on the first click
-  // anywhere - browsers do not let a page start sound by itself.
-  if (prefs.ambient) {
-    const resume = () => { if (prefs.ambient && !bed) startAmbient(prefs.ambient); };
-    document.addEventListener('pointerdown', resume, { once: true, capture: true });
+  // A scene's sound left on last visit resumes on the first click anywhere -
+  // browsers do not let a page start sound by itself.
+  if (prefs.ambient && prefs.effects) {
+    document.addEventListener('pointerdown', () => syncAmbient(), { once: true, capture: true });
   }
   return box;
 }
+
+let hinted = false;

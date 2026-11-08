@@ -56,8 +56,14 @@ export function enableDrag(container, { onDrop }) {
     const under = document.elementFromPoint(x, y);
     drag.ghost.style.visibility = '';
     if (!under) return;
-    const block = under.closest('.shelf-block[data-shelf]');
+    const block = under.closest('.shelf-block[data-shelf], [data-zone]');
     if (!block || !container.contains(block)) return;
+    // A zone can take only some things, and only so many (the top of the case:
+    // ornaments, two at most).
+    const accept = block.dataset.accept;
+    if (accept && !drag.item.dataset.key.startsWith(`${accept}:`)) return;
+    const max = Number(block.dataset.max);
+    if (max && drag.item.parentElement !== block && block.querySelectorAll(':scope > [data-key]').length >= max) return;
     const target = under.closest('[data-key]');
     if (target && target !== drag.item && block.contains(target)) {
       const r = target.getBoundingClientRect();
@@ -96,4 +102,9 @@ export function readShelves(container, shelves) {
     if (!block) return shelf;
     return { ...shelf, keys: [...block.querySelectorAll(':scope > [data-key]')].map((el) => el.dataset.key) };
   });
+}
+
+/** The ornaments on top of the case, as keys. */
+export function readTop(container) {
+  return [...container.querySelectorAll('.case-top > [data-key]')].map((el) => el.dataset.key);
 }

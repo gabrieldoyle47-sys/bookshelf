@@ -187,3 +187,28 @@ test('the year story: reading days, streaks, records and passport stamps', async
   assert.deepEqual(passport([{ name: 'A', location: 'Utah, USA' }, { name: 'B', location: 'Texas' }, { name: 'C', location: 'Sydney, Australia' }, { name: 'D' }]),
     [{ country: 'United States', authors: ['A', 'B'] }, { country: 'Australia', authors: ['C'] }]);
 });
+
+test('by author: a shelf per author with two or more books, everyone else together, new books find their author', async () => {
+  const { autoShelves, mergeLayout } = await import('../docs/app/core/arrange.js');
+  const A = [{ id: 'a', name: 'Ann' }];
+  const B = [{ id: 'b', name: 'Bo' }];
+  const C = [{ id: 'c', name: 'Cy' }];
+  const books = [book(1, { authors: A }), book(2, { authors: A }), book(3, { authors: B }), book(4, { authors: C })];
+  const auto = autoShelves(books, 'author');
+  assert.deepEqual(auto.shelves.map((s) => s.title), ['Ann', 'More authors', 'To read']);
+  assert.deepEqual(auto.top, []);
+  const merged = mergeLayout(auto, [...books, book(5, { authors: A }), book(6, { authors: [{ id: 'd', name: 'Di' }] })], 'author');
+  assert.ok(merged.shelves[0].keys.includes('b:hc:5'), 'beside Ann');
+  assert.ok(merged.shelves[1].keys.includes('b:hc:6'), 'a new author goes on the shared shelf');
+});
+
+test('a renamed shelf still collects its genre, and the top of the case keeps two ornaments at most', () => {
+  const saved = { shelves: [
+    { title: 'Sci-fi', kind: 'genre', key: 'genre:Romance', keys: ['e:Sci-fi', 'o:1'] },
+    { title: 'Other', kind: 'genre', key: 'genre:Horror', keys: ['e:Other'] },
+    { title: 'To read', kind: 'pile', key: 'pile', keys: ['e:To read'] },
+  ], ornaments: { 1: 'cat', 2: 'owl', 3: 'bird', 4: 'plant' }, top: ['o:2', 'o:3', 'o:4', 'o:9'] };
+  const merged = mergeLayout(saved, [book(8, { authors: [{ id: 'z', name: 'Z' }] }), book(9, { authors: [{ id: 'y', name: 'Y' }] })]);
+  assert.deepEqual([...merged.shelves[0].keys].sort(), ['b:hc:8', 'b:hc:9', 'e:Sci-fi', 'o:1'], 'both land on the renamed shelf');
+  assert.deepEqual(merged.top, ['o:2', 'o:3']);
+});

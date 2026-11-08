@@ -118,7 +118,33 @@ export const shelfOrder = (sections) =>
  */
 const DEFAULT_ORNAMENTS = [['plant', 'cat'], ['candle', 'globe'], ['hourglass', 'plant']];
 
-export function autoShelves(books) {
+/** The arrangements a shelf can have: by genre (the default) or by author. */
+export const MODES = ['genre', 'author'];
+
+// What decides a book's shelf in each arrangement. A shelf keeps the key it
+// was made with, so renaming "Dystopian" to "Sci-fi" still gathers the books
+// that would have gone on it.
+const MORE_AUTHORS = 'More authors';
+const shelfKeyFor = (mode, genreOf, authorShelves) => (b) => (mode === 'author'
+  ? (authorShelves.has(authorKey(b)) ? `author:${authorKey(b)}` : 'author:more')
+  : `genre:${genreOf.get(b.id) ?? MORE}`);
+/** A shelf's key - saved layouts from before keys existed fall back to the genre in their title. */
+export const keyOfShelf = (s) => s.key ?? (s.kind === 'genre' ? `genre:${s.title}` : s.kind);
+
+/** Each author's books, in shelf order (series together), most-read authors first. */
+function authorsOf(list) {
+  const byAuthor = new Map();
+  for (const b of list) {
+    const k = authorKey(b);
+    if (!byAuthor.has(k)) byAuthor.set(k, { key: k, name: b.authors?.[0]?.name ?? 'Unknown author', books: [] });
+    byAuthor.get(k).books.push(b);
+  }
+  return [...byAuthor.values()]
+    .map((a) => ({ ...a, books: shelfOrder(arrangeShelf(a.books)) }))
+    .sort((a, b) => b.books.length - a.books.length || a.name.localeCompare(b.name));
+}
+
+export function autoShelves(books, mode = 'genre') {
   const list = shelvable(books);
   const shelves = [];
   const ornaments = {};
@@ -129,19 +155,35 @@ export function autoShelves(books) {
     return `o:${id}`;
   });
   const done = list.filter((b) => b.status !== 'tbr');
-  arrangeShelf(done).forEach((section, i) => {
-    shelves.push({
-      title: section.genre, kind: 'genre',
-      keys: [`e:${section.genre}`, ...shelfOrder([section]).map((b) => `b:${b.id}`),
-        ...addOrnaments(DEFAULT_ORNAMENTS[i % DEFAULT_ORNAMENTS.length])],
+  if (mode === 'author') {
+    // A shelf for each author with two or more books; everyone else shares one.
+    const authors = authorsOf(done);
+    const own = authors.filter((a) => a.books.length >= 2);
+    const rest = authors.filter((a) => a.books.length < 2).sort((a, b) => a.name.localeCompare(b.name));
+    own.forEach((a, i) => shelves.push({
+      title: a.name, kind: 'genre', key: `author:${a.key}`,
+      keys: [`e:${a.name}`, ...a.books.map((b) => `b:${b.id}`), ...addOrnaments(DEFAULT_ORNAMENTS[i % DEFAULT_ORNAMENTS.length])],
+    }));
+    if (rest.length) {
+      shelves.push({ title: MORE_AUTHORS, kind: 'genre', key: 'author:more',
+        keys: [`e:${MORE_AUTHORS}`, ...rest.flatMap((a) => a.books).map((b) => `b:${b.id}`), ...addOrnaments(['plant'])] });
+    }
+  } else {
+    arrangeShelf(done).forEach((section, i) => {
+      shelves.push({
+        title: section.genre, kind: 'genre', key: `genre:${section.genre}`,
+        keys: [`e:${section.genre}`, ...shelfOrder([section]).map((b) => `b:${b.id}`),
+          ...addOrnaments(DEFAULT_ORNAMENTS[i % DEFAULT_ORNAMENTS.length])],
+      });
     });
-  });
+  }
   const pile = list.filter((b) => b.status === 'tbr');
   shelves.push({
-    title: 'To read', kind: 'pile',
+    title: 'To read', kind: 'pile', key: 'pile',
     keys: ['e:To read', ...shelfOrder(arrangeShelf(pile)).map((b) => `b:${b.id}`), ...addOrnaments(['mug', 'hourglass'])],
   });
-  return { shelves, ornaments };
+  // The top of the case holds up to two ornaments; it starts clear.
+  return { shelves, ornaments, top: [] };
 }
 
 /**
@@ -153,12 +195,14 @@ export function autoShelves(books) {
  * the to-read shelf); failing that, at the end of the last shelf. Everything
  * the person placed by hand stays where they put it.
  */
-export function mergeLayout(layout, books) {
+export function mergeLayout(layout, books, mode = 'genre') {
   const list = shelvable(books);
   const byId = new Map(list.map((b) => [b.id, b]));
   const shelves = (layout?.shelves ?? []).map((s) => ({ ...s, keys: [...s.keys] }));
   const ornaments = { ...(layout?.ornaments ?? {}) };
-  if (!shelves.length) return autoShelves(books);
+  if (!shelves.length) return autoShelves(books, mode);
+  // Only ornaments that still exist, and at most two, on top of the case.
+  const top = (layout?.top ?? []).filter((k) => k.startsWith('o:') && ornaments[k.slice(2)]).slice(0, 2);
 
   const pileShelf = shelves.find((s) => s.kind === 'pile');
   const placed = new Set();
@@ -176,6 +220,8 @@ export function mergeLayout(layout, books) {
 
   const genreOf = new Map();
   for (const section of arrangeShelf(list)) for (const b of shelfOrder([section])) genreOf.set(b.id, section.genre);
+  const authorShelves = new Set(shelves.map(keyOfShelf).filter((k) => k.startsWith('author:') && k !== 'author:more').map((k) => k.slice(7)));
+  const keyOf = shelfKeyFor(mode, genreOf, authorShelves);
 
   const insertAfterLast = (test) => {
     for (let s = shelves.length - 1; s >= 0; s--) {
@@ -200,14 +246,14 @@ export function mergeLayout(layout, books) {
       || insertAfterLast((x, shelf) => authorKey(x ?? {}) === authorKey(b) && onPileSide(shelf))
       || (() => {
         const target = b.status === 'tbr' && pileShelf ? pileShelf
-          : shelves.find((s) => s.title === genreOf.get(b.id) && s !== pileShelf)
+          : shelves.find((s) => keyOfShelf(s) === keyOf(b) && s !== pileShelf)
           ?? [...shelves].reverse().find((s) => s !== pileShelf && s.kind !== 'cabinet') ?? shelves[0];
         return { s: shelves.indexOf(target), i: endOf(target) };
       })();
     shelves[spot.s].keys.splice(spot.i, 0, `b:${b.id}`);
     placed.add(b.id);
   }
-  return { shelves, ornaments };
+  return { shelves, ornaments, top };
 }
 
 /**

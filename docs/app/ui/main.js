@@ -26,7 +26,7 @@ import { statsView } from './stats.js';
 import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
-import { applyTheme, themeOf, themePicker } from './themes.js';
+import { applyTheme, themeOf, themePicker, THEMES_ON } from './themes.js';
 import { play, soundControls } from './sound.js';
 import { startTour, toured } from './tour.js';
 import { celebrate, art, shelfPalette } from './art.js';
@@ -304,7 +304,8 @@ function render() {
   // theme of whoever was looking; the shared pages, the site's own.
   const themed = view === 'profile' ? state.profiles.find((p) => p.id === profileId) ?? state.profiles[0]
     : view === 'author' || view === 'series' ? state.profiles.find((p) => p.id === state.viewer) : null;
-  applyTheme(themed ? themeOf(themed) : null);
+  // Switched off for now (themes.js) - every page wears the site's own look.
+  applyTheme(themed && THEMES_ON ? themeOf(themed) : null);
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
   if (view === 'shared') return void main.append(togetherView(ctx));
@@ -617,9 +618,11 @@ ctx.actions.untrack = async (profile, bookId, title) => {
  * Keep a hand-made arrangement of the bookshelf, or (with null) go back to
  * the automatic one.
  */
-ctx.actions.saveShelfLayout = (profile, layout) => saveLibrary(profile.id, (lib) => {
-  if (layout) lib.shelfLayout = { shelves: layout.shelves, ornaments: layout.ornaments };
-  else delete lib.shelfLayout;
+ctx.actions.saveShelfLayout = (profile, layout, mode = 'genre') => saveLibrary(profile.id, (lib) => {
+  // One saved layout per arrangement: by genre, and by author.
+  const field = mode === 'author' ? 'shelfLayoutAuthor' : 'shelfLayout';
+  if (layout) lib[field] = { shelves: layout.shelves, ornaments: layout.ornaments, top: layout.top ?? [] };
+  else delete lib[field];
   return lib;
 }, layout ? `Rearrange ${profile.name}'s bookshelf` : `Put ${profile.name}'s bookshelf back in order`);
 
@@ -1681,8 +1684,8 @@ ctx.actions.openNewProfile = () => {
     h('div', { class: 'row profile-preview' }, preview,
       h('label', { class: 'field grow' }, h('span', { text: 'Name' }), input)),
     h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
-    h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; }),
-      h('span', { class: 'hint', text: 'Their pages take its colour, the wood of their bookcase and a faint wallpaper. It can be changed later.' })),
+    THEMES_ON ? h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; }),
+      h('span', { class: 'hint', text: 'Their pages take its colour, the wood of their bookcase and a faint wallpaper. It can be changed later.' })) : null,
     error,
     h('p', { class: 'hint', text: 'Anyone with the link can see and edit every shelf here, including this one.' }),
     h('div', { class: 'row end' }, create));
@@ -1819,7 +1822,7 @@ function openProfileMenu(profile, x, y, opener) {
   menuEl = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `${profile.name} options` },
     h('div', { class: 'ctx-head', text: profile.name }),
     item('Open shelf', () => go(`#/p/${profile.id}`)),
-    state.canWrite ? item('Colour and theme…', () => ctx.actions.openEditProfile(profile)) : null,
+    state.canWrite && THEMES_ON ? item('Colour and theme…', () => ctx.actions.openEditProfile(profile)) : null,
     item('Add a person…', () => ctx.actions.openNewProfile()),
     h('div', { class: 'ctx-sep', role: 'separator' }),
     item(`Remove ${profile.name}…`, () => ctx.actions.openRemoveProfile(profile), 'danger'));
