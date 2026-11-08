@@ -8,7 +8,7 @@
  *   is set down on the shelf. Off by default.
  *
  *   Background - a crackling fire, rain, or a café's murmur, for reading by.
- *   Picked from three monochrome icons, with a volume slider.
+ *   Picked from three icons, with a volume slider.
  *
  * Everything is made on the spot with Web Audio - filtered noise and a few
  * sine tones - so there are no files to download, and nothing plays until
@@ -202,7 +202,7 @@ function stopAmbient() {
 
 /* ---------------------------------------------------------------- controls */
 
-const KINDS = [['fire', '🔥', 'Crackling fire'], ['rain', '🌧', 'Rain'], ['cafe', '☕', 'Coffee shop']];
+const KINDS = [['fire', 'ico-fire', 'Crackling fire'], ['rain', 'ico-rain', 'Rain'], ['cafe', 'ico-cup', 'Coffee shop']];
 
 /**
  * The sidebar controls: a speaker for the little sounds, three icons for the
@@ -218,15 +218,15 @@ export function soundControls() {
         onclick: () => { prefs.effects = !prefs.effects; save(); paint(); play('tick'); },
       }, h('span', { class: `ico ${prefs.effects ? 'ico-sound' : 'ico-mute'}`, 'aria-hidden': 'true' })),
       h('span', { class: 'sound-sep', 'aria-hidden': 'true' }),
-      ...KINDS.map(([id, glyph, label]) => h('button', {
-        class: 'sound-opt mono', type: 'button', 'aria-pressed': String(prefs.ambient === id), title: label, 'aria-label': label,
+      ...KINDS.map(([id, icon, label]) => h('button', {
+        class: 'sound-opt', type: 'button', 'aria-pressed': String(prefs.ambient === id), title: label, 'aria-label': label,
         onclick: () => {
           prefs.ambient = prefs.ambient === id ? null : id;
           save();
           if (prefs.ambient) startAmbient(prefs.ambient); else stopAmbient();
           paint();
         },
-      }, glyph))),
+      }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' })))),
       prefs.ambient ? h('input', {
         class: 'sound-volume', type: 'range', min: '0.05', max: '1', step: '0.05', value: String(prefs.volume), 'aria-label': 'Background volume',
         oninput: (e) => {

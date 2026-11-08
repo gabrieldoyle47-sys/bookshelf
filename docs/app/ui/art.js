@@ -267,13 +267,92 @@ const ORNAMENTS = {
     <rect x="12" y="28" width="66" height="14" rx="2" fill="#8a2d2d"/><rect x="14" y="34" width="62" height="2" fill="#f4ead6" opacity=".5"/>
     <rect x="18" y="16" width="56" height="12" rx="2" fill="#b8861f"/><rect x="20" y="21" width="52" height="2" fill="#3a2608" opacity=".4"/>
     <path d="M78 42v14M84 46v6" stroke="#f4ead6" stroke-width="1" opacity=".5"/></svg>`,
+  // A cat sitting up, tail curled round; it blinks now and then.
+  sittingCat: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 110">
+    <ellipse cx="34" cy="106" rx="26" ry="3.5" fill="#000" opacity=".25"/>
+    <path class="tail" d="M48 100c14 0 18-10 14-20-2-5-8-4-7 1 1 4 4 6 2 11-2 4-6 5-9 5z" fill="#c98a4b"/>
+    <path d="M14 104c-2-24 2-44 20-52 16 4 22 26 18 52z" fill="#d99a5b"/>
+    <path d="M24 104c0-14 4-26 10-30 6 4 10 16 9 30z" fill="#f2d2a8"/>
+    <path d="M16 36l2-22 12 12h8l12-12 2 22c0 12-8 20-18 20s-18-8-18-20z" fill="#d99a5b"/>
+    <path d="M20 18l7 8M48 18l-7 8" stroke="#f2b6b0" stroke-width="2.4" stroke-linecap="round"/>
+    <g class="eyes" fill="#3a2a1a"><ellipse cx="27" cy="37" rx="2.4" ry="3"/><ellipse cx="41" cy="37" rx="2.4" ry="3"/></g>
+    <path d="M32 44l2 2 2-2" stroke="#8a4a3a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M22 30l-6-2M46 30l6-2" stroke="#a86a3a" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  // A robin on a twig; it tilts its head.
+  bird: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <path d="M6 70h64M60 70l8-8" stroke="#6b4a2a" stroke-width="4" stroke-linecap="round"/>
+    <path d="M28 70v-8M38 70v-8" stroke="#c9822f" stroke-width="2"/>
+    <path d="M18 52c0-14 10-22 22-22 10 0 16 8 16 18 0 10-8 16-20 16H22l-12 6 6-8z" fill="#6f5a48"/>
+    <path d="M30 40c6-4 16-2 18 8 1 8-6 13-14 12-7-1-9-12-4-20z" fill="#e0723a"/>
+    <g class="head"><circle cx="46" cy="30" r="10" fill="#6f5a48"/><path d="M44 34c4-4 9-3 10 0-2 5-7 6-10 0z" fill="#e0723a"/>
+    <circle cx="49" cy="27" r="1.8" fill="#1d1a16"/><path d="M55 29l7 2-7 2z" fill="#e3a83a"/></g>
+    <path d="M22 50c6 2 12 2 18-2" stroke="#4f3f32" stroke-width="2" fill="none"/></svg>`,
+  // A carved wooden owl.
+  owl: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 84">
+    <ellipse cx="30" cy="80" rx="20" ry="3" fill="#000" opacity=".25"/>
+    <path d="M10 30c0-14 8-24 20-24s20 10 20 24v26c0 14-9 22-20 22S10 70 10 56z" fill="#8a5f36"/>
+    <path d="M10 14l8 8M50 14l-8 8" stroke="#8a5f36" stroke-width="6" stroke-linecap="round"/>
+    <path d="M18 52c4 10 20 10 24 0-2 14-22 14-24 0z" fill="#b48653"/>
+    <path d="M20 54l3 4 3-4M27 58l3 4 3-4M34 54l3 4 3-4" stroke="#7a5230" stroke-width="1.4" fill="none"/>
+    <circle cx="21" cy="30" r="8" fill="#e8d3a6"/><circle cx="39" cy="30" r="8" fill="#e8d3a6"/>
+    <circle cx="21" cy="30" r="3.6" fill="#2a1c10"/><circle cx="39" cy="30" r="3.6" fill="#2a1c10"/>
+    <circle cx="22.4" cy="28.6" r="1" fill="#fff"/><circle cx="40.4" cy="28.6" r="1" fill="#fff"/>
+    <path d="M27 38l3 5 3-5z" fill="#d89a3a"/>
+    <path d="M10 46c-4 8-2 18 6 22M50 46c4 8 2 18-6 22" stroke="#6e4a29" stroke-width="3" fill="none"/></svg>`,
+  // A round bowl with a goldfish swimming in it.
+  fishbowl: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+    <ellipse cx="40" cy="77" rx="26" ry="3" fill="#000" opacity=".25"/>
+    <path d="M22 14h36" stroke="rgb(255 255 255 / .6)" stroke-width="3" stroke-linecap="round"/>
+    <path d="M24 16C10 24 6 44 14 60c6 12 18 16 26 16s20-4 26-16c8-16 4-36-10-44" fill="rgb(200 225 245 / .22)" stroke="rgb(255 255 255 / .55)" stroke-width="2"/>
+    <path d="M10 36c10 4 50 4 60 0 2 10 1 22-4 32-6 10-16 8-26 8s-20 2-26-8c-5-10-6-22-4-32z" fill="#4f9cc7" opacity=".55"/>
+    <path d="M18 70c4-6 8-6 10 0M50 72c2-8 8-10 10-4" stroke="#3f7d4c" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <g class="fish"><path d="M30 50c4-6 14-6 18 0-4 6-14 6-18 0z" fill="#f08a2c"/><path d="M30 50l-7-5v10z" fill="#f4a24c"/><circle cx="44" cy="49" r="1.2" fill="#1d1a16"/></g>
+    <circle class="bubble" cx="50" cy="42" r="1.6" fill="none" stroke="#fff" opacity=".7"/>
+    <path d="M20 26c-4 6-5 12-4 18" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".5"/></svg>`,
+  // A cactus in a terracotta pot.
+  cactus: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100">
+    <path d="M14 70h32l-4 28H18z" fill="#c26b3f"/><path d="M12 66h36v7H12z" fill="#d6804f"/>
+    <path d="M24 66V24c0-8 12-8 12 0v42z" fill="#4f8a55"/>
+    <path d="M24 46h-6c-4 0-6-3-6-7V30c0-5 7-5 7 0v8h5zM36 40h6c3 0 4-2 4-5v-7c0-5 6-5 6 0v9c0 6-4 10-10 10h-6z" fill="#5f9a64"/>
+    <path d="M30 20v44M27 30h-2M35 36h2M27 50h-2M35 56h2" stroke="#3f7247" stroke-width="1.2"/>
+    <circle cx="30" cy="18" r="4" fill="#e86a8a"/><circle cx="30" cy="18" r="1.6" fill="#f7c64a"/></svg>`,
+  // Tulips in a glass vase.
+  tulips: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 120">
+    <path d="M32 62C30 44 22 34 18 28M32 62c0-20 2-32 6-40M32 62c2-16 10-24 16-28" stroke="#3f7d4c" stroke-width="2.4" fill="none"/>
+    <path d="M22 54c-8-4-12-12-10-20 8 4 12 12 10 20zM42 56c8-2 12-10 12-18-8 2-12 10-12 18z" fill="#4f9a5c"/>
+    <path d="M12 28c0-8 4-12 6-12s6 4 6 12c0 4-3 6-6 6s-6-2-6-6z" fill="#e0607a"/>
+    <path d="M32 22c0-8 4-12 6-12s6 4 6 12c0 4-3 6-6 6s-6-2-6-6z" fill="#f2b84b"/>
+    <path d="M42 34c0-8 4-12 6-12s6 4 6 12c0 4-3 6-6 6s-6-2-6-6z" fill="#c45ab0"/>
+    <path d="M20 62h24l4 50c0 4-4 6-8 6H24c-4 0-8-2-8-6z" fill="rgb(200 225 245 / .3)" stroke="rgb(255 255 255 / .55)" stroke-width="1.5"/>
+    <path d="M18 84h28l2 28c0 3-3 5-6 5H22c-3 0-6-2-6-5z" fill="rgb(140 190 220 / .3)"/></svg>`,
+  // A small mantel clock whose second hand goes round.
+  clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 90">
+    <ellipse cx="40" cy="86" rx="30" ry="3" fill="#000" opacity=".25"/>
+    <path d="M6 84c0-8 4-12 10-14 2-30 12-56 24-56s22 26 24 56c6 2 10 6 10 14z" fill="#7a4a2a"/>
+    <path d="M10 84h60" stroke="#5a3418" stroke-width="3"/>
+    <circle cx="40" cy="44" r="20" fill="#d8b261"/><circle cx="40" cy="44" r="17" fill="#f6efe0"/>
+    <g stroke="#3a2a1a" stroke-width="1.4"><path d="M40 29v3M40 56v3M25 44h3M52 44h3"/></g>
+    <path d="M40 44V33M40 44l7 4" stroke="#2a1c10" stroke-width="2" stroke-linecap="round"/>
+    <path class="second" d="M40 46V30" stroke="#b3402f" stroke-width="1" stroke-linecap="round"/>
+    <circle cx="40" cy="44" r="1.6" fill="#2a1c10"/></svg>`,
+  // An oil lantern with a small flame.
+  lantern: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 100">
+    <ellipse cx="25" cy="96" rx="18" ry="3" fill="#000" opacity=".25"/>
+    <path d="M25 4c-6 0-8 4-8 8" stroke="#3a3a3e" stroke-width="2.4" fill="none"/>
+    <path d="M14 18h22l-3 8H17z" fill="#3a3a3e"/>
+    <path d="M15 26h20v52H15z" fill="rgb(255 210 120 / .28)" stroke="#3a3a3e" stroke-width="2.4"/>
+    <path d="M25 26v52" stroke="#3a3a3e" stroke-width="1.4"/>
+    <path class="flame" d="M25 46c5 6 5 11 0 15-5-4-5-9 0-15z" fill="#ffb347"/>
+    <path class="flame" d="M25 52c2 3 2 5 0 7-2-2-2-4 0-7z" fill="#fff3c4"/>
+    <path d="M10 78h30l-3 16H13z" fill="#3a3a3e"/></svg>`,
 };
 
 /** What an ornament can be swapped for, in the order the menu lists them. */
 export const ORNAMENT_CHOICES = [
   ['plant', 'Plant'], ['candle', 'Candle'], ['cat', 'Sleeping cat'], ['mug', 'Mug of tea'], ['teapot', 'Teapot'],
   ['hourglass', 'Hourglass'], ['globe', 'Globe'], ['snowGlobe', 'Snow globe'], ['frame', 'Little painting'],
-  ['crystal', 'Amethyst'], ['bookStack', 'Stack of books'],
+  ['crystal', 'Amethyst'], ['bookStack', 'Stack of books'], ['sittingCat', 'Sitting cat'], ['bird', 'Robin'], ['owl', 'Wooden owl'],
+  ['fishbowl', 'Goldfish'], ['cactus', 'Cactus'], ['tulips', 'Tulips'], ['clock', 'Mantel clock'], ['lantern', 'Lantern'],
 ];
 
 /** A decorative object for the end of a shelf. Hidden from screen readers. */
@@ -288,15 +367,18 @@ export function ornament(name) {
 /* --------------------------------------------------------------- the lamp */
 
 /**
- * The little lamp on top of the case. Its bulb and the pool of light under
- * the shade are styled by .lamp.on, which the bookshelf sets at night.
+ * The head of the floor lamp: the top of the arc and a brass dome shade. The
+ * pole and base are CSS, so the lamp can be as tall as the case. The bulb and
+ * shade are restyled by .floor-lamp.on at night.
  */
-const LAMP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90">
-  <ellipse cx="30" cy="86" rx="16" ry="3.5" fill="#000" opacity=".3"/>
-  <path d="M18 80h24l-3 6H21z" fill="#9c7330"/><rect x="28" y="40" width="4" height="40" fill="#b8893a"/>
-  <circle class="lamp-bulb" cx="30" cy="38" r="6" fill="#6b5a40"/>
-  <path class="lamp-shade" d="M14 36l6-30h20l6 30z" fill="#c9a77a"/>
-  <path d="M14 36h32" stroke="#8a6a3a" stroke-width="2"/><path d="M20 6h20" stroke="#8a6a3a" stroke-width="2"/></svg>`;
+const LAMP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 96">
+  <path d="M141 96V34C141 14 122 6 98 6 70 6 44 12 34 30" fill="none" stroke="#b8893a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M141 96V34C141 14 122 6 98 6" fill="none" stroke="#f0d18a" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+  <circle cx="34" cy="31" r="3.2" fill="#9c7330"/>
+  <ellipse class="lamp-bulb" cx="34" cy="56" rx="9" ry="5" fill="#6b5a40"/>
+  <path class="lamp-shade" d="M34 32c-14 0-22 10-24 24h48c-2-14-10-24-24-24z" fill="#a8873f"/>
+  <path d="M12 56h44" stroke="#7a5a26" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M22 40c4-4 9-6 13-6" stroke="#f3dca0" stroke-width="2" fill="none" stroke-linecap="round" opacity=".55"/></svg>`;
 
 export function lampArt() {
   const doc = new DOMParser().parseFromString(LAMP, 'image/svg+xml');

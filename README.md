@@ -66,21 +66,24 @@ You can override any of it with `books watch` / `books unwatch`.
   in a wooden case — a series together and in order, then each author's books
   together, then authors gathered by genre behind an engraved bookend. Each series
   has its own cloth colour; books being read carry a ribbon, audiobooks a small
-  pair of headphones, and spine titles are set in a face that suits the genre.
+  pair of headphones.
   Hover for a peek, click to open. Filter by read / reading / to read, or arrange
   as a rainbow. The list view is the *Books* tab.
 - **Rearranging.** *Rearrange* lets you drag books, ornaments and trophies anywhere
   on the shelves (mouse or finger); *Save shelf* keeps the order with that person's
   shelf, and new books still slot in beside their series. Double-click any ornament
-  to swap it for another — plant, candle, cat, teapot, snow globe and more — or
-  take it off the shelf. *Reset* goes back to the automatic order.
-- **The trophy cabinet.** A glass-fronted shelf under the others holds a trophy for
+  to swap it for one of nineteen others — plant, candle, sleeping or sitting cat,
+  robin, owl, goldfish bowl, tulips, mantel clock, lantern and more — or take it
+  off the shelf. *Reset* goes back to the automatic order.
+- **The trophy cabinet.** A small glass-fronted cabinet hanging under the case holds a trophy for
   every series you have finished completely: a trinket for its genre (a sword for
   epic fantasy, a rose for romance, a rocket for science fiction…), in the series'
   own spine colour, with its name on a brass plaque. Click one for the series page.
-- **The room.** A small window shows the sky as it is outside — dawn, day, dusk or
-  night, worked out from the date — the light on the shelves follows it, and a lamp
-  on top of the case comes on after dark (click it to switch it yourself).
+- **The room.** A floor-to-ceiling window beside the case, running off the edge of
+  the page, shows the sky as it is outside — dawn, day, dusk or night, worked out
+  from the date — and lets a faint stream of light fall across the right of the
+  shelves. A brass floor lamp on the other side reaches over the top and comes on
+  after dark (click it to switch it yourself).
 - **Opening a book.** Click a book anywhere and it opens: the cover swings back and
   the details are on the pages — rating, note, start and finish dates, days taken,
   pace, listening hours and narrator — with *Edit* leading to the usual panel.
@@ -131,10 +134,13 @@ You can override any of it with `books watch` / `books unwatch`.
   your taste moved month by month, personal records, a passport stamp for each
   country your authors come from, your favourites, and a card to save or copy.
 - **Themes.** Each person picks a theme when they're added (or later, from their
-  menu or the palette button on their shelf): an accent colour, a wood for their
-  bookcase and a faint wallpaper, worn by their pages.
+  menu or the palette button on their shelf). Beyond Classic, a theme's two colours
+  tint the background, sidebar, cards and borders, dress the buttons, chips and
+  tabs, and glow faintly across the top of the page; it also chooses the wood of
+  their bookcase and a faint wallpaper.
 - **Sound, if you want it.** Off by default. A speaker in the sidebar turns on a
-  few quiet sounds (a page turning, a soft chime); three icons beside it play a
+  few quiet sounds (a page turning, a soft chime); three icons beside it — a flame,
+  a rain cloud and a cup — play a
   crackling fire, rain or a café to read by, with a volume slider.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.

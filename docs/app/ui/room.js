@@ -1,7 +1,7 @@
 /**
- * The room the bookshelf stands in: a small window that shows the sky as it
- * is outside right now, light that follows it, and a lamp on top of the case
- * that comes on after dark.
+ * The room the bookshelf stands in: a tall window that shows the sky as it is
+ * outside right now, a faint stream of light from it across the shelves, and
+ * a floor lamp that comes on after dark.
  *
  * All decoration - quiet on purpose. The light on the shelves shifts a little;
  * nothing ever makes a book harder to read.
@@ -34,26 +34,35 @@ export function timeOfDay(date = new Date()) {
   return 'night';
 }
 
-/** The window: sky, sun or moon, a few stars, two slow clouds. */
+/**
+ * The window: floor to ceiling beside the case, half of it out of view, with
+ * sky, sun or moon, a few stars, slow clouds and a sheer curtain on the side
+ * you can see.
+ */
 export function roomWindow() {
-  const stars = Array.from({ length: 7 }, (_, n) => h('i', { class: 'win-star', style: `--n:${n}` }));
+  const stars = Array.from({ length: 12 }, (_, n) => h('i', { class: 'win-star', style: `--n:${n}` }));
   return h('div', { class: 'room-window', 'aria-hidden': 'true' },
     h('div', { class: 'win-sky' },
       h('i', { class: 'win-sun' }), h('i', { class: 'win-moon' }), stars,
-      h('i', { class: 'win-cloud c1' }), h('i', { class: 'win-cloud c2' })),
+      h('i', { class: 'win-cloud c1' }), h('i', { class: 'win-cloud c2' }), h('i', { class: 'win-cloud c3' })),
     h('div', { class: 'win-frame' }),
+    h('div', { class: 'win-curtain' }, h('span', { class: 'win-tie' })),
     h('div', { class: 'win-sill' }));
 }
 
 /**
- * The lamp. It follows the time of day unless someone has clicked it, which
- * holds for the rest of the visit - an easter egg rather than a setting.
+ * The floor lamp: a brass arc standing beside the case, its arm reaching
+ * over the top. It follows the time of day unless someone has clicked it,
+ * which holds for the rest of the visit - an easter egg rather than a setting.
  */
 let lampOverride = null;
 
-export function roomLamp(onChange) {
-  const el = h('button', { class: 'room-lamp', type: 'button', tabindex: '-1', 'aria-hidden': 'true' },
-    h('span', { class: 'lamp-glow' }), lampArt());
+export function floorLamp(onChange) {
+  const el = h('button', { class: 'floor-lamp', type: 'button', tabindex: '-1', 'aria-hidden': 'true', title: 'Lamp' },
+    h('span', { class: 'fl-glow' }),
+    h('span', { class: 'fl-pole' }),
+    h('span', { class: 'fl-base' }),
+    lampArt());
   el.addEventListener('click', () => {
     lampOverride = !el.classList.contains('on');
     onChange();
@@ -70,7 +79,7 @@ export function lightRoom(library) {
     const tod = timeOfDay();
     library.dataset.tod = tod;
     const on = lampOverride ?? (tod === 'night' || tod === 'dusk');
-    library.querySelector('.room-lamp')?.classList.toggle('on', on);
+    library.querySelector('.floor-lamp')?.classList.toggle('on', on);
     library.classList.toggle('lamp-on', on);
   };
   paint();

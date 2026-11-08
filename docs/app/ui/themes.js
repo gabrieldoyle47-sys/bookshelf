@@ -1,7 +1,8 @@
 /**
  * A person's theme: chosen when they are added, changed from their menu or
- * their bookshelf, and worn by their pages - an accent colour, the wood of
- * their bookcase, and a faint wallpaper behind it all.
+ * their bookshelf, and worn by their pages - two colours that tint the
+ * background, surfaces, buttons and tabs, the wood of their bookcase, and a
+ * faint wallpaper behind it all. Classic is the site's own look, untouched.
  *
  * The accent and wood are CSS (style.css, "Profile themes"); this sets which
  * one is on, and draws the wallpaper, which needs the accent baked into it.
@@ -31,11 +32,13 @@ export function applyTheme(theme) {
     delete root.dataset.wood;
     root.style.removeProperty('--wallpaper');
     root.style.removeProperty('--p-accent');
+    root.style.removeProperty('--p-accent-2');
     return;
   }
   root.dataset.ptheme = theme.id;
   root.dataset.wood = theme.wood;
   root.style.setProperty('--p-accent', theme.accent);
+  root.style.setProperty('--p-accent-2', theme.accent2 ?? theme.accent);
   const tile = PATTERNS[theme.wallpaper];
   if (tile && /^#[0-9a-f]{6}$/i.test(theme.accent)) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" opacity=".07">${tile.replaceAll('C', theme.accent)}</svg>`;
@@ -58,7 +61,7 @@ export function themePicker(current, onPick) {
       onclick: () => { paint(t.id); onPick(t.id); },
     },
       // Classic is the site's own terracotta, whatever is showing now.
-      h('span', { class: 'tc-swatch', style: `--c:${t.accent ?? '#a2461f'}` }),
+      h('span', { class: 'tc-swatch', style: `--c:${t.accent ?? '#a2461f'};--c2:${t.accent2 ?? t.accent ?? '#a2461f'}` }),
       h('span', { class: 'tc-wood', 'aria-hidden': 'true' }),
       h('span', { class: 'tc-name', text: t.name })));
   }

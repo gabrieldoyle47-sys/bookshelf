@@ -847,12 +847,12 @@ export function whosWho(library, seriesId, upTo = Infinity) {
  * bookcase, and a wallpaper behind it.
  */
 export const PROFILE_THEMES = [
-  { id: 'classic', name: 'Classic', accent: null, wood: 'walnut', wallpaper: 'plain' },
-  { id: 'forest', name: 'Forest', accent: '#2f6b4f', wood: 'oak', wallpaper: 'leaves' },
-  { id: 'ocean', name: 'Ocean', accent: '#1f6f8b', wood: 'driftwood', wallpaper: 'waves' },
-  { id: 'rose', name: 'Rose', accent: '#b0476a', wood: 'cherry', wallpaper: 'florals' },
-  { id: 'midnight', name: 'Midnight', accent: '#4b5bb8', wood: 'ebony', wallpaper: 'stars' },
-  { id: 'sunset', name: 'Sunset', accent: '#c2622d', wood: 'oak', wallpaper: 'stripes' },
+  { id: 'classic', name: 'Classic', accent: null, accent2: null, wood: 'walnut', wallpaper: 'plain' },
+  { id: 'forest', name: 'Forest', accent: '#2f6b4f', accent2: '#8a9a3a', wood: 'oak', wallpaper: 'leaves' },
+  { id: 'ocean', name: 'Ocean', accent: '#1f6f8b', accent2: '#2a9d8f', wood: 'driftwood', wallpaper: 'waves' },
+  { id: 'rose', name: 'Rose', accent: '#b0476a', accent2: '#d98a6a', wood: 'cherry', wallpaper: 'florals' },
+  { id: 'midnight', name: 'Midnight', accent: '#4b5bb8', accent2: '#8a5cc8', wood: 'ebony', wallpaper: 'stars' },
+  { id: 'sunset', name: 'Sunset', accent: '#c2622d', accent2: '#d9a12f', wood: 'oak', wallpaper: 'stripes' },
 ];
 
 export function setProfileTheme(doc, id, themeId) {

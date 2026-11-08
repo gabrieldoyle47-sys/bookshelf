@@ -24,7 +24,7 @@ import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/mod
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
-import { roomWindow, roomLamp, lightRoom } from './room.js';
+import { roomWindow, floorLamp, lightRoom } from './room.js';
 import { enableDrag, readShelves } from './shelfdrag.js';
 
 const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read']];
@@ -62,8 +62,6 @@ export function libraryView(ctx, profile) {
       h('h1', { text: `${profile.name}’s shelf` }),
       h('div', { class: 'lib-stats' }, stat(all.length, all.length === 1 ? 'book' : 'books'),
         stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'))),
-    h('div', { class: 'spacer' }),
-    roomWindow(),
     h('div', { class: 'spacer' }),
     h('div', { class: 'lib-actions' },
       canWrite ? h('button', { class: 'icon-btn lib-theme', type: 'button', title: 'Colour and theme',
@@ -261,12 +259,15 @@ export function libraryView(ctx, profile) {
       return shelfBlock(shelf.title, books.length, items, null, shelf.kind, n);
     }).filter(Boolean);
 
-    fill(caseBox, bookcase(blocks.length ? blocks : [emptyBlock()], relight));
+    // The trophy cabinet hangs under the case rather than standing in it.
+    const cabinet = blocks.find((b) => b.classList.contains('cabinet')) ?? null;
+    const shelves = blocks.filter((b) => b !== cabinet);
+    fill(caseBox, bookcase(shelves.length ? shelves : [emptyBlock()], relight, cabinet));
     relight();
     requestAnimationFrame(() => tidyLines(caseBox, Boolean(editing)));
     if (editing) {
-      const shelves = caseBox.querySelector('.case-shelves');
-      enableDrag(shelves, { onDrop: () => { editing = { ...editing, shelves: readShelves(shelves, editing.shelves) }; } });
+      const wrap = caseBox.querySelector('.case-wrap');
+      enableDrag(wrap, { onDrop: () => { editing = { ...editing, shelves: readShelves(wrap, editing.shelves) }; } });
     }
   }
 
@@ -358,18 +359,30 @@ function ornamentMenu(anchor, current, onPick) {
 }
 
 /**
- * The case: a carved top strung with fairy lights, a lamp and an ivy pot on
- * top - the vine trailing down the side - the shelves, and a plinth.
+ * The case: a carved top strung with fairy lights, an ivy pot whose vine
+ * trails down the side nearest the window, the shelves, and a plinth. Beside
+ * it, a floor-to-ceiling window on the left (half out of view) and a floor
+ * lamp on the right whose arm reaches over the top; under it, the trophy
+ * cabinet, hanging from the plinth.
  */
-function bookcase(blocks, relight) {
+function bookcase(blocks, relight, cabinet = null) {
   const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
-  return h('div', { class: 'case' },
-    h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
-    roomLamp(relight),
-    h('div', { class: 'ivy', 'aria-hidden': 'true' }, ornament('ivyPot'), h('div', { class: 'ivy-vine' })),
-    h('div', { class: 'case-shelves' }, blocks),
-    h('div', { class: 'case-light', 'aria-hidden': 'true' }),
-    h('div', { class: 'case-plinth', 'aria-hidden': 'true' }));
+  const motes = Array.from({ length: 9 }, (_, n) => h('i', { class: 'mote', style: `--n:${n}` }));
+  return h('div', { class: 'case-wrap' },
+    h('div', { class: 'case' },
+      roomWindow(),
+      h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
+      h('div', { class: 'ivy', 'aria-hidden': 'true' }, ornament('ivyPot'), h('div', { class: 'ivy-vine' })),
+      h('div', { class: 'case-shelves' }, blocks),
+      // The light from the window, falling across to the right-hand side.
+      h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
+      h('div', { class: 'case-light', 'aria-hidden': 'true' }),
+      h('div', { class: 'case-plinth', 'aria-hidden': 'true' }),
+      floorLamp(relight)),
+    cabinet ? h('div', { class: 'cabinet-hang' },
+      h('span', { class: 'hang-chain left', 'aria-hidden': 'true' }),
+      h('span', { class: 'hang-chain right', 'aria-hidden': 'true' }),
+      cabinet) : null);
 }
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
@@ -387,22 +400,6 @@ function bookend(title, count) {
     h('span', { class: 'bookend-text', text: title }));
 }
 
-/**
- * Lettering on a spine, by the book's genre - the way a publisher sets a
- * fantasy title in engraved capitals and a thriller in typewriter type.
- * Kept to this one function and one block of CSS ("Genre lettering"), so it
- * can come out cleanly.
- */
-function lettering(b) {
-  const g = cleanTags(b.genres, 6).join(' ').toLowerCase();
-  if (/romantasy/.test(g)) return 'type-romance';
-  if (/science fiction|sci-fi|dystop|space|cyberpunk/.test(g)) return 'type-scifi';
-  if (/horror|mystery|thriller|crime|detective|suspense/.test(g)) return 'type-mystery';
-  if (/fantasy|epic|magic/.test(g)) return 'type-fantasy';
-  if (/romance|love/.test(g)) return 'type-romance';
-  return '';
-}
-
 /** A spine for the bookshelf page: same family as the profile header's, with more to say. */
 function spineEl(ctx, profile, b, style, order, editing = false) {
   const { cloth, finish } = style;
@@ -412,7 +409,7 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
   const label = `${b.title}${seriesLabel(b) ? `, ${seriesLabel(b)}` : ''}${b.rating ? `, rated ${b.rating}` : ''}`
     + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '');
   const el = h('button', {
-    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''} ${lettering(b)}`, type: 'button',
+    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}`, type: 'button',
     style: `--h:${Math.round(118 + t * 40)}px;--w:${Math.round(25 + t * 18)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
     'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
     dataset: { key: `b:${b.id}` },
