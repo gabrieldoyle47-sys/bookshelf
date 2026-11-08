@@ -804,8 +804,8 @@ export function setAudiobook(book, audio) {
 
 export const isAudiobook = (book) => book.format === 'audiobook';
 
-/** Hours of listening a finished audiobook stands for. */
-export const audioHours = (book) => (isAudiobook(book) && book.audio?.seconds ? book.audio.seconds / 3600 : 0);
+/** Hours of listening an audiobook takes, to a tenth. */
+export const audioHours = (book) => (isAudiobook(book) && book.audio?.seconds ? Math.round(book.audio.seconds / 360) / 10 : 0);
 
 /* -------------------------------------------------------- who's who notes */
 

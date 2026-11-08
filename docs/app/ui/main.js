@@ -564,6 +564,16 @@ ctx.actions.untrack = async (profile, bookId, title) => {
   if (ok) toast(`Stopped tracking ${title}`);
 };
 
+/**
+ * Keep a hand-made arrangement of the bookshelf, or (with null) go back to
+ * the automatic one.
+ */
+ctx.actions.saveShelfLayout = (profile, layout) => saveLibrary(profile.id, (lib) => {
+  if (layout) lib.shelfLayout = { shelves: layout.shelves, ornaments: layout.ornaments };
+  else delete lib.shelfLayout;
+  return lib;
+}, layout ? `Rearrange ${profile.name}'s bookshelf` : `Put ${profile.name}'s bookshelf back in order`);
+
 ctx.actions.setGoal = async (profile, year, target) => {
   const n = Number(target);
   if (n !== 0 && (!Number.isFinite(n) || n < 1)) return toast('A goal needs to be at least one book.', true);

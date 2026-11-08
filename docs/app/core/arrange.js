@@ -112,6 +112,7 @@ export const shelfOrder = (sections) =>
  *   b:<book id>     a book
  *   e:<label>       a bookend carrying a shelf's name
  *   o:<id>          an ornament, its kind in `ornaments`
+ *   t:<series id>   a trophy for a finished series (see placeTrophies)
  * The automatic arrangement and a person's own saved one share this shape,
  * so the page draws either the same way and a saved one survives new books.
  */
@@ -200,11 +201,31 @@ export function mergeLayout(layout, books) {
       || (() => {
         const target = b.status === 'tbr' && pileShelf ? pileShelf
           : shelves.find((s) => s.title === genreOf.get(b.id) && s !== pileShelf)
-          ?? [...shelves].reverse().find((s) => s !== pileShelf) ?? shelves[shelves.length - 1];
+          ?? [...shelves].reverse().find((s) => s !== pileShelf && s.kind !== 'cabinet') ?? shelves[0];
         return { s: shelves.indexOf(target), i: endOf(target) };
       })();
     shelves[spot.s].keys.splice(spot.i, 0, `b:${b.id}`);
     placed.add(b.id);
   }
   return { shelves, ornaments };
+}
+
+/**
+ * The trophy cabinet: the last shelf, one trophy per finished series. A trophy
+ * someone has moved stays where they put it; one for a series that is no
+ * longer finished (a new book was announced) is taken down; a new one goes at
+ * the end of the cabinet.
+ */
+export function placeTrophies(layout, seriesIds) {
+  const want = new Set(seriesIds.map(String));
+  const shelves = layout.shelves.map((s) => ({ ...s, keys: s.keys.filter((k) => !k.startsWith('t:') || want.has(k.slice(2))) }));
+  let cabinet = shelves.find((s) => s.kind === 'cabinet');
+  if (!cabinet) {
+    cabinet = { title: 'Trophies', kind: 'cabinet', keys: [] };
+    shelves.push(cabinet);
+  }
+  const have = new Set(shelves.flatMap((s) => s.keys).filter((k) => k.startsWith('t:')).map((k) => k.slice(2)));
+  for (const id of want) if (!have.has(id)) cabinet.keys.push(`t:${id}`);
+  // The cabinet always stands at the bottom, whatever was moved around it.
+  return { ...layout, shelves: [...shelves.filter((s) => s !== cabinet), cabinet] };
 }

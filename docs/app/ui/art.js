@@ -229,15 +229,144 @@ const ORNAMENTS = {
     <path d="M30 40c-10 4-18 14-20 24M60 40c10 6 18 16 22 30" stroke="#3f7d4c" stroke-width="3" fill="none" stroke-linecap="round"/>
     <ellipse cx="10" cy="64" rx="6" ry="4" fill="#4f9a5c" transform="rotate(-40 10 64)"/>
     <ellipse cx="82" cy="70" rx="6" ry="4" fill="#3f7d4c" transform="rotate(40 82 70)"/></svg>`,
+  // A teapot, a wisp of steam from the spout.
+  teapot: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80">
+    <path class="steam" d="M86 22c-3-5 3-8 0-13" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".4"/>
+    <ellipse cx="46" cy="76" rx="30" ry="3.5" fill="#000" opacity=".25"/>
+    <path d="M18 46c0-14 12-22 28-22s28 8 28 22c0 16-10 28-28 28S18 62 18 46z" fill="#5b7f9a"/>
+    <path d="M22 44c6 3 42 3 48 0" stroke="#e8eef2" stroke-width="2.4" fill="none" opacity=".7"/>
+    <path d="M72 44c8-2 12-8 14-18l4 2c-2 12-8 22-18 24z" fill="#5b7f9a"/>
+    <path d="M20 40c-10-2-14 6-12 14 2 7 8 8 12 6" stroke="#5b7f9a" stroke-width="5" fill="none"/>
+    <ellipse cx="46" cy="25" rx="16" ry="4" fill="#4a6d87"/><circle cx="46" cy="18" r="4" fill="#e3c176"/></svg>`,
+  // A snow globe: a tiny pine and falling snow.
+  snowGlobe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 96">
+    <path d="M12 78h46l-4 16H16z" fill="#7a5530"/><rect x="10" y="74" width="50" height="6" rx="2" fill="#9c6f40"/>
+    <circle cx="35" cy="44" r="30" fill="rgb(200 225 245 / .22)" stroke="rgb(255 255 255 / .55)" stroke-width="1.5"/>
+    <path d="M35 30l-10 16h6l-8 12h24l-8-12h6z" fill="#2f6b4f"/><rect x="33" y="58" width="4" height="6" fill="#6b4226"/>
+    <ellipse cx="35" cy="68" rx="22" ry="4" fill="#f4f7fa"/>
+    <g class="snow" fill="#fff"><circle cx="22" cy="30" r="1.4"/><circle cx="48" cy="26" r="1.2"/><circle cx="28" cy="48" r="1"/>
+    <circle cx="50" cy="44" r="1.4"/><circle cx="40" cy="20" r="1"/><circle cx="18" cy="54" r="1.2"/></g>
+    <path d="M18 30a20 20 0 0 1 14-14" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".55"/></svg>`,
+  // A small framed picture on a stand: hills under a low sun.
+  frame: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 76 100">
+    <path d="M52 96l-8-30" stroke="#5a3d26" stroke-width="3"/>
+    <rect x="6" y="18" width="56" height="74" rx="3" fill="#b8893a" transform="rotate(-6 34 55)"/>
+    <g transform="rotate(-6 34 55)"><rect x="12" y="24" width="44" height="62" fill="#f1dcb8"/>
+    <circle cx="40" cy="44" r="8" fill="#e98a4f"/><path d="M12 70c10-12 20-12 28-4s12 2 16-4v24H12z" fill="#5f8a5b"/>
+    <path d="M12 78c12-8 24-6 44 0v8H12z" fill="#3f6b45"/></g></svg>`,
+  // A cluster of amethyst.
+  crystal: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 80">
+    <ellipse cx="35" cy="76" rx="28" ry="3.5" fill="#000" opacity=".25"/>
+    <path d="M10 76l6-26 8 26z" fill="#7d5ba6"/><path d="M22 76l10-56 10 56z" fill="#9b7bc8"/>
+    <path d="M32 20l10 56h-10z" fill="#6f4f99"/><path d="M40 76l10-36 8 36z" fill="#8a69b8"/>
+    <path d="M50 40l8 36h-8z" fill="#5e4285"/><path d="M28 40l4-20 2 30z" fill="#fff" opacity=".35"/>
+    <path d="M6 76h58" stroke="#4a3566" stroke-width="3" stroke-linecap="round"/></svg>`,
+  // A stack of three books lying flat, the right way up.
+  bookStack: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 60">
+    <rect x="6" y="42" width="78" height="14" rx="2" fill="#2f4858"/><rect x="8" y="44" width="74" height="2" fill="#e3c176" opacity=".6"/>
+    <rect x="12" y="28" width="66" height="14" rx="2" fill="#8a2d2d"/><rect x="14" y="34" width="62" height="2" fill="#f4ead6" opacity=".5"/>
+    <rect x="18" y="16" width="56" height="12" rx="2" fill="#b8861f"/><rect x="20" y="21" width="52" height="2" fill="#3a2608" opacity=".4"/>
+    <path d="M78 42v14M84 46v6" stroke="#f4ead6" stroke-width="1" opacity=".5"/></svg>`,
 };
+
+/** What an ornament can be swapped for, in the order the menu lists them. */
+export const ORNAMENT_CHOICES = [
+  ['plant', 'Plant'], ['candle', 'Candle'], ['cat', 'Sleeping cat'], ['mug', 'Mug of tea'], ['teapot', 'Teapot'],
+  ['hourglass', 'Hourglass'], ['globe', 'Globe'], ['snowGlobe', 'Snow globe'], ['frame', 'Little painting'],
+  ['crystal', 'Amethyst'], ['bookStack', 'Stack of books'],
+];
 
 /** A decorative object for the end of a shelf. Hidden from screen readers. */
 export function ornament(name) {
-  const doc = new DOMParser().parseFromString(ORNAMENTS[name], 'image/svg+xml');
+  const doc = new DOMParser().parseFromString(ORNAMENTS[name] ?? ORNAMENTS.plant, 'image/svg+xml');
   const svg = document.importNode(doc.documentElement, true);
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
-  return h('span', { class: `ornament ${name}`, 'aria-hidden': 'true' }, svg);
+  return h('span', { class: `ornament ${ORNAMENTS[name] ? name : 'plant'}`, 'aria-hidden': 'true' }, svg);
+}
+
+/* --------------------------------------------------------------- the lamp */
+
+/**
+ * The little lamp on top of the case. Its bulb and the pool of light under
+ * the shade are styled by .lamp.on, which the bookshelf sets at night.
+ */
+const LAMP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90">
+  <ellipse cx="30" cy="86" rx="16" ry="3.5" fill="#000" opacity=".3"/>
+  <path d="M18 80h24l-3 6H21z" fill="#9c7330"/><rect x="28" y="40" width="4" height="40" fill="#b8893a"/>
+  <circle class="lamp-bulb" cx="30" cy="38" r="6" fill="#6b5a40"/>
+  <path class="lamp-shade" d="M14 36l6-30h20l6 30z" fill="#c9a77a"/>
+  <path d="M14 36h32" stroke="#8a6a3a" stroke-width="2"/><path d="M20 6h20" stroke="#8a6a3a" stroke-width="2"/></svg>`;
+
+export function lampArt() {
+  const doc = new DOMParser().parseFromString(LAMP, 'image/svg+xml');
+  return document.importNode(doc.documentElement, true);
+}
+
+/* ---------------------------------------------------------------- trophies */
+
+/**
+ * The trinket for a finished series, chosen by its genre and painted in the
+ * series' own spine colour - so the cabinet reads against the shelves above.
+ * `colour` is always one of the palette's own hex values, never user text,
+ * and is checked anyway before it goes into the markup.
+ */
+const TRINKETS = {
+  // Epic fantasy: a sword on a stand.
+  sword: (c) => `<path d="M30 4l4 8v42h-8V12z" fill="#dfe6ec"/><path d="M30 6v48" stroke="#9aa6b0" stroke-width="1"/>
+    <rect x="16" y="54" width="28" height="5" rx="2" fill="${c}"/><rect x="27" y="59" width="6" height="12" fill="${c}"/>
+    <circle cx="30" cy="56.5" r="2.2" fill="#f3cf6a"/><circle cx="30" cy="73" r="3.5" fill="#f3cf6a"/>`,
+  // Romantasy: a crown.
+  crown: (c) => `<path d="M10 62l-2-30 12 12 10-20 10 20 12-12-2 30z" fill="#e3c176"/>
+    <rect x="10" y="58" width="40" height="8" rx="2" fill="${c}"/>
+    <circle cx="20" cy="62" r="2" fill="#f4ead6"/><circle cx="30" cy="62" r="2.4" fill="#f4ead6"/><circle cx="40" cy="62" r="2" fill="#f4ead6"/>
+    <circle cx="8" cy="32" r="2.6" fill="${c}"/><circle cx="30" cy="24" r="2.8" fill="${c}"/><circle cx="52" cy="32" r="2.6" fill="${c}"/>`,
+  // Science fiction and dystopia: a rocket.
+  rocket: (c) => `<path d="M30 4c10 10 12 26 10 46H20c-2-20 0-36 10-46z" fill="#e8ecef"/>
+    <circle cx="30" cy="28" r="6" fill="${c}"/><circle cx="30" cy="28" r="3.5" fill="#bfe0f4"/>
+    <path d="M20 40l-10 14 10-2zM40 40l10 14-10-2z" fill="${c}"/><path d="M24 50h12l-2 6h-8z" fill="${c}"/>
+    <path class="trinket-flame" d="M26 56c0 8 4 12 4 16 0-4 4-8 4-16z" fill="#f4a84a"/>`,
+  // Romance: a rose in a bud vase.
+  rose: (c) => `<path d="M30 30v26" stroke="#3f7d4c" stroke-width="2.4"/>
+    <path d="M30 44c-8-6-14-2-14 2 6 2 10 2 14-2z" fill="#4f9a5c"/>
+    <circle cx="30" cy="22" r="11" fill="${c}"/><path d="M24 22c2-6 10-6 12 0-4-2-8-2-12 0zM22 26c4 4 12 4 16 0" stroke="rgb(0 0 0 / .3)" stroke-width="1.4" fill="none"/>
+    <path d="M22 56h16l-2 18h-12z" fill="rgb(210 230 240 / .35)" stroke="rgb(255 255 255 / .55)"/>`,
+  // Mystery, thriller, crime: a magnifying glass.
+  magnifier: (c) => `<circle cx="26" cy="28" r="15" fill="rgb(200 225 245 / .25)" stroke="#e3c176" stroke-width="4"/>
+    <path d="M20 22a8 8 0 0 1 8-6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/>
+    <path d="M37 39l14 22" stroke="${c}" stroke-width="7" stroke-linecap="round"/>`,
+  // Horror: a lantern.
+  lantern: (c) => `<path d="M24 6h12v6H24z" fill="${c}"/><path d="M18 12h24l-2 6H20z" fill="${c}"/>
+    <rect x="20" y="18" width="20" height="36" fill="rgb(255 210 120 / .35)" stroke="${c}" stroke-width="3"/>
+    <path class="trinket-flame" d="M30 30c4 5 4 10 0 14-4-4-4-9 0-14z" fill="#ffb347"/>
+    <path d="M18 54h24l2 6H16z" fill="${c}"/>`,
+  // Everything else: a quill in an inkpot.
+  quill: (c) => `<path d="M42 4C28 10 22 26 24 50l4 0C30 30 34 18 42 4z" fill="#f4ead6"/>
+    <path d="M42 4c-6 12-10 26-12 46" stroke="#c9bfae" stroke-width="1"/>
+    <path d="M16 50h28l-3 18H19z" fill="${c}"/><rect x="18" y="46" width="24" height="5" rx="2" fill="#2a2a2e"/>`,
+};
+
+/** The trinket for a list of genres, most telling first (a shelf name before raw tags). */
+export function trinketFor(genres) {
+  const g = (genres ?? []).join(' ').toLowerCase();
+  if (/romantasy/.test(g)) return 'crown';
+  if (/fantasy|epic|magic|dragon/.test(g)) return 'sword';
+  if (/science fiction|sci-fi|dystop|space|cyberpunk/.test(g)) return 'rocket';
+  if (/horror|gothic/.test(g)) return 'lantern';
+  if (/mystery|thriller|crime|detective|suspense/.test(g)) return 'magnifier';
+  if (/romance|love/.test(g)) return 'rose';
+  return 'quill';
+}
+
+export function trinketArt(kind, colour) {
+  const c = /^#[0-9a-f]{6}$/i.test(colour) ? colour : '#8a2d2d';
+  const body = (TRINKETS[kind] ?? TRINKETS.quill)(c);
+  const doc = new DOMParser().parseFromString(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">${body}</svg>`, 'image/svg+xml');
+  const svg = document.importNode(doc.documentElement, true);
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  return svg;
 }
 
 /* ------------------------------------------------------------- celebrate */

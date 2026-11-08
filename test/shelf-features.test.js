@@ -105,3 +105,25 @@ test('only a fully finished series with nothing more announced is complete', () 
   ] };
   assert.deepEqual(completedSeries(state, lib, NOW).map((s) => s.id), ['done']);
 });
+
+test('trophies go into the cabinet at the bottom, and come down if a series reopens', async () => {
+  const { placeTrophies } = await import('../docs/app/core/arrange.js');
+  const base = { shelves: [{ title: 'Romance', kind: 'genre', keys: ['e:Romance', 'b:hc:1', 't:old'] }], ornaments: {} };
+  const out = placeTrophies(base, ['x', 'y']);
+  assert.deepEqual(out.shelves.map((s) => s.kind), ['genre', 'cabinet']);
+  assert.deepEqual(out.shelves[0].keys, ['e:Romance', 'b:hc:1'], 'a series no longer finished loses its trophy');
+  assert.deepEqual(out.shelves[1].keys, ['t:x', 't:y']);
+  const moved = { shelves: [{ title: 'Romance', kind: 'genre', keys: ['e:Romance', 't:y'] }, out.shelves[1]], ornaments: {} };
+  assert.deepEqual(placeTrophies(moved, ['x', 'y']).shelves[0].keys, ['e:Romance', 't:y'], 'a moved trophy stays put');
+});
+
+test('a new book never lands in the trophy cabinet', () => {
+  const saved = { shelves: [
+    { title: 'Romance', kind: 'genre', keys: ['e:Romance'] },
+    { title: 'To read', kind: 'pile', keys: ['e:To read'] },
+    { title: 'Trophies', kind: 'cabinet', keys: [] },
+  ], ornaments: {} };
+  const merged = mergeLayout(saved, [book(7, { genres: ['Horror'], authors: [{ id: 'q', name: 'Q' }] })]);
+  assert.deepEqual(merged.shelves[0].keys, ['e:Romance', 'b:hc:7']);
+  assert.deepEqual(merged.shelves[2].keys, []);
+});

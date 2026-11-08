@@ -10,13 +10,22 @@
  *
  * Books drop onto the shelves on arrival, lift on hover with a peek at the
  * cover, and open on click.
+ *
+ * The order on the shelves is a list of keys (core/arrange.js). Someone can
+ * rearrange it by hand - books, ornaments and trophies - and that order is
+ * saved with their shelf; new books still slot in beside their series. Under
+ * the shelves, a glass cabinet holds a trophy for every finished series.
+ * Around the case, the room (room.js) follows the time of day.
  */
 
-import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp } from './dom.js';
-import { arrangeShelf, shelvable } from '../core/arrange.js';
-import { readOnOf } from '../core/model.js';
-import { shelfPalette, emptyArt, ornament } from './art.js';
+import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp, toast } from './dom.js';
+import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable } from '../core/arrange.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/model.js';
+import { completedSeries } from '../core/watch.js';
+import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
+import { roomWindow, roomLamp, lightRoom } from './room.js';
+import { enableDrag, readShelves } from './shelfdrag.js';
 
 const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read']];
 const ARRANGE = [['shelf', 'By series & genre'], ['rainbow', 'Rainbow']];
@@ -24,9 +33,13 @@ const prefs = { filter: 'all', arrange: 'shelf' };
 try { Object.assign(prefs, JSON.parse(sessionStorage.getItem('bookshelf.library') ?? '{}')); } catch { /* private mode */ }
 const savePrefs = () => { try { sessionStorage.setItem('bookshelf.library', JSON.stringify(prefs)); } catch { /* ignore */ } };
 
+const paletteKey = (b) => (b.series?.id ? `series:${b.series.id}`
+  : `author:${b.authors?.[0]?.id ?? b.authors?.[0]?.name ?? b.title}`);
+
 export function libraryView(ctx, profile) {
   const library = ctx.state.libraries[profile.id] ?? { books: [] };
   const all = shelvable(library.books);
+  const byId = new Map(all.map((b) => [b.id, b]));
   const canWrite = ctx.state.canWrite;
   const animate = ctx.state.navigated && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -50,6 +63,8 @@ export function libraryView(ctx, profile) {
       h('div', { class: 'lib-stats' }, stat(all.length, all.length === 1 ? 'book' : 'books'),
         stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'))),
     h('div', { class: 'spacer' }),
+    roomWindow(),
+    h('div', { class: 'spacer' }),
     h('div', { class: 'lib-actions' }, booksBtn, addBtn));
 
   if (!all.length) {
@@ -57,7 +72,33 @@ export function libraryView(ctx, profile) {
       emptyArt('books', `${profile.name}’s shelf is empty. Add the book you are reading now and it will be the first one here.`));
   }
 
+  // One palette for the whole shelf, so no two series share a colour.
+  const colourOf = shelfPalette(all);
+
+  // Trophies: one per series where every book is out and read.
+  // The trinket follows the shelf the series stands on ("Epic Fantasy"), then
+  // its books' own tags - Hardcover tags plenty of fantasy as science fiction too.
+  const shelfGenre = new Map();
+  for (const section of arrangeShelf(all.filter((b) => b.status !== 'tbr'))) {
+    for (const b of shelfOrder([section])) shelfGenre.set(b.id, section.genre);
+  }
+  const trophies = new Map(completedSeries(ctx.state.seriesState ?? {}, library, today()).map((s) => {
+    const books = all.filter((b) => b.series?.id === s.id);
+    const onShelf = books.map((b) => shelfGenre.get(b.id)).filter((g) => g && g !== MORE);
+    return [String(s.id), { id: s.id, name: s.name.split(':')[0].trim(), fullName: s.name, count: s.slots.length,
+      kind: trinketFor(onShelf.length ? onShelf : books.flatMap((b) => cleanTags(b.genres, 6))),
+      colour: colourOf(books[0] ?? { series: { id: s.id } }).cloth }];
+  }));
+
+  /** The shelves as they stand: the saved arrangement brought up to date, or the automatic one. */
+  const currentLayout = () => placeTrophies(mergeLayout(library.shelfLayout, all), [...trophies.keys()]);
+
+  let editing = null; // a working copy of the layout while rearranging
   const caseBox = h('div', { class: 'bookcase' });
+  const tools = h('div', { class: 'lib-tools' });
+  const root = h('div', { class: 'library' }, head, tools, caseBox, legend());
+  const relight = lightRoom(root);
+
   const chips = (items, current, set, label) => h('div', { class: 'seg', role: 'tablist', 'aria-label': label },
     items.map(([id, text]) => h('button', {
       class: 'seg-btn', type: 'button', role: 'tab', 'aria-selected': String(id === current()),
@@ -65,99 +106,274 @@ export function libraryView(ctx, profile) {
         set(id);
         for (const b of e.currentTarget.parentElement.children) b.setAttribute('aria-selected', String(b === e.currentTarget));
         savePrefs();
+        paintTools();
         paint(true);
       },
     }, text)));
 
-  const tools = h('div', { class: 'lib-tools' },
-    chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books'),
-    h('div', { class: 'spacer' }),
-    chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'));
-
-  // One palette for the whole shelf, so no two series share a colour.
-  const colourOf = shelfPalette(all);
-
-  function paint(withMotion) {
-    const books = prefs.filter === 'all' ? all : all.filter((b) => b.status === prefs.filter);
-    let i = 0;
-    const spine = (b) => spineEl(ctx, profile, b, colourOf(b), withMotion ? i++ : null);
-
-    if (!books.length) {
-      fill(caseBox, bookcase([h('div', { class: 'shelf-block' }, h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' }))]));
+  function paintTools() {
+    if (editing) {
+      fill(tools,
+        h('p', { class: 'edit-hint' }, h('strong', { text: 'Rearranging. ' }),
+          'Drag books, ornaments and trophies anywhere. Double-click an ornament to swap it.'),
+        h('div', { class: 'spacer' }),
+        h('div', { class: 'row edit-actions' },
+          h('button', { class: 'btn secondary small', type: 'button', onclick: addOrnament }, '+ Ornament'),
+          h('button', { class: 'btn secondary small', type: 'button', onclick: resetLayout,
+            title: 'Put everything back in the automatic order' }, 'Reset'),
+          h('button', { class: 'btn secondary small', type: 'button', onclick: () => stopEditing() }, 'Cancel'),
+          h('button', { class: 'btn small', type: 'button', onclick: saveEditing }, 'Save shelf')));
       return;
     }
-
-    const groupEl = (g, authorName) => h('div', { class: 'shelf-group', title: g.name ?? `${authorName} — standalones` },
-      g.books.map(spine),
-      // A label on the plank under a series - only where it can be read.
-      g.name && g.books.length >= 3 ? h('span', { class: 'shelf-mark', text: g.name }) : null);
-    const groupsOf = (list) => arrangeShelf(list).flatMap((section) =>
-      section.authors.flatMap((author) => author.groups.map((g) => groupEl(g, author.name))));
-
-    // Every block starts on a shelf of its own and ends with an ornament.
-    // Two per shelf, so every ornament gets a turn on screen.
-    const ornaments = [['plant', 'cat'], ['candle', 'globe'], ['hourglass', 'plant']];
-    let o = 0;
-    const blocks = [];
-    if (prefs.arrange === 'rainbow') {
-      // Sorted by spine colour: a shelf you'd photograph.
-      const sorted = [...books].sort((a, b) => hue(colourOf(a).cloth) - hue(colourOf(b).cloth));
-      blocks.push(shelfBlock('Rainbow', sorted.length, [h('div', { class: 'shelf-group' }, sorted.map(spine))], ornament('plant')));
-    } else {
-      // What you have read or are reading, one shelf per genre (core/arrange.js):
-      // a series together and in order, then the author's books, then genre.
-      const done = books.filter((b) => b.status !== 'tbr');
-      for (const section of arrangeShelf(done)) {
-        blocks.push(shelfBlock(section.genre, section.count,
-          section.authors.flatMap((author) => author.groups.map((g) => groupEl(g, author.name))),
-          ornaments[o++ % ornaments.length].map(ornament)));
-      }
-      // The to-read pile on its own shelf, in the same order of series and author.
-      const pile = books.filter((b) => b.status === 'tbr');
-      if (pile.length) {
-        blocks.push(shelfBlock('To read', pile.length, groupsOf(pile), [ornament('mug'), ornament('hourglass')], 'pile'));
-      } else if (prefs.filter === 'all') {
-        // An empty pile still gets its shelf - and a way to fill it.
-        blocks.push(shelfBlock('To read', 0, [h('div', { class: 'pile-empty' },
-          h('span', { text: 'Nothing on the pile yet.' }),
-          h('button', { class: 'btn secondary small', type: 'button', onclick: () => ctx.actions.goSuggest(profile) },
-            h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }), 'Suggest a book'))], [ornament('mug')], 'pile'));
-      }
-    }
-    fill(caseBox, bookcase(blocks));
+    fill(tools,
+      chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books'),
+      h('div', { class: 'spacer' }),
+      chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'),
+      canWrite && prefs.arrange === 'shelf' ? h('button', {
+        class: 'btn secondary small rearrange-btn', type: 'button', onclick: startEditing,
+        title: 'Move books and ornaments by hand',
+      }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Rearrange') : null);
   }
 
+  /* ------------------------------------------------------------ rearranging */
+
+  function startEditing() {
+    editing = currentLayout();
+    root.classList.add('editing');
+    paintTools();
+    paint(false);
+  }
+  function stopEditing() {
+    editing = null;
+    root.classList.remove('editing');
+    paintTools();
+    paint(false);
+  }
+  async function saveEditing(e) {
+    const button = e.currentTarget;
+    button.disabled = true;
+    if (await ctx.actions.saveShelfLayout(profile, editing)) toast('Shelf saved — new books will slot in beside their series.');
+    else button.disabled = false;
+  }
+  async function resetLayout() {
+    if (!confirm('Put every book and ornament back in the automatic order?')) return;
+    if (library.shelfLayout) await ctx.actions.saveShelfLayout(profile, null);
+    else stopEditing();
+  }
+  function addOrnament() {
+    const id = nextOrnamentId(editing);
+    editing.ornaments[id] = 'plant';
+    const first = editing.shelves.find((s) => s.kind !== 'cabinet');
+    first.keys.splice(1, 0, `o:${id}`);
+    paint(false);
+    toast('A plant is on the first shelf — drag it where you like, or double-click it to change it.');
+  }
+
+  /** Swap an ornament for another kind, or take it off the shelf. */
+  async function changeOrnament(id, kind) {
+    if (editing) {
+      if (kind) editing.ornaments[id] = kind;
+      else removeOrnament(editing, id);
+      paint(false);
+      return;
+    }
+    const layout = currentLayout();
+    if (kind) layout.ornaments[id] = kind;
+    else removeOrnament(layout, id);
+    await ctx.actions.saveShelfLayout(profile, layout);
+  }
+
+  /* ---------------------------------------------------------------- drawing */
+
+  function paint(withMotion) {
+    const filter = editing ? 'all' : prefs.filter;
+    const visible = (b) => b && (filter === 'all' || b.status === filter);
+    let i = 0;
+    const spine = (b) => spineEl(ctx, profile, b, colourOf(b), withMotion ? i++ : null, Boolean(editing));
+    const layout = editing ?? currentLayout();
+    const ornamentEl = (id) => {
+      const el = ornament(layout.ornaments[id] ?? 'plant');
+      el.dataset.key = `o:${id}`;
+      if (canWrite) {
+        el.title = 'Double-click to change';
+        el.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          ornamentMenu(el, layout.ornaments[id], (kind) => changeOrnament(id, kind));
+        });
+      }
+      return el;
+    };
+
+    if (prefs.arrange === 'rainbow' && !editing) {
+      const books = all.filter(visible);
+      if (!books.length) { fill(caseBox, bookcase([emptyBlock()], relight)); return relight(); }
+      // Sorted by spine colour: a shelf you'd photograph.
+      const sorted = [...books].sort((a, b) => hue(colourOf(a).cloth) - hue(colourOf(b).cloth));
+      fill(caseBox, bookcase([shelfBlock('Rainbow', sorted.length,
+        [h('div', { class: 'shelf-group' }, sorted.map(spine))], [ornament('plant')])], relight));
+      return relight();
+    }
+
+    const blocks = layout.shelves.map((shelf, n) => {
+      const books = shelf.keys.filter((k) => k.startsWith('b:')).map((k) => byId.get(k.slice(2))).filter(visible);
+      if (shelf.kind === 'cabinet') return filter === 'all' ? cabinetBlock(shelf, n) : null;
+      if (!books.length && filter !== 'all' && !editing) return null;
+
+      const items = [];
+      let run = null; // consecutive books of one series (or one author's standalones) stand as a group
+      const flush = () => {
+        if (!run) return;
+        const g = run;
+        run = null;
+        const first = g.books[0];
+        items.push(h('div', { class: 'shelf-group', title: first.series?.name ?? `${authorNames(first)} — standalones` },
+          g.books.map(spine),
+          // A label on the plank under a series - only where it can be read.
+          first.series?.name && g.books.length >= 3 ? h('span', { class: 'shelf-mark', text: first.series.name }) : null));
+      };
+      for (const key of shelf.keys) {
+        if (key.startsWith('e:')) continue;
+        if (key.startsWith('b:')) {
+          const b = byId.get(key.slice(2));
+          if (!visible(b)) continue;
+          // Rearranging: every book is its own item to pick up.
+          if (editing) { items.push(spine(b)); continue; }
+          if (run && run.key === paletteKey(b)) run.books.push(b);
+          else { flush(); run = { key: paletteKey(b), books: [b] }; }
+          continue;
+        }
+        flush();
+        if (key.startsWith('o:')) items.push(ornamentEl(key.slice(2)));
+        else if (key.startsWith('t:') && trophies.has(key.slice(2))) items.push(trophyEl(trophies.get(key.slice(2))));
+      }
+      flush();
+
+      if (shelf.kind === 'pile' && !books.length && !editing) {
+        items.unshift(h('div', { class: 'pile-empty' },
+          h('span', { text: 'Nothing on the pile yet.' }),
+          h('button', { class: 'btn secondary small', type: 'button', onclick: () => ctx.actions.goSuggest(profile) },
+            h('span', { class: 'ico ico-sparkle', 'aria-hidden': 'true' }), 'Suggest a book')));
+      }
+      return shelfBlock(shelf.title, books.length, items, null, shelf.kind, n);
+    }).filter(Boolean);
+
+    fill(caseBox, bookcase(blocks.length ? blocks : [emptyBlock()], relight));
+    relight();
+    if (editing) {
+      const shelves = caseBox.querySelector('.case-shelves');
+      enableDrag(shelves, { onDrop: () => { editing = { ...editing, shelves: readShelves(shelves, editing.shelves) }; } });
+    }
+  }
+
+  /** The glass-fronted cabinet under the shelves, where finished series earn a trophy. */
+  function cabinetBlock(shelf, n) {
+    const items = shelf.keys.filter((k) => k.startsWith('t:') && trophies.has(k.slice(2)))
+      .map((k) => trophyEl(trophies.get(k.slice(2))));
+    const placedElsewhere = trophies.size > items.length;
+    return h('section', { class: 'shelf-block cabinet', dataset: { shelf: String(n) }, 'aria-label': 'Trophy cabinet' },
+      h('div', { class: 'cabinet-glass', 'aria-hidden': 'true' }),
+      items.length ? items : h('p', { class: 'cabinet-empty', text: placedElsewhere
+        ? 'The trophies are out on the shelves.'
+        : 'Finish every book in a series and its trophy goes here.' }));
+  }
+
+  function trophyEl(t) {
+    return h('button', {
+      class: `trophy ${t.kind}`, type: 'button', dataset: { key: `t:${t.id}` },
+      title: `Finished ${t.fullName} — all ${t.count} books`,
+      'aria-label': `Trophy: finished ${t.fullName}`,
+      onclick: () => { if (!editing) location.hash = `#/series/${t.id}`; },
+    }, trinketArt(t.kind, t.colour), h('span', { class: 'trophy-plaque' }, h('span', { text: t.name })));
+  }
+
+  const emptyBlock = () => h('div', { class: 'shelf-block' }, h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' }));
+
+  paintTools();
   paint(animate);
-  return h('div', { class: 'library' }, head, tools, caseBox, legend());
+  return root;
+}
+
+const nextOrnamentId = (layout) => String(Math.max(0, ...Object.keys(layout.ornaments).map(Number).filter(Number.isFinite)) + 1);
+
+function removeOrnament(layout, id) {
+  delete layout.ornaments[id];
+  for (const s of layout.shelves) s.keys = s.keys.filter((k) => k !== `o:${id}`);
 }
 
 /**
- * The case: a carved top strung with fairy lights, an ivy pot whose vine
- * trails down the side, the shelves, and a plinth.
+ * The menu a double-click on an ornament opens: everything it could be
+ * instead, each drawn small, and a way to take it off the shelf.
  */
-function bookcase(blocks) {
+function ornamentMenu(anchor, current, onPick) {
+  document.querySelector('.ornament-menu')?.remove();
+  const close = () => { menu.remove(); document.removeEventListener('pointerdown', away, true); document.removeEventListener('keydown', esc); };
+  const away = (e) => { if (!menu.contains(e.target)) close(); };
+  const esc = (e) => { if (e.key === 'Escape') close(); };
+  const menu = h('div', { class: 'ornament-menu', role: 'menu', 'aria-label': 'Change this ornament' },
+    h('div', { class: 'om-title', text: 'Swap for…' }),
+    h('div', { class: 'om-grid' }, ORNAMENT_CHOICES.map(([kind, label]) => h('button', {
+      class: 'om-opt', type: 'button', role: 'menuitemradio', 'aria-checked': String(kind === current), title: label,
+      onclick: () => { close(); if (kind !== current) onPick(kind); },
+    }, ornament(kind), h('span', { text: label })))),
+    h('button', { class: 'om-remove', type: 'button', role: 'menuitem', onclick: () => { close(); onPick(null); } }, 'Take it off the shelf'));
+  document.body.append(menu);
+  const r = anchor.getBoundingClientRect();
+  const w = menu.offsetWidth;
+  const hgt = menu.offsetHeight;
+  menu.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2))}px`;
+  menu.style.top = `${r.top - hgt - 10 > 8 ? r.top - hgt - 10 : Math.min(innerHeight - hgt - 8, r.bottom + 10)}px`;
+  setTimeout(() => { document.addEventListener('pointerdown', away, true); document.addEventListener('keydown', esc); });
+  menu.querySelector('[aria-checked="true"]')?.focus();
+}
+
+/**
+ * The case: a carved top strung with fairy lights, a lamp and an ivy pot on
+ * top - the vine trailing down the side - the shelves, and a plinth.
+ */
+function bookcase(blocks, relight) {
   const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
   return h('div', { class: 'case' },
     h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
+    roomLamp(relight),
     h('div', { class: 'ivy', 'aria-hidden': 'true' }, ornament('ivyPot'), h('div', { class: 'ivy-vine' })),
     h('div', { class: 'case-shelves' }, blocks),
+    h('div', { class: 'case-light', 'aria-hidden': 'true' }),
     h('div', { class: 'case-plinth', 'aria-hidden': 'true' }));
 }
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
-function shelfBlock(title, count, groups, decoration, kind = '') {
-  return h('section', { class: `shelf-block ${kind}`, 'aria-label': `${title}, ${count} book${count === 1 ? '' : 's'}` },
-    bookend(title, count), groups, decoration);
+function shelfBlock(title, count, items, decoration, kind = '', n = null) {
+  return h('section', {
+    class: `shelf-block ${kind}`, dataset: n != null ? { shelf: String(n) } : null,
+    'aria-label': `${title}, ${count} book${count === 1 ? '' : 's'}`,
+  }, bookend(title, count), items, decoration);
 }
 
 /** A bookend engraved with the name of the shelf that follows it. */
 function bookend(title, count) {
-  return h('div', { class: 'bookend', role: 'heading', 'aria-level': '2', 'aria-label': count ? `${title}, ${count} books` : title },
+  return h('div', { class: 'bookend', role: 'heading', 'aria-level': '2', 'aria-label': count ? `${title}, ${count} books` : title,
+    dataset: { key: `e:${title}` } },
     h('span', { class: 'bookend-text', text: title }));
 }
 
+/**
+ * Lettering on a spine, by the book's genre - the way a publisher sets a
+ * fantasy title in engraved capitals and a thriller in typewriter type.
+ * Kept to this one function and one block of CSS ("Genre lettering"), so it
+ * can come out cleanly.
+ */
+function lettering(b) {
+  const g = cleanTags(b.genres, 6).join(' ').toLowerCase();
+  if (/romantasy/.test(g)) return 'type-romance';
+  if (/science fiction|sci-fi|dystop|space|cyberpunk/.test(g)) return 'type-scifi';
+  if (/horror|mystery|thriller|crime|detective|suspense/.test(g)) return 'type-mystery';
+  if (/fantasy|epic|magic/.test(g)) return 'type-fantasy';
+  if (/romance|love/.test(g)) return 'type-romance';
+  return '';
+}
+
 /** A spine for the bookshelf page: same family as the profile header's, with more to say. */
-function spineEl(ctx, profile, b, style, order) {
+function spineEl(ctx, profile, b, style, order, editing = false) {
   const { cloth, finish } = style;
   const pages = Math.min(b.pages ?? 320, 1300);
   const t = Math.max(0, Math.min(1, (pages - 150) / 1000));
@@ -165,16 +381,18 @@ function spineEl(ctx, profile, b, style, order) {
   const label = `${b.title}${seriesLabel(b) ? `, ${seriesLabel(b)}` : ''}${b.rating ? `, rated ${b.rating}` : ''}`
     + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '');
   const el = h('button', {
-    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}`, type: 'button',
+    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''} ${lettering(b)}`, type: 'button',
     style: `--h:${Math.round(118 + t * 40)}px;--w:${Math.round(25 + t * 18)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
-    'aria-label': label,
-    onclick: () => ctx.actions.openBook(b, profile),
+    'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
+    dataset: { key: `b:${b.id}` },
+    onclick: () => { if (!editing) ctx.actions.openBook(b, profile); },
   },
     h('span', { class: 'lspine-title', text: b.title }),
+    isAudiobook(b) ? h('span', { class: 'lspine-audio', 'aria-hidden': 'true', title: 'Audiobook' }) : null,
     pos != null && Number.isInteger(pos) ? h('span', { class: 'lspine-num', text: String(pos) }) : null,
     b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null);
   if (order != null) el.classList.add('drop');
-  el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') peek(el, b); });
+  el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !editing) peek(el, b); });
   el.addEventListener('pointerleave', hidePeek);
   el.addEventListener('focus', () => peek(el, b));
   el.addEventListener('blur', hidePeek);
@@ -201,7 +419,8 @@ function peek(anchor, b) {
       b.rating ? starsEl(b.rating) : null,
       h('div', { class: 'peek-meta', text: [
         { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile' }[b.status], when, b.pages ? `${b.pages} pages` : null,
-      ].filter(Boolean).join(' · ') })));
+      ].filter(Boolean).join(' · ') }),
+      isAudiobook(b) ? h('div', { class: 'peek-meta', text: `🎧 Audiobook${audioHours(b) ? ` · ${audioHours(b)} h` : ''}` }) : null));
   const r = anchor.getBoundingClientRect();
   peekEl.classList.add('show');
   const w = peekEl.offsetWidth;
@@ -222,7 +441,8 @@ function legend() {
     h('span', {}, h('i', { class: 'key num' }, '3'), 'Number in the series'),
     h('span', {}, h('i', { class: 'key gilt' }), 'Gold bands: five stars'),
     h('span', {}, h('i', { class: 'key ribbon' }), 'Ribbon: reading now'),
-    h('span', {}, h('i', { class: 'key tbr' }), 'Crisp and new: to read'));
+    h('span', {}, h('i', { class: 'key tbr' }), 'Crisp and new: to read'),
+    h('span', {}, h('i', { class: 'key audio' }), 'Headphones: audiobook'));
 }
 
 /** Hue of a #rrggbb colour, for the rainbow arrangement. */
