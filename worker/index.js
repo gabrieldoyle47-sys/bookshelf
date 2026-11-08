@@ -17,7 +17,7 @@
 
 // Confined to the data files: not as a defence, but so a bug or a stray
 // request can't scribble over the site's own code and break it for everyone.
-import { createClient, booksByIds, booksByGenre } from '../docs/app/core/hardcover.js';
+import { createClient, booksByIds, booksByTag, authorPage, seriesPage, listBooks, AWARD_LISTS } from '../docs/app/core/hardcover.js';
 import { today, activeProfiles } from '../docs/app/core/model.js';
 import { releaseInvite } from '../docs/app/core/calendar.js';
 import { runReleaseCheck } from '../docs/app/core/check.js';
@@ -268,12 +268,32 @@ export default {
       const genres = [...new Set((url.searchParams.get('genres') ?? '').split('|')
         .map((g) => g.trim()).filter((g) => g && g.length <= 40))].slice(0, 4);
       if (!genres.length) return json({ error: 'no genres' }, 400);
+      // kind=mood searches Hardcover's mood tags ("funny", "dark") instead.
+      const category = url.searchParams.get('kind') === 'mood' ? 'Mood' : 'Genre';
       try {
         const gql = createClient(env.HARDCOVER_TOKEN);
-        const lists = await Promise.all(genres.map((g) => booksByGenre(gql, g)));
+        const lists = await Promise.all(genres.map((g) => booksByTag(gql, category, g)));
         const seen = new Set();
         const books = lists.flat().filter((b) => !seen.has(b.id) && seen.add(b.id));
         return json({ books });
+      } catch (err) {
+        return json({ error: err.message }, 502);
+      }
+    }
+
+    /* ---- author and series pages, and award lists ---- */
+    if (request.method === 'GET' && ['/author', '/series', '/list'].includes(url.pathname)) {
+      const id = url.searchParams.get('id') ?? '';
+      if (!/^\d{1,10}$/.test(id)) return json({ error: 'bad id' }, 400);
+      // Lists are limited to the award lists the site offers, so this cannot
+      // be used to page through anything else.
+      if (url.pathname === '/list' && !AWARD_LISTS.some((l) => String(l.id) === id)) return json({ error: 'unknown list' }, 400);
+      try {
+        const gql = createClient(env.HARDCOVER_TOKEN);
+        const found = url.pathname === '/author' ? await authorPage(gql, id)
+          : url.pathname === '/series' ? await seriesPage(gql, id)
+          : await listBooks(gql, id);
+        return found ? json(found) : json({ error: 'not found' }, 404);
       } catch (err) {
         return json({ error: err.message }, 502);
       }

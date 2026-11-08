@@ -169,3 +169,12 @@ test('the tracked-books state file is readable', async () => {
   assert.equal((await worker.fetch(new Request('https://w.dev/read?path=books-state.json'), ENV)).status, 200);
   restore();
 });
+
+test('author, series and list routes refuse bad ids before calling Hardcover', async () => {
+  stub();
+  for (const path of ['/author?id=abc', '/series?id=', '/list?id=12345']) {
+    assert.equal((await worker.fetch(new Request(`https://w.dev${path}`), ENV)).status, 400, path);
+  }
+  assert.equal(calls.length, 0);
+  restore();
+});

@@ -678,7 +678,7 @@ export function profileId(name, taken = []) {
  * Add a person. Ids are never reused - not even a removed person's - so a new
  * "Sam" can never inherit an old Sam's shelf.
  */
-export function addProfile(doc, { name, colour }, now = new Date().toISOString()) {
+export function addProfile(doc, { name, colour, theme }, now = new Date().toISOString()) {
   doc.profiles ??= [];
   const clean = cleanText(name ?? '');
   if (!clean) throw new Error('Give the new profile a name.');
@@ -691,6 +691,7 @@ export function addProfile(doc, { name, colour }, now = new Date().toISOString()
     colour: /^#[0-9a-f]{6}$/i.test(colour ?? '') ? colour : PROFILE_COLOURS[doc.profiles.length % PROFILE_COLOURS.length],
     lastSeen: null,
     created: now,
+    theme: PROFILE_THEMES.some((t) => t.id === theme) ? theme : 'classic',
   };
   doc.profiles.push(profile);
   return profile;
@@ -755,4 +756,107 @@ export function readingEstimate(book, now = today()) {
   out.daysLeft = Math.ceil((total - page) / pace);
   out.finishOn = new Date((dayNumber(now) + out.daysLeft) * MS_DAY).toISOString().slice(0, 10);
   return out;
+}
+
+/* -------------------------------------------------------------- reactions */
+
+export const REACTIONS = ['🔥', '😍', '😂', '😮', '😢', '👏'];
+
+/**
+ * React to someone's rating of a book, or to their finishing it. Reactions
+ * live in the library of the person reacted to, beside the book.
+ *
+ * Anonymous for now: `by` is stored as null. When accounts arrive it holds
+ * the reactor's profile id, and nothing else here needs to change - the
+ * summaries already count entries rather than assuming who made them.
+ */
+export function addReaction(library, bookId, on, emoji, { by = null, now = new Date().toISOString() } = {}) {
+  if (!REACTIONS.includes(emoji)) throw new Error('Unknown reaction.');
+  if (on !== 'rating' && on !== 'finished') throw new Error('React to a rating or a finish.');
+  library.reactions ??= {};
+  library.reactions[bookId] ??= [];
+  library.reactions[bookId].push({ emoji, on, by, at: now });
+  return library;
+}
+
+/** Counts per emoji for one book's rating or finish, most first. */
+export function reactionSummary(library, bookId, on) {
+  const counts = new Map();
+  for (const r of library.reactions?.[bookId] ?? []) {
+    if (r.on === on) counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1);
+  }
+  return [...counts.entries()].map(([emoji, count]) => ({ emoji, count })).sort((a, b) => b.count - a.count);
+}
+
+/* ------------------------------------------------------------- audiobooks */
+
+/** Mark a book as listened to, with what Hardcover knows of the recording. */
+export function setAudiobook(book, audio) {
+  if (audio === false) {
+    delete book.format;
+    delete book.audio;
+    return book;
+  }
+  book.format = 'audiobook';
+  if (audio?.seconds) book.audio = { seconds: audio.seconds, narrators: audio.narrators ?? [] };
+  return book;
+}
+
+export const isAudiobook = (book) => book.format === 'audiobook';
+
+/** Hours of listening a finished audiobook stands for. */
+export const audioHours = (book) => (isAudiobook(book) && book.audio?.seconds ? book.audio.seconds / 3600 : 0);
+
+/* -------------------------------------------------------- who's who notes */
+
+/**
+ * Notes on a series' people, kept spoiler-safe: each entry records the book
+ * it comes from, and is only shown to someone reading at or past that book.
+ */
+export function upsertSeriesPerson(library, seriesId, { id, name, note = '', from = 1 }, now = today()) {
+  const clean = cleanText(name ?? '');
+  if (!clean) throw new Error('Give the character a name.');
+  library.seriesNotes ??= {};
+  const s = (library.seriesNotes[seriesId] ??= { people: [] });
+  const entry = { id: id ?? `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`,
+    name: clean, note: cleanText(note) ?? '', from: Number(from) || 1, updated: now };
+  const i = s.people.findIndex((p) => p.id === entry.id);
+  if (i >= 0) s.people[i] = entry; else s.people.push(entry);
+  return entry;
+}
+
+export function removeSeriesPerson(library, seriesId, personId) {
+  const s = library.seriesNotes?.[seriesId];
+  if (s) s.people = s.people.filter((p) => p.id !== personId);
+  return library;
+}
+
+/** Who's who as far as a reader has got: what is safe, and how many wait further on. */
+export function whosWho(library, seriesId, upTo = Infinity) {
+  const people = [...(library.seriesNotes?.[seriesId]?.people ?? [])]
+    .sort((a, b) => a.from - b.from || a.name.localeCompare(b.name));
+  return { shown: people.filter((p) => p.from <= upTo), hidden: people.filter((p) => p.from > upTo).length };
+}
+
+/* ----------------------------------------------------------- profile themes */
+
+/**
+ * Looks a person can choose for their pages: an accent, a wood for their
+ * bookcase, and a wallpaper behind it.
+ */
+export const PROFILE_THEMES = [
+  { id: 'classic', name: 'Classic', accent: null, wood: 'walnut', wallpaper: 'plain' },
+  { id: 'forest', name: 'Forest', accent: '#2f6b4f', wood: 'oak', wallpaper: 'leaves' },
+  { id: 'ocean', name: 'Ocean', accent: '#1f6f8b', wood: 'driftwood', wallpaper: 'waves' },
+  { id: 'rose', name: 'Rose', accent: '#b0476a', wood: 'cherry', wallpaper: 'florals' },
+  { id: 'midnight', name: 'Midnight', accent: '#4b5bb8', wood: 'ebony', wallpaper: 'stars' },
+  { id: 'sunset', name: 'Sunset', accent: '#c2622d', wood: 'oak', wallpaper: 'stripes' },
+];
+
+export function setProfileTheme(doc, id, themeId) {
+  const p = (doc.profiles ?? []).find((x) => x.id === id);
+  if (!p) throw new Error('That profile is not here any more.');
+  if (!PROFILE_THEMES.some((t) => t.id === themeId)) throw new Error('Unknown theme.');
+  p.theme = themeId;
+  return p;
 }

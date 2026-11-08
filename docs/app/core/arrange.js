@@ -104,3 +104,107 @@ function genreFor(books, shelfGenreCount) {
 /** Every book in shelf order, flattened - for anything that wants a single line. */
 export const shelfOrder = (sections) =>
   sections.flatMap((s) => s.authors.flatMap((a) => a.groups.flatMap((g) => g.books)));
+
+/* ------------------------------------------------------- shelves as items */
+
+/**
+ * The bookcase as data: shelves, each a list of item keys -
+ *   b:<book id>     a book
+ *   e:<label>       a bookend carrying a shelf's name
+ *   o:<id>          an ornament, its kind in `ornaments`
+ * The automatic arrangement and a person's own saved one share this shape,
+ * so the page draws either the same way and a saved one survives new books.
+ */
+const DEFAULT_ORNAMENTS = [['plant', 'cat'], ['candle', 'globe'], ['hourglass', 'plant']];
+
+export function autoShelves(books) {
+  const list = shelvable(books);
+  const shelves = [];
+  const ornaments = {};
+  let n = 0;
+  const addOrnaments = (kinds) => kinds.map((kind) => {
+    const id = `${++n}`;
+    ornaments[id] = kind;
+    return `o:${id}`;
+  });
+  const done = list.filter((b) => b.status !== 'tbr');
+  arrangeShelf(done).forEach((section, i) => {
+    shelves.push({
+      title: section.genre, kind: 'genre',
+      keys: [`e:${section.genre}`, ...shelfOrder([section]).map((b) => `b:${b.id}`),
+        ...addOrnaments(DEFAULT_ORNAMENTS[i % DEFAULT_ORNAMENTS.length])],
+    });
+  });
+  const pile = list.filter((b) => b.status === 'tbr');
+  shelves.push({
+    title: 'To read', kind: 'pile',
+    keys: ['e:To read', ...shelfOrder(arrangeShelf(pile)).map((b) => `b:${b.id}`), ...addOrnaments(['mug', 'hourglass'])],
+  });
+  return { shelves, ornaments };
+}
+
+/**
+ * A saved arrangement brought up to date with the shelf as it is now.
+ *
+ * Books that have gone are dropped. A new book - or one whose status moved it
+ * on or off the to-read pile - slots in beside its series; failing that,
+ * beside its author; failing that, at the end of the shelf for its genre (or
+ * the to-read shelf); failing that, at the end of the last shelf. Everything
+ * the person placed by hand stays where they put it.
+ */
+export function mergeLayout(layout, books) {
+  const list = shelvable(books);
+  const byId = new Map(list.map((b) => [b.id, b]));
+  const shelves = (layout?.shelves ?? []).map((s) => ({ ...s, keys: [...s.keys] }));
+  const ornaments = { ...(layout?.ornaments ?? {}) };
+  if (!shelves.length) return autoShelves(books);
+
+  const pileShelf = shelves.find((s) => s.kind === 'pile');
+  const placed = new Set();
+  for (const shelf of shelves) {
+    shelf.keys = shelf.keys.filter((k) => {
+      if (!k.startsWith('b:')) return true;
+      const b = byId.get(k.slice(2));
+      if (!b || placed.has(b.id)) return false;
+      // A book that changed sides of the pile is re-placed by the rules.
+      if (pileShelf && ((shelf === pileShelf) !== (b.status === 'tbr'))) return false;
+      placed.add(b.id);
+      return true;
+    });
+  }
+
+  const genreOf = new Map();
+  for (const section of arrangeShelf(list)) for (const b of shelfOrder([section])) genreOf.set(b.id, section.genre);
+
+  const insertAfterLast = (test) => {
+    for (let s = shelves.length - 1; s >= 0; s--) {
+      const keys = shelves[s].keys;
+      for (let i = keys.length - 1; i >= 0; i--) {
+        if (keys[i].startsWith('b:') && test(byId.get(keys[i].slice(2)), shelves[s])) return { s, i: i + 1 };
+      }
+    }
+    return null;
+  };
+  // Before the shelf's trailing ornaments, so a new book never lands beyond the plant.
+  const endOf = (shelf) => {
+    let i = shelf.keys.length;
+    while (i > 0 && shelf.keys[i - 1].startsWith('o:')) i--;
+    return i;
+  };
+
+  for (const b of shelfOrder(arrangeShelf(list))) {
+    if (placed.has(b.id)) continue;
+    const onPileSide = (shelf) => !pileShelf || ((shelf === pileShelf) === (b.status === 'tbr'));
+    const spot = (b.series?.id && insertAfterLast((x, shelf) => x?.series?.id === b.series.id && onPileSide(shelf)))
+      || insertAfterLast((x, shelf) => authorKey(x ?? {}) === authorKey(b) && onPileSide(shelf))
+      || (() => {
+        const target = b.status === 'tbr' && pileShelf ? pileShelf
+          : shelves.find((s) => s.title === genreOf.get(b.id) && s !== pileShelf)
+          ?? [...shelves].reverse().find((s) => s !== pileShelf) ?? shelves[shelves.length - 1];
+        return { s: shelves.indexOf(target), i: endOf(target) };
+      })();
+    shelves[spot.s].keys.splice(spot.i, 0, `b:${b.id}`);
+    placed.add(b.id);
+  }
+  return { shelves, ornaments };
+}

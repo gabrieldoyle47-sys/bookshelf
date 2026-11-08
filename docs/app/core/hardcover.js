@@ -395,16 +395,28 @@ export async function authorBooks(gql, id, today = new Date().toISOString().slic
 
 /* ---------------------------------------------------------- book details */
 
+/**
+ * Everything a book's detail view shows, in one place so every query that
+ * returns books returns the same shape. `audio` is the most-read English
+ * audiobook edition: its length and narrators.
+ */
+const DETAIL_FIELDS = `
+  id title subtitle description pages release_date release_year slug
+  users_count rating ratings_count cached_tags
+  image { url }
+  contributions { contribution author { id name } }
+  book_series { position series { id name books_count } }
+  default_physical_edition { publisher { name } }
+  audio: editions(
+    where: { audio_seconds: { _gt: 0 }, language: { code2: { _eq: "en" } } }
+    order_by: { users_count: desc }
+    limit: 1
+  ) { audio_seconds contributions { contribution author { name } } }
+`;
+
 const BOOKS_BY_IDS = `
   query BooksByIds($ids: [Int!]) {
-    books(where: { id: { _in: $ids } }) {
-      id title subtitle description pages release_date release_year slug
-      users_count rating ratings_count cached_tags
-      image { url }
-      contributions { contribution author { id name } }
-      book_series { position series { id name books_count } }
-      default_physical_edition { publisher { name } }
-    }
+    books(where: { id: { _in: $ids } }) { ${DETAIL_FIELDS} }
   }
 `;
 
@@ -458,7 +470,16 @@ function normaliseDetail(b) {
     publisher: b.default_physical_edition?.publisher?.name ?? null,
     genres: tags('Genre'),
     moods: tags('Mood'),
+    audio: audioOf(b.audio?.[0]),
   };
+}
+
+/** An audiobook edition as { seconds, narrators }, or null when there is none. */
+function audioOf(edition) {
+  if (!edition?.audio_seconds) return null;
+  const narrators = [...new Set((edition.contributions ?? [])
+    .filter((c) => c.contribution === 'Narrator').map((c) => c.author?.name).filter(Boolean))];
+  return { seconds: edition.audio_seconds, narrators };
 }
 
 /**
@@ -466,8 +487,8 @@ function normaliseDetail(b) {
  * suggestions. Thresholds keep out books too obscure or too poorly rated to
  * be worth suggesting; the English-edition filter keeps out translations.
  */
-const BOOKS_BY_GENRE = `
-  query BooksByGenre($tags: jsonb!, $limit: Int!, $minUsers: Int!, $minRating: numeric!) {
+const BOOKS_BY_TAG = `
+  query BooksByTag($tags: jsonb!, $limit: Int!, $minUsers: Int!, $minRating: numeric!) {
     books(
       where: {
         cached_tags: { _contains: $tags }
@@ -479,21 +500,129 @@ const BOOKS_BY_GENRE = `
       }
       order_by: { users_count: desc }
       limit: $limit
-    ) {
-      id title subtitle description pages release_date release_year slug
-      users_count rating ratings_count cached_tags
-      image { url }
-      contributions { contribution author { id name } }
-      book_series { position series { id name books_count } }
-      default_physical_edition { publisher { name } }
+    ) { ${DETAIL_FIELDS} }
+  }
+`;
+
+export async function booksByGenre(gql, genre, options = {}) {
+  return booksByTag(gql, 'Genre', genre, options);
+}
+
+/** Well-liked books carrying a tag in any category - 'Genre' or 'Mood'. */
+export async function booksByTag(gql, category, tag, { limit = 30, minUsers = 300, minRating = 3.8 } = {}) {
+  const data = await gql(BOOKS_BY_TAG, { tags: { [category]: [{ tag }] }, limit, minUsers, minRating });
+  return (data?.books ?? []).map(normaliseDetail);
+}
+
+/* ------------------------------------------------- author and series pages */
+
+const AUTHOR_PAGE = `
+  query AuthorPage($id: Int!) {
+    authors(where: { id: { _eq: $id } }, limit: 1) {
+      id name bio location born_year image { url }
+      contributions(
+        order_by: { book: { users_count: desc } }
+        limit: 60
+        where: { book: { canonical_id: { _is_null: true }, compilation: { _eq: false },
+          editions: { language: { code2: { _eq: "en" } } } } }
+      ) { contribution book { ${DETAIL_FIELDS} } }
     }
   }
 `;
 
-export async function booksByGenre(gql, genre, { limit = 30, minUsers = 300, minRating = 3.8 } = {}) {
-  const data = await gql(BOOKS_BY_GENRE, { tags: { Genre: [{ tag: genre }] }, limit, minUsers, minRating });
-  return (data?.books ?? []).map(normaliseDetail);
+/** An author's page: who they are, and their best-known books, newest last. */
+export async function authorPage(gql, id) {
+  const a = (await gql(AUTHOR_PAGE, { id: Number(id) }))?.authors?.[0];
+  if (!a) return null;
+  const seen = new Set();
+  const books = [];
+  for (const c of a.contributions ?? []) {
+    if (c.contribution && c.contribution !== 'Author') continue;
+    if (!c.book || seen.has(c.book.id)) continue;
+    seen.add(c.book.id);
+    books.push(normaliseDetail(c.book));
+  }
+  return {
+    id: String(a.id), name: a.name, bio: a.bio ?? null, location: a.location ?? null,
+    bornYear: a.born_year ?? null, image: a.image?.url ?? null, books,
+  };
 }
+
+const SERIES_PAGE = `
+  query SeriesPage($id: Int!) {
+    series(where: { id: { _eq: $id } }, limit: 1) {
+      id name books_count author { id name }
+      book_series(
+        distinct_on: position
+        order_by: [{ position: asc }, { book: { users_count: desc } }]
+        where: {
+          book: { canonical_id: { _is_null: true }, is_partial_book: { _eq: false },
+            editions: { language: { code2: { _eq: "en" } } } }
+          compilation: { _eq: false }
+        }
+      ) { position book { ${DETAIL_FIELDS} } }
+    }
+  }
+`;
+
+/** A series in reading order, every entry a full book record. */
+export async function seriesPage(gql, id) {
+  const s = (await gql(SERIES_PAGE, { id: Number(id) }))?.series?.[0];
+  if (!s) return null;
+  return {
+    id: String(s.id), name: s.name,
+    author: s.author ? { id: String(s.author.id), name: s.author.name } : null,
+    books: (s.book_series ?? []).filter((x) => x.book).map((x) => ({
+      ...normaliseDetail(x.book),
+      position: x.position == null ? null : Number(x.position),
+    })),
+  };
+}
+
+/* ------------------------------------------------------------ award lists */
+
+/**
+ * Award lists Hardcover's editors keep. Ids, not a search: Hardcover's list
+ * search is closed to the API, and a fixed set means every link works.
+ */
+export const AWARD_LISTS = [
+  { id: 99387, name: 'Hugo Award', blurb: 'Best Novel, 1953 to today' },
+  { id: 553583, name: 'Booker Prize', blurb: 'Every shortlist since 1969' },
+  { id: 96, name: 'Pulitzer Prize', blurb: 'Winning fiction' },
+  { id: 539802, name: 'Giller Prize', blurb: "This year's longlist - Canada's top fiction prize" },
+  { id: 358776, name: 'International Booker', blurb: "This year's longlist" },
+  { id: 3, name: 'NPR Top 100', blurb: 'Science fiction and fantasy, as voted by readers' },
+];
+
+const LIST_BOOKS = `
+  query ListBooks($id: Int!, $limit: Int!) {
+    lists(where: { id: { _eq: $id } }, limit: 1) {
+      id name
+      list_books(order_by: { position: asc }, limit: $limit) { position book { ${DETAIL_FIELDS} } }
+    }
+  }
+`;
+
+export async function listBooks(gql, id, limit = 60) {
+  const l = (await gql(LIST_BOOKS, { id: Number(id), limit }))?.lists?.[0];
+  if (!l) return null;
+  return { id: String(l.id), name: l.name, books: (l.list_books ?? []).filter((x) => x.book).map((x) => normaliseDetail(x.book)) };
+}
+
+/** The Worker versions of the above, for the live site. */
+async function viaProxy(workerUrl, path) {
+  const res = await fetch(`${workerUrl}${path}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Could not load (${res.status})`);
+  }
+  return res.json();
+}
+export const authorViaProxy = (w, id) => viaProxy(w, `/author?id=${encodeURIComponent(id)}`);
+export const seriesViaProxy = (w, id) => viaProxy(w, `/series?id=${encodeURIComponent(id)}`);
+export const listViaProxy = (w, id) => viaProxy(w, `/list?id=${encodeURIComponent(id)}`);
+export const moodsViaProxy = async (w, moods) =>
+  (await viaProxy(w, `/discover?kind=mood&genres=${encodeURIComponent(moods.join('|'))}`)).books ?? [];
 
 /** Suggestion candidates through the Worker, for up to four genres at once. */
 export async function discoverViaProxy(workerUrl, genres) {

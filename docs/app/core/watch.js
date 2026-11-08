@@ -443,3 +443,13 @@ export function unseenEvents(events, profile, library) {
   const mine = visibleEvents(events, profile, library);
   return since ? mine.filter((e) => eventStamp(e) > since) : mine;
 }
+
+/**
+ * Series a person has finished outright: every main book read, and nothing
+ * further announced - no future date, no untitled next instalment. (Hardcover
+ * cannot say a series is over, so "nothing more announced" stands in.)
+ */
+export function completedSeries(seriesState, library, now = today()) {
+  return seriesProgress(seriesState, library, now)
+    .filter((s) => s.slots.length && s.slots.every((x) => x.state === 'read'));
+}
