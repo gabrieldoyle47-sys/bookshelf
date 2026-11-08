@@ -2437,8 +2437,8 @@ select:disabled { cursor: not-allowed; }
 }
 @media (max-width: 560px) {
   /* One ornament per shelf on a phone: a second would wrap onto a row alone. */
-  .shelf-block .ornament + .ornament { display: none; }
-  .pile-empty { height: auto; min-height: var(--row); align-content: center; }
+  .library:not(.editing) .shelf-block .ornament + .ornament { display: none; }
+  .pile-empty { height: auto; min-height: var(--row); align-content: center; flex: 1 1 0; min-width: 0; font-size: .84rem; }
 }
 
 /* ======================================================= the room (room.js)
@@ -3164,3 +3164,6 @@ body { background-image: var(--wallpaper, none); background-attachment: fixed; }
 .tour-skip { font-size: .8rem; margin-left: .4rem; }
 .settings-tour { align-items: center; gap: .6rem; margin-bottom: .8rem; flex-wrap: wrap; }
 @media (prefers-reduced-motion: reduce) { .tour-ring, .tour-bubble { transition: none; animation: none; } }
+
+/* An ornament alone on a wrapped line (library.js tidyLines). */
+.shelf-block .ornament.wrapped-alone { display: none; }

@@ -263,6 +263,7 @@ export function libraryView(ctx, profile) {
 
     fill(caseBox, bookcase(blocks.length ? blocks : [emptyBlock()], relight));
     relight();
+    requestAnimationFrame(() => tidyLines(caseBox, Boolean(editing)));
     if (editing) {
       const shelves = caseBox.querySelector('.case-shelves');
       enableDrag(shelves, { onDrop: () => { editing = { ...editing, shelves: readShelves(shelves, editing.shelves) }; } });
@@ -294,7 +295,33 @@ export function libraryView(ctx, profile) {
 
   paintTools();
   paint(animate);
+  const onResize = () => (root.isConnected ? tidyLines(caseBox, Boolean(editing)) : removeEventListener('resize', onResize));
+  addEventListener('resize', onResize);
   return root;
+}
+
+/**
+ * On a narrow screen a full shelf pushes its plant or cat onto a line of its
+ * own, which reads as an empty shelf with a pot on it. Any line made only of
+ * ornaments is hidden - except while rearranging, when they must stay
+ * reachable.
+ */
+function tidyLines(box, editing) {
+  for (const block of box.querySelectorAll('.shelf-block:not(.cabinet)')) {
+    const items = [...block.children];
+    for (const el of items) el.classList.remove('wrapped-alone');
+    if (editing) continue;
+    const lines = new Map();
+    for (const el of items) {
+      // Everything on a line stands on the same plank, whatever its height.
+      const top = Math.round((el.offsetTop + el.offsetHeight) / 40);
+      if (!lines.has(top)) lines.set(top, []);
+      lines.get(top).push(el);
+    }
+    for (const line of lines.values()) {
+      if (line.every((el) => el.classList.contains('ornament'))) for (const el of line) el.classList.add('wrapped-alone');
+    }
+  }
 }
 
 const nextOrnamentId = (layout) => String(Math.max(0, ...Object.keys(layout.ornaments).map(Number).filter(Number.isFinite)) + 1);
