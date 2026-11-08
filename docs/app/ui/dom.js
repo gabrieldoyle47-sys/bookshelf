@@ -63,21 +63,65 @@ export function starsEl(n, { empty = '' } = {}) {
 }
 
 /**
- * A search on Indigo for this book. A search rather than a product page,
- * because Hardcover does not carry ISBNs for unreleased books and Indigo's
- * product URLs are not predictable from a title.
+ * Where to buy a book: a search at each store, rather than a product page,
+ * because Hardcover carries no ISBN for most unreleased books and none of these
+ * stores has product URLs you could build from a title.
+ *
+ * Indigo for the big chain; Les Libraires (Quebec's independents, together),
+ * Renaud-Bray and indiebookstores.ca (independents across Canada) for the rest.
+ * Showing only the stores with stock was tried and is not possible from here:
+ * Indigo and Renaud-Bray refuse requests that are not from a browser, and the
+ * other two fill their results in with private APIs.
  */
-export function indigoUrl(book) {
-  const author = (book.authorName ?? authorNames(book)).split(',')[0];
-  return `https://www.indigo.ca/search?q=${encodeURIComponent([book.title, author].filter(Boolean).join(' '))}`;
+export const STORES = [
+  { id: 'indigo', name: 'Indigo', url: (q) => `https://www.indigo.ca/en-ca/search?q=${q}` },
+  { id: 'leslibraires', name: 'Les Libraires', url: (q) => `https://www.leslibraires.ca/catalogue?s=${q}` },
+  { id: 'renaudbray', name: 'Renaud-Bray', url: (q) => `https://www.renaud-bray.com/Recherche.aspx?words=${q}` },
+  { id: 'indie', name: 'Indie stores', url: (q) => `https://www.indiebookstores.ca/books?term=${q}` },
+];
+
+export function storeUrls(book) {
+  const author = (book.authorName ?? authorNames(book)).split(',')[0].trim();
+  const q = encodeURIComponent([book.title, author].filter(Boolean).join(' '));
+  return STORES.map((s) => ({ ...s, href: s.url(q) }));
 }
 
-/** An Indigo link that says whether it is a purchase or a pre-order. */
-export function indigoLink(book, { released = true, className = 'shop-link' } = {}) {
-  return h('a', {
-    class: className, href: indigoUrl(book), target: '_blank', rel: 'noopener',
-    title: `${released ? 'Buy' : 'Pre-order'} ${book.title} at Indigo`,
-  }, released ? 'Buy at Indigo ↗' : 'Pre-order at Indigo ↗');
+/**
+ * The stores as a row of small buttons, or - where a card has no room -
+ * one "Buy" button that opens them as a menu.
+ */
+export function buyLinks(book, { released = true, compact = false } = {}) {
+  const verb = released ? 'Buy' : 'Pre-order';
+  const links = storeUrls(book).map((s) => h('a', {
+    class: 'buy-store', href: s.href, target: '_blank', rel: 'noopener',
+    title: `${verb} ${book.title} at ${s.name}`,
+  }, s.name, h('span', { class: 'buy-arrow', 'aria-hidden': 'true', text: '↗' })));
+  if (!compact) return h('div', { class: 'buy-row' }, h('span', { class: 'buy-label', text: `${verb} at` }), links);
+  const summary = h('summary', { title: `${verb} ${book.title}` }, verb, h('span', { class: 'buy-caret', 'aria-hidden': 'true', text: '▾' }));
+  const pop = h('div', { class: 'buy-pop' }, links);
+  const menu = h('details', { class: 'buy-menu' }, summary, pop);
+  // Fixed to the viewport, because these sit in carousels that would clip a
+  // menu hanging out of the card. Below the button, or above it near the
+  // bottom of the screen. One open at a time; a click elsewhere or a scroll
+  // closes it.
+  menu.addEventListener('toggle', () => {
+    if (!menu.open) return;
+    for (const other of document.querySelectorAll('details.buy-menu[open]')) if (other !== menu) other.open = false;
+    const r = summary.getBoundingClientRect();
+    const below = r.bottom + 190 < innerHeight;
+    pop.style.left = `${Math.max(8, Math.min(r.left, innerWidth - 168))}px`;
+    pop.style.top = below ? `${r.bottom + 4}px` : '';
+    pop.style.bottom = below ? '' : `${innerHeight - r.top + 4}px`;
+    const close = (e) => {
+      if (e.type === 'pointerdown' && menu.contains(e.target)) return;
+      menu.open = false;
+      document.removeEventListener('pointerdown', close, true);
+      removeEventListener('scroll', close, true);
+    };
+    document.addEventListener('pointerdown', close, true);
+    addEventListener('scroll', close, { capture: true, once: true });
+  });
+  return menu;
 }
 
 /** A Jan-1 date in Hardcover usually means "we know the year, not the day". */

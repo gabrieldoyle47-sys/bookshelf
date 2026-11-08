@@ -12,7 +12,7 @@
  */
 
 import {
-  h, clear, fill, indigoLink, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, toast, isPlaceholderDate,
+  h, clear, fill, buyLinks, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, toast, isPlaceholderDate,
 } from './dom.js';
 import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js';
 import { getConfig } from './storage.js';
@@ -280,7 +280,7 @@ function releaseCard(item, ctx, profile) {
     }, '✕') : null,
     h('div', { class: 'rcard-foot' },
       calendarLink(item, 'rcard-link'),
-      indigoLink(item, { released: item.daysUntil != null && item.daysUntil <= 0, className: 'rcard-link' })));
+      buyLinks(item, { released: item.daysUntil != null && item.daysUntil <= 0, compact: true })));
 }
 
 /* --------------------------------------------------------- track search */
@@ -431,9 +431,9 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
   }
 
   const released = Boolean(item.releaseDate && item.releaseDate <= today());
-  const links = h('div', { class: 'row release-links' },
-    calendarLink(item, 'btn secondary small'),
-    indigoLink(item, { released, className: 'btn secondary small' }));
+  const links = h('div', { class: 'release-links' },
+    h('div', { class: 'row' }, calendarLink(item, 'btn secondary small')),
+    buyLinks(item, { released }));
 
   fill(body,
     h('div', { class: 'release-top', style: cssArt(item.image) },

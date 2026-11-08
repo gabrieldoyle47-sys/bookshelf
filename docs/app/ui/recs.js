@@ -6,7 +6,7 @@
  * the future. Right, books the other person sent you, with their note.
  */
 
-import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl, indigoLink } from './dom.js';
+import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl, buyLinks } from './dom.js';
 import { onShelfIds, hiddenIds, today } from '../core/model.js';
 import { tasteProfile, discoveryGenres } from '../core/suggest.js';
 import { carousel } from './carousel.js';
@@ -116,7 +116,7 @@ function suggestionCard(ctx, profile, s) {
         } }, '+ Want to read') : null,
       ctx.state.canWrite ? h('button', { class: 'icon-btn', type: 'button', title: 'Not interested',
         'aria-label': `Not interested in ${b.title}`, onclick: () => ctx.actions.hide(profile, String(b.id), b.title) }, '✕') : null,
-      indigoLink({ title: b.title, authorName: authorNames(b) }, { className: 'shop-link compact' })));
+      buyLinks({ title: b.title, authorName: authorNames(b) }, { compact: true })));
 }
 
 /* ---------------------------------------------------- next in your series */
@@ -173,7 +173,7 @@ function seriesRow(ctx, profile, b, isNext, queued = null) {
         // what to read next - it is what to get once that one is done.
         isNext ? h('span', { class: 'pill soon', text: queued ? `after ${queued.title}` : 'read next' }) : null)),
     h('div', { class: 'rec-actions' },
-      indigoLink({ title: b.title, authorName: b.authorName ?? seriesAuthorOf(ctx, b.seriesId) }, { className: 'shop-link compact' }),
+      buyLinks({ title: b.title, authorName: b.authorName ?? seriesAuthorOf(ctx, b.seriesId) }, { compact: true }),
       ctx.state.canWrite ? h('button', {
         class: 'btn small', type: 'button',
         onclick: async (e) => {
@@ -188,7 +188,7 @@ function seriesRow(ctx, profile, b, isNext, queued = null) {
       }, '✕') : null));
 }
 
-/** The author of a series, from whichever shelf has a book in it - for the Indigo search. */
+/** The author of a series, from whichever shelf has a book in it - for the store searches. */
 function seriesAuthorOf(ctx, seriesId) {
   for (const lib of Object.values(ctx.state.libraries)) {
     const book = (lib.books ?? []).find((x) => x.series?.id === seriesId);
@@ -276,7 +276,7 @@ function recCard(ctx, profile, r, fromName) {
         h('div', { class: 'rec-from', text: `From ${fromName} · ${fmtAgo(r.at)}` }),
         r.note ? h('blockquote', { class: 'rec-note', text: r.note }) : null)),
     h('div', { class: 'row end' },
-      indigoLink(book, { className: 'shop-link' }),
+      buyLinks(book, { compact: true }),
       // Added some other way since it was sent: a disabled button with no
       // reason was a puzzle, so say it and let "Got it" file it away.
       ctx.state.canWrite && have ? h('span', { class: 'count', text: 'Already on your shelf' }) : null,
