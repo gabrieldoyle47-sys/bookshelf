@@ -26,7 +26,7 @@ import { statsView } from './stats.js';
 import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
-import { celebrate, art } from './art.js';
+import { celebrate, art, shelfPalette } from './art.js';
 import { cssArt } from './shelfhero.js';
 
 const state = {
@@ -1830,21 +1830,25 @@ const PICK_FILTERS = [
 ];
 
 /**
- * A shuffle through the to-read pile that slows down and lands on one book -
- * for when choosing is the hard part. "Waiting longest" weights the draw
- * towards books that have sat on the pile the longest.
+ * The TBR jar: every book on the pile is a folded slip of paper in its spine
+ * colour. The jar shakes, one slip rises out and unfolds into the book - for
+ * when choosing is the hard part. "Waiting longest" gives older additions
+ * more slips in the draw.
  */
 ctx.actions.openPicker = (profile) => {
   const dialog = document.getElementById('picker-dialog');
   const body = clear(document.getElementById('picker-body'));
   const lib = state.libraries[profile.id] ?? { books: [] };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const colourOf = shelfPalette(lib.books);
   let filter = 'any';
-  let timer = null;
+  const timers = [];
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  const stop = () => { while (timers.length) clearTimeout(timers.pop()); };
 
-  // The blurred cover behind the card is read from --art on the wrapper.
-  const wrap = h('div', { class: 'picker-wrap' });
-  const card = h('div', { class: 'picker-card' });
+  // The blurred cover behind the reveal is read from --art on the wrapper.
+  const wrap = h('div', { class: 'picker-wrap jar-wrap' });
+  const stage = h('div', { class: 'jar-stage' });
   const info = h('div', { class: 'picker-info', 'aria-live': 'polite' });
   const actions = h('div', { class: 'row end picker-actions' });
 
@@ -1861,18 +1865,31 @@ ctx.actions.openPicker = (profile) => {
     return tickets[Math.floor(Math.random() * tickets.length)];
   }
 
-  function show(book, final) {
+  /** The jar with a slip for each book (up to a jarful), settled at the bottom. */
+  function jar(books) {
+    const slips = [];
+    // A small pile still fills the jar a little: two slips a book, up to a jarful.
+    const n = Math.min(Math.max(books.length, Math.min(books.length * 2, 10)), 15);
+    for (let i = 0; i < n; i++) {
+      const b = books[i % books.length];
+      const row = Math.floor(i / 5);
+      slips.push(h('span', { class: 'slip', style: `--c:${colourOf(b).cloth};--x:${(i % 5) * 19 + (row % 2) * 9 + 8}px;--y:${row * 15}px;--r:${(i * 47) % 70 - 35}deg;--d:${(i * 13) % 9 * 40}ms` }));
+    }
+    return h('div', { class: 'jar' }, h('div', { class: 'jar-lid' }), h('div', { class: 'jar-glass' }, slips, h('span', { class: 'jar-shine' })));
+  }
+
+  function reveal(book) {
     wrap.setAttribute('style', cssArt(book.cover));
-    fill(card, coverEl(book));
-    card.classList.toggle('landed', final);
-    if (!final) return fill(info, h('div', { class: 'picker-title', text: book.title }));
+    wrap.classList.add('revealed');
+    stage.append(h('div', { class: 'jar-reveal', style: `--c:${colourOf(book).cloth}` },
+      h('div', { class: 'jar-paper' }, coverEl(book))));
     fill(info,
       h('div', { class: 'eyebrow', text: 'Your next read' }),
       h('div', { class: 'picker-title', text: book.title }),
       h('div', { class: 'book-meta', text: [authorNames(book), seriesLabel(book), book.pages ? `${book.pages} pages` : null].filter(Boolean).join(' · ') }),
       book.added ? h('div', { class: 'book-meta', text: `On the pile since ${fmtDate(book.added)}` }) : null);
     fill(actions,
-      h('button', { class: 'btn secondary', type: 'button', onclick: () => spin() }, 'Shuffle again'),
+      h('button', { class: 'btn secondary', type: 'button', onclick: () => shake() }, 'Shake again'),
       state.canWrite ? h('button', { class: 'btn', type: 'button', onclick: async (e) => {
         e.currentTarget.disabled = true;
         const ok = await saveLibrary(profile.id, (l) => {
@@ -1887,28 +1904,33 @@ ctx.actions.openPicker = (profile) => {
       } }, 'Start reading') : null);
   }
 
-  function spin() {
-    clearTimeout(timer);
+  function shake() {
+    stop();
     const books = pool();
     fill(actions);
+    wrap.removeAttribute('style');
+    wrap.classList.remove('revealed');
     if (!books.length) {
-      wrap.removeAttribute('style');
-      fill(card, art('books'));
+      fill(stage, art('books'));
       fill(info, h('p', { class: 'hint', text: 'Nothing on the pile matches that — try another filter.' }));
       return;
     }
     const winner = draw(books);
-    if (reduced || books.length === 1) return show(winner, true);
-    // Slow down like a wheel: each step a little longer than the last.
-    let delay = 60;
-    let i = 0;
-    const step = () => {
-      if (delay > 320) return show(winner, true);
-      show(books[i++ % books.length], false);
-      delay *= 1.16;
-      timer = setTimeout(step, delay);
-    };
-    step();
+    fill(stage, jar(books));
+    if (reduced) return reveal(winner);
+    fill(info, h('p', { class: 'hint jar-hint', text: books.length === 1 ? 'Only one book in the jar…' : `${books.length} books in the jar…` }));
+    const jarEl = stage.querySelector('.jar');
+    // Shake, then a slip in the winner's colour rises out and unfolds.
+    jarEl.classList.add('shaking');
+    later(1100, () => {
+      jarEl.classList.remove('shaking');
+      stage.append(h('span', { class: 'slip flying', style: `--c:${colourOf(winner).cloth}` }));
+    });
+    later(1900, () => {
+      stage.querySelector('.slip.flying')?.remove();
+      jarEl.classList.add('settled');
+      reveal(winner);
+    });
   }
 
   body.append(
@@ -1918,15 +1940,15 @@ ctx.actions.openPicker = (profile) => {
         onclick: (e) => {
           filter = id;
           for (const b of e.currentTarget.parentElement.children) b.setAttribute('aria-selected', String(b === e.currentTarget));
-          spin();
+          shake();
         },
       }, label))),
-    (wrap.append(h('div', { class: 'picker-wash', 'aria-hidden': 'true' }), card), wrap),
+    (wrap.append(h('div', { class: 'picker-wash', 'aria-hidden': 'true' }), stage), wrap),
     info,
     actions);
-  dialog.addEventListener('close', () => clearTimeout(timer), { once: true });
+  dialog.addEventListener('close', stop, { once: true });
   dialog.showModal();
-  spin();
+  shake();
 };
 
 /* ---------------------------------------------------------------- settings */
