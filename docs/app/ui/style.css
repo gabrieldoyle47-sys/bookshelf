@@ -3144,3 +3144,23 @@ body { background-image: var(--wallpaper, none); background-attachment: fixed; }
 .sound-volume { width: 150px; margin: 0 0 0 4px; accent-color: var(--accent); }
 .ico-sound { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12'/%3E%3C/svg%3E"); }
 .ico-mute { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3Cpath d='M17 9.5l5 5M22 9.5l-5 5'/%3E%3C/svg%3E"); }
+
+/* ====================================================== the tour (tour.js) */
+.tour { position: fixed; inset: 0; z-index: 95; pointer-events: none; }
+.tour-ring {
+  position: fixed; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 9999px rgb(10 8 6 / .55), 0 0 0 2px var(--accent), 0 0 24px 4px color-mix(in srgb, var(--accent) 50%, transparent);
+  transition: left .35s var(--ease), top .35s var(--ease), width .35s var(--ease), height .35s var(--ease);
+}
+.tour-bubble {
+  position: fixed; width: min(320px, calc(100vw - 24px)); padding: .95rem 1rem .8rem; pointer-events: auto;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); transition: left .35s var(--ease), top .35s var(--ease); animation: buy-pop var(--med) var(--ease);
+}
+.tour-title { display: block; font: 600 1.1rem var(--display); margin-bottom: .25rem; }
+.tour-text { margin: 0 0 .8rem; font-size: .9rem; color: var(--text-dim); line-height: 1.5; }
+.tour-foot { display: flex; align-items: center; gap: .4rem; }
+.tour-count { font-size: .74rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.tour-skip { font-size: .8rem; margin-left: .4rem; }
+.settings-tour { align-items: center; gap: .6rem; margin-bottom: .8rem; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { .tour-ring, .tour-bubble { transition: none; animation: none; } }

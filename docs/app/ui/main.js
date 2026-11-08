@@ -28,6 +28,7 @@ import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
 import { applyTheme, themeOf, themePicker } from './themes.js';
 import { play, soundControls } from './sound.js';
+import { startTour, toured } from './tour.js';
 import { celebrate, art, shelfPalette } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -124,6 +125,8 @@ async function boot() {
   state.navigated = true;
   render();
   state.navigated = false;
+  // A first visit gets the short tour, once the books have landed.
+  if (!toured() && state.route.view === 'profile' && state.route.tab === 'library') setTimeout(() => startTour(), 1600);
 }
 
 /**
@@ -1671,6 +1674,8 @@ ctx.actions.openNewProfile = () => {
       dialog.close();
       go(`#/p/${made.id}`);
       toast(`Welcome, ${made.name} — add the book you are reading to get started`);
+      // Their first look at their own (empty) shelf comes with the tour.
+      setTimeout(() => startTour({ name: made.name }), 1200);
     },
   },
     h('div', { class: 'row profile-preview' }, preview,
@@ -2082,6 +2087,14 @@ function openSettings() {
   const draft = { ...cfg };
 
   body.append(
+    h('div', { class: 'row settings-tour' },
+      h('span', { class: 'hint', text: 'New here, or forgotten what is where?' }),
+      h('button', { class: 'btn secondary small', type: 'button', onclick: () => {
+        dialog.close();
+        const p = state.profiles.find((x) => x.id === state.route.profileId) ?? state.profiles[0];
+        go(`#/p/${p.id}`);
+        setTimeout(() => startTour(), 700);
+      } }, 'Show the tour')),
     h('p', { class: 'hint', text: {
       local: 'Running locally: changes are written straight to the files on disk.',
       live: 'Everything is set up — anyone with this link can add books. Nothing to configure.',
