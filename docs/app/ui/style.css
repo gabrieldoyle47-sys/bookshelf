@@ -3063,3 +3063,67 @@ select:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   .story, .story-slide, .st-fan span, .st-swatch, .st-record, .st-stamp, .st-favs figure, .st-hint { animation: none !important; }
 }
+
+/* ======================================================== Profile themes
+   themes.js sets data-ptheme, data-wood and --p-accent on <html> for the
+   person whose pages are showing. The accent is lightened in dark mode so
+   it reads on a dark page, as the site's own accent is. */
+:root[data-ptheme] {
+  --accent: var(--p-accent);
+  --accent-strong: color-mix(in srgb, var(--p-accent) 82%, #000);
+  --accent-soft: color-mix(in srgb, var(--p-accent) 16%, var(--surface));
+  --accent-tint: color-mix(in srgb, var(--p-accent) 7%, var(--surface));
+  --on-accent: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-ptheme]:not([data-theme="light"]) {
+    --accent: color-mix(in srgb, var(--p-accent) 58%, #fff);
+    --accent-strong: color-mix(in srgb, var(--p-accent) 72%, #fff);
+    --accent-soft: color-mix(in srgb, var(--p-accent) 24%, var(--surface));
+    --accent-tint: color-mix(in srgb, var(--p-accent) 12%, var(--surface));
+    --on-accent: #0f0c0a;
+  }
+}
+:root[data-ptheme][data-theme="dark"] {
+  --accent: color-mix(in srgb, var(--p-accent) 58%, #fff);
+  --accent-strong: color-mix(in srgb, var(--p-accent) 72%, #fff);
+  --accent-soft: color-mix(in srgb, var(--p-accent) 24%, var(--surface));
+  --accent-tint: color-mix(in srgb, var(--p-accent) 12%, var(--surface));
+  --on-accent: #0f0c0a;
+}
+body { background-image: var(--wallpaper, none); background-attachment: fixed; }
+
+/* The bookcase woods. Walnut is the site's own. */
+:root[data-wood="oak"] { --wood-1: #c9a06a; --wood-2: #b08350; --wood-3: #8a6236; --wood-back: #4a3622; --plank-top: #dcb684; --plank-face: #b8894f; }
+:root[data-wood="driftwood"] { --wood-1: #b5aa98; --wood-2: #9c917f; --wood-3: #7d7364; --wood-back: #3a3631; --plank-top: #cfc5b3; --plank-face: #a59a87; }
+:root[data-wood="cherry"] { --wood-1: #b5694a; --wood-2: #9a5236; --wood-3: #7a3e27; --wood-back: #3b1d14; --plank-top: #cc8463; --plank-face: #a65a3c; }
+:root[data-wood="ebony"] { --wood-1: #4a3f3a; --wood-2: #3a312d; --wood-3: #2a2320; --wood-back: #120e0c; --plank-top: #5c504a; --plank-face: #40362f; }
+@media (prefers-color-scheme: dark) {
+  :root[data-wood="oak"]:not([data-theme="light"]) { --wood-1: #6e5034; --wood-2: #5c4229; --wood-3: #43301f; --wood-back: #1c140c; --plank-top: #8c6a45; --plank-face: #694c2f; }
+  :root[data-wood="driftwood"]:not([data-theme="light"]) { --wood-1: #5e584f; --wood-2: #4d4841; --wood-3: #3a3631; --wood-back: #151413; --plank-top: #777065; --plank-face: #57524a; }
+  :root[data-wood="cherry"]:not([data-theme="light"]) { --wood-1: #6a3324; --wood-2: #572a1d; --wood-3: #3f1e15; --wood-back: #170b08; --plank-top: #85432f; --plank-face: #612f21; }
+  :root[data-wood="ebony"]:not([data-theme="light"]) { --wood-1: #2e2724; --wood-2: #251f1c; --wood-3: #1b1614; --wood-back: #0a0807; --plank-top: #3d3430; --plank-face: #2a2320; }
+}
+:root[data-wood="oak"][data-theme="dark"] { --wood-1: #6e5034; --wood-2: #5c4229; --wood-3: #43301f; --wood-back: #1c140c; --plank-top: #8c6a45; --plank-face: #694c2f; }
+:root[data-wood="driftwood"][data-theme="dark"] { --wood-1: #5e584f; --wood-2: #4d4841; --wood-3: #3a3631; --wood-back: #151413; --plank-top: #777065; --plank-face: #57524a; }
+:root[data-wood="cherry"][data-theme="dark"] { --wood-1: #6a3324; --wood-2: #572a1d; --wood-3: #3f1e15; --wood-back: #170b08; --plank-top: #85432f; --plank-face: #612f21; }
+:root[data-wood="ebony"][data-theme="dark"] { --wood-1: #2e2724; --wood-2: #251f1c; --wood-3: #1b1614; --wood-back: #0a0807; --plank-top: #3d3430; --plank-face: #2a2320; }
+
+/* Choosing a theme. */
+.theme-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.theme-card {
+  position: relative; display: grid; gap: .35rem; justify-items: start; padding: .55rem .6rem .5rem; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface); cursor: pointer; color: var(--text); text-align: left;
+}
+.theme-card:hover { border-color: var(--border-strong); }
+.theme-card[aria-checked="true"] { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.tc-swatch { width: 22px; height: 22px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .35); }
+.tc-wood { width: 100%; height: 8px; border-radius: 2px; background: linear-gradient(180deg, #d1a571, #a87745); }
+.theme-card.wood-oak .tc-wood { background: linear-gradient(180deg, #dcb684, #b8894f); }
+.theme-card.wood-driftwood .tc-wood { background: linear-gradient(180deg, #cfc5b3, #a59a87); }
+.theme-card.wood-cherry .tc-wood { background: linear-gradient(180deg, #cc8463, #a65a3c); }
+.theme-card.wood-ebony .tc-wood { background: linear-gradient(180deg, #5c504a, #40362f); }
+.tc-name { font-size: .8rem; font-weight: 600; }
+.lib-theme { width: 40px; height: 40px; }
+.ico-palette { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.9 1.4-1.9-.5-1.2.3-2.6 1.7-2.6H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z'/%3E%3Ccircle cx='7.5' cy='11' r='1.2' fill='black'/%3E%3Ccircle cx='10' cy='7' r='1.2' fill='black'/%3E%3Ccircle cx='14.5' cy='7' r='1.2' fill='black'/%3E%3C/svg%3E"); }
+@media (max-width: 560px) { .theme-cards { grid-template-columns: repeat(2, 1fr); } .lib-actions .lib-theme { flex: 0 0 40px; } }

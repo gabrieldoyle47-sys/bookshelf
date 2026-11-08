@@ -65,7 +65,11 @@ export function libraryView(ctx, profile) {
     h('div', { class: 'spacer' }),
     roomWindow(),
     h('div', { class: 'spacer' }),
-    h('div', { class: 'lib-actions' }, booksBtn, addBtn));
+    h('div', { class: 'lib-actions' },
+      canWrite ? h('button', { class: 'icon-btn lib-theme', type: 'button', title: 'Colour and theme',
+        'aria-label': `${profile.name}’s colour and theme`, onclick: () => ctx.actions.openEditProfile(profile) },
+      h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' })) : null,
+      booksBtn, addBtn));
 
   if (!all.length) {
     return h('div', { class: 'library' }, head,

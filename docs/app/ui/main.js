@@ -15,7 +15,7 @@ import {
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress, activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
-  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours,
+  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, setProfileTheme,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
@@ -26,6 +26,7 @@ import { statsView } from './stats.js';
 import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
+import { applyTheme, themeOf, themePicker } from './themes.js';
 import { celebrate, art, shelfPalette } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -288,6 +289,12 @@ function render() {
   }
 
   const { view, profileId, tab } = state.route;
+
+  // Someone's pages wear their theme; an author or series page wears the
+  // theme of whoever was looking; the shared pages, the site's own.
+  const themed = view === 'profile' ? state.profiles.find((p) => p.id === profileId) ?? state.profiles[0]
+    : view === 'author' || view === 'series' ? state.profiles.find((p) => p.id === state.viewer) : null;
+  applyTheme(themed ? themeOf(themed) : null);
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
   if (view === 'shared') return void main.append(togetherView(ctx));
@@ -1601,6 +1608,7 @@ ctx.actions.openNewProfile = () => {
   const body = clear(document.getElementById('profile-body'));
   const used = new Set(state.profiles.map((p) => p.colour));
   let colour = PROFILE_COLOURS.find((c) => !used.has(c)) ?? PROFILE_COLOURS[0];
+  let theme = 'classic';
   const error = h('p', { class: 'hint error', role: 'alert' });
 
   const preview = h('span', { class: 'avatar-chip xl', 'aria-hidden': 'true' });
@@ -1631,7 +1639,7 @@ ctx.actions.openNewProfile = () => {
       const name = input.value.trim();
       // Check before writing anything, so a clash never leaves a stray shelf.
       try {
-        addPerson({ profiles: structuredClone(state.allProfiles ?? state.profiles) }, { name, colour });
+        addPerson({ profiles: structuredClone(state.allProfiles ?? state.profiles) }, { name, colour, theme });
       } catch (err) {
         error.textContent = err.message;
         input.focus();
@@ -1639,7 +1647,7 @@ ctx.actions.openNewProfile = () => {
       }
       create.disabled = true;
       let made = null;
-      const doc = await saveProfiles((data) => { made = addPerson(data, { name, colour }); return data; },
+      const doc = await saveProfiles((data) => { made = addPerson(data, { name, colour, theme }); return data; },
         `Add ${name}`);
       if (!doc || !made) { create.disabled = false; return; }
       // An empty shelf file, so the new person exists everywhere at once -
@@ -1660,6 +1668,8 @@ ctx.actions.openNewProfile = () => {
     h('div', { class: 'row profile-preview' }, preview,
       h('label', { class: 'field grow' }, h('span', { text: 'Name' }), input)),
     h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
+    h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; }),
+      h('span', { class: 'hint', text: 'Their pages take its colour, the wood of their bookcase and a faint wallpaper. It can be changed later.' })),
     error,
     h('p', { class: 'hint', text: 'Anyone with the link can see and edit every shelf here, including this one.' }),
     h('div', { class: 'row end' }, create));
@@ -1668,6 +1678,47 @@ ctx.actions.openNewProfile = () => {
   paintPreview();
   dialog.showModal();
   input.focus();
+};
+
+/** A person's colour and theme, changed after the fact. Shows each pick as it is chosen. */
+ctx.actions.openEditProfile = (profile) => {
+  const dialog = document.getElementById('profile-dialog');
+  document.getElementById('profile-title').textContent = `${profile.name}’s colour and theme`;
+  const body = clear(document.getElementById('profile-body'));
+  let colour = profile.colour ?? PROFILE_COLOURS[0];
+  let theme = themeOf(profile).id;
+  const preview = h('span', { class: 'avatar-chip xl', 'aria-hidden': 'true', text: profile.name.slice(0, 1).toUpperCase() });
+  const paintPreview = () => { preview.style.background = colour; applyTheme(themeOf({ theme })); };
+  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Colour' },
+    PROFILE_COLOURS.map((c) => h('button', {
+      class: 'swatch', type: 'button', role: 'radio', 'aria-checked': String(c === colour), 'aria-label': `Colour ${c}`, style: `background:${c}`,
+      onclick: (e) => {
+        colour = c;
+        for (const sw of swatches.children) sw.setAttribute('aria-checked', String(sw === e.currentTarget));
+        paintPreview();
+      },
+    })));
+  const save = h('button', { class: 'btn', type: 'submit' }, 'Save');
+  body.append(h('form', { class: 'profile-form', onsubmit: async (e) => {
+    e.preventDefault();
+    save.disabled = true;
+    const doc = await saveProfiles((data) => {
+      setProfileTheme(data, profile.id, theme);
+      const p = data.profiles.find((x) => x.id === profile.id);
+      if (p) p.colour = colour;
+      return data;
+    }, `Change ${profile.name}'s theme`);
+    if (!doc) { save.disabled = false; return; }
+    dialog.close();
+    toast('Theme saved');
+  } },
+    h('div', { class: 'row profile-preview' }, preview, h('div', { class: 'field grow' }, h('span', { text: 'Colour' }), swatches)),
+    h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; paintPreview(); })),
+    h('div', { class: 'row end' }, h('button', { class: 'btn secondary', type: 'button', onclick: () => dialog.close() }, 'Cancel'), save)));
+  // Cancelling puts back whatever the page was wearing.
+  dialog.addEventListener('close', () => render(), { once: true });
+  paintPreview();
+  dialog.showModal();
 };
 
 /**
@@ -1755,6 +1806,7 @@ function openProfileMenu(profile, x, y, opener) {
   menuEl = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `${profile.name} options` },
     h('div', { class: 'ctx-head', text: profile.name }),
     item('Open shelf', () => go(`#/p/${profile.id}`)),
+    state.canWrite ? item('Colour and theme…', () => ctx.actions.openEditProfile(profile)) : null,
     item('Add a person…', () => ctx.actions.openNewProfile()),
     h('div', { class: 'ctx-sep', role: 'separator' }),
     item(`Remove ${profile.name}…`, () => ctx.actions.openRemoveProfile(profile), 'danger'));
