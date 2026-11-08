@@ -1,9 +1,11 @@
 /**
- * Recommendations: two sources of "read this next", side by side.
+ * Recommendations: suggestions made for you, more like your favourite books
+ * (discover.js), and two sources of "read this next" side by side.
  *
  * Left, the books already out in series you read that are nowhere on your
  * shelf - the watcher knew about them all along but only ever talked about
  * the future. Right, books the other person sent you, with their note.
+ * Last, a place to go looking: search, a vibe, or an award list.
  */
 
 import { h, fmtAgo, fmtRelease, authorNames, coverEl, starsEl, buyLinks } from './dom.js';
@@ -14,6 +16,7 @@ import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 import { openRelease } from './upcoming.js';
 import { emptyArt } from './art.js';
+import { becauseSection, findSection } from './discover.js';
 
 /** New recommendations waiting for an answer - the tab's badge. */
 export const newRecCount = (library) =>
@@ -32,9 +35,27 @@ export function recsView(ctx, profile) {
   return frag(
     pageHead(`Recommendations · ${profile.name}`, 'What to read next', sendBtn),
     pickedForYou(ctx, profile, library),
+    live((redraw) => becauseSection(ctx, profile, library, suggestionCard, redraw)),
     h('div', { class: 'recs-columns' },
       seriesColumn(ctx, profile, library),
-      sentToYouColumn(ctx, profile, library, others)));
+      sentToYouColumn(ctx, profile, library, others)),
+    live((redraw) => findSection(ctx, profile, library, suggestionCard, redraw)));
+}
+
+/**
+ * A section that redraws itself in place - its chips and tabs change what it
+ * shows without redrawing the page around it (or losing a half-typed search).
+ */
+function live(build) {
+  let el;
+  const redraw = () => {
+    if (!el?.isConnected) return;
+    const next = build(redraw) ?? h('div', { hidden: true });
+    el.replaceWith(next);
+    el = next;
+  };
+  el = build(redraw) ?? h('div', { hidden: true });
+  return el;
 }
 
 /* --------------------------------------------------------- picked for you */
@@ -102,11 +123,11 @@ function suggestionCard(ctx, profile, s) {
   return h('article', { class: 'sg-card' },
     h('button', { class: 'sg-cover', type: 'button', onclick: preview, 'aria-label': `About ${b.title}` },
       coverEl({ cover: b.image }),
-      h('span', { class: 'sg-match', text: `${s.match}% match` })),
+      s.match != null ? h('span', { class: 'sg-match', text: `${s.match}% match` }) : null),
     h('div', { class: 'sg-body' },
       h('div', { class: 'sg-title', text: b.title }),
       h('div', { class: 'book-meta', text: authorNames(b) }),
-      s.reasons[0] ? h('div', { class: 'sg-reason', text: s.reasons[0] }) : null,
+      s.reasons?.[0] ? h('div', { class: 'sg-reason', text: s.reasons[0] }) : null,
       meta ? h('div', { class: 'sg-meta', text: meta }) : null),
     h('div', { class: 'sg-actions' },
       ctx.state.canWrite ? h('button', { class: 'btn small', type: 'button',

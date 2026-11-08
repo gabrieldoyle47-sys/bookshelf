@@ -179,3 +179,75 @@ export function discoveryGenres(library, n = 4) {
   const specific = top.filter((g) => !BROAD.has(g.toLowerCase()));
   return [...specific, ...top.filter((g) => BROAD.has(g.toLowerCase()))].slice(0, n);
 }
+
+/* ------------------------------------------------------ because you loved */
+
+/**
+ * Books like one particular book, for "Because you loved…": the candidates
+ * that share most of its genres and moods - distinctive ones counting more -
+ * with another book by the same author allowed in, and popularity only
+ * breaking ties. The seed's own series and anything already on the shelf
+ * are left out.
+ */
+export function becauseYouLoved(seed, candidates, library, { limit = 12 } = {}) {
+  const have = onShelfIds(library);
+  const hidden = hiddenIds(library);
+  const seedGenres = cleanTags(seed.genres, 6);
+  const seedMoods = cleanTags(seed.moods, 6).map((m) => m.toLowerCase());
+  const seedAuthor = seed.authors?.[0]?.id;
+  const unique = [...new Map(candidates.map((c) => [String(c.id), c])).values()];
+  const maxUsers = Math.max(1, ...unique.map((c) => c.usersCount ?? 0));
+  const out = [];
+  for (const c of unique) {
+    const id = String(c.id);
+    if (have.has(id) || hidden.has(id) || id === String(seed.hardcoverId ?? seed.id)) continue;
+    if (seed.series?.id && c.series?.id === seed.series.id) continue;
+    // Starting a series, not joining one halfway.
+    if (c.series?.position != null && c.series.position > 1) continue;
+    const genres = cleanTags(c.genres, 6);
+    const moods = cleanTags(c.moods, 6).map((m) => m.toLowerCase());
+    const sharedGenres = genres.filter((g) => seedGenres.includes(g));
+    const sharedMoods = moods.filter((m) => seedMoods.includes(m));
+    const sameAuthor = Boolean(seedAuthor && c.authors?.some((a) => a.id === seedAuthor));
+    const weight = (g) => (BROAD.has(g.toLowerCase()) ? 0.35 : 1);
+    const genreFit = sharedGenres.reduce((n, g) => n + weight(g), 0) / Math.max(1, seedGenres.reduce((n, g) => n + weight(g), 0));
+    const moodFit = seedMoods.length ? sharedMoods.length / seedMoods.length : 0;
+    const popularity = Math.log10((c.usersCount ?? 0) + 1) / Math.log10(maxUsers + 1);
+    const quality = c.rating ? Math.max(0, Math.min(1, (c.rating - 3.5) / 1.2)) : 0.4;
+    const score = 0.5 * genreFit + 0.22 * moodFit + 0.1 * popularity + 0.1 * quality + (sameAuthor ? 0.12 : 0);
+    if (!sameAuthor && !sharedGenres.length) continue;
+    const telling = sharedGenres.filter((g) => !BROAD.has(g.toLowerCase()));
+    const reasons = [sameAuthor ? `Also by ${c.authors.find((a) => a.id === seedAuthor).name}`
+      : `Also ${[...(telling.length ? telling : sharedGenres).slice(0, 2), ...sharedMoods.slice(0, 1)].join(', ').toLowerCase()}`];
+    out.push({ book: c, score, match: Math.min(99, Math.round(score * 100)), reasons });
+  }
+  out.sort((a, b) => b.score - a.score);
+  // No more than two from one author, as elsewhere.
+  const per = new Map();
+  return out.filter((s) => {
+    const a = s.book.authors?.[0]?.id ?? s.book.id;
+    per.set(a, (per.get(a) ?? 0) + 1);
+    return per.get(a) <= 2;
+  }).slice(0, limit);
+}
+
+/**
+ * Books for a vibe: those carrying the most of the chosen moods first, then
+ * the best liked. Nothing already on the shelf.
+ */
+export function vibeMatches(candidates, moods, library, { limit = 24 } = {}) {
+  const have = onShelfIds(library);
+  const hidden = hiddenIds(library);
+  const want = moods.map((m) => m.toLowerCase());
+  const unique = [...new Map(candidates.map((c) => [String(c.id), c])).values()];
+  return unique
+    .filter((c) => !have.has(String(c.id)) && !hidden.has(String(c.id)) && !(c.series?.position > 1))
+    .map((c) => {
+      const has = cleanTags(c.moods, 8).map((m) => m.toLowerCase()).filter((m) => want.includes(m));
+      return { book: c, hits: has.length, reasons: has.length ? [`Feels ${has.join(', ')}`] : [] };
+    })
+    .filter((s) => s.hits)
+    .sort((a, b) => b.hits - a.hits || (b.book.rating ?? 0) * Math.log10((b.book.usersCount ?? 0) + 10) - (a.book.rating ?? 0) * Math.log10((a.book.usersCount ?? 0) + 10))
+    .slice(0, limit)
+    .map(({ book, reasons }) => ({ book, match: null, reasons }));
+}

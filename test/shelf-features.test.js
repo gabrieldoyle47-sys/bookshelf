@@ -139,3 +139,23 @@ test('a recap keeps the story and drops the publisher puff', async () => {
   ] };
   assert.deepEqual(earlierBooks(lib, '9', 3).map((b) => b.id), ['hc:1', 'hc:2']);
 });
+
+test('because you loved: shared distinctive genres and the same author lead; the seed series is left out', async () => {
+  const { becauseYouLoved, vibeMatches } = await import('../docs/app/core/suggest.js');
+  const seed = { id: 'hc:1', hardcoverId: '1', authors: [{ id: 'a', name: 'A' }], series: { id: 's' },
+    genres: ['Fantasy', 'Epic', 'Military'], moods: ['tense', 'dark'] };
+  const lib = { books: [seed] };
+  const cand = [
+    { id: '2', title: 'Same series', series: { id: 's', position: 2 }, genres: ['Epic'], authors: [{ id: 'a', name: 'A' }] },
+    { id: '3', title: 'Epic military', genres: ['Epic', 'Military'], moods: ['tense'], authors: [{ id: 'b', name: 'B' }], usersCount: 10 },
+    { id: '4', title: 'Only broad', genres: ['Fantasy'], authors: [{ id: 'c', name: 'C' }], usersCount: 100000 },
+    { id: '5', title: 'Romance', genres: ['Romance'], authors: [{ id: 'd', name: 'D' }] },
+    { id: '6', title: 'Same author', genres: ['Science Fiction'], authors: [{ id: 'a', name: 'A' }] },
+  ];
+  const out = becauseYouLoved(seed, cand, lib);
+  assert.deepEqual(out.map((s) => s.book.id).slice(0, 1), ['3']);
+  assert.ok(!out.some((s) => ['2', '5'].includes(s.book.id)));
+  assert.equal(out.find((s) => s.book.id === '6').reasons[0], 'Also by A');
+  const v = vibeMatches([{ id: '7', moods: ['Dark', 'tense'] }, { id: '8', moods: ['dark'] }, { id: '9', moods: ['funny'] }], ['dark', 'tense'], lib);
+  assert.deepEqual(v.map((s) => s.book.id), ['7', '8']);
+});

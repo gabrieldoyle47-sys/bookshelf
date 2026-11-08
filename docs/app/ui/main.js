@@ -505,6 +505,8 @@ const viaHardcover = (proxied, direct) => async (...args) => {
 ctx.actions.fetchAuthor = viaHardcover(authorViaProxy, authorPage);
 ctx.actions.fetchSeries = viaHardcover(seriesViaProxy, seriesPage);
 ctx.actions.fetchList = viaHardcover(listViaProxy, listBooks);
+ctx.actions.discover = viaHardcover(discoverViaProxy,
+  async (gql, genres) => (await Promise.all(genres.map((g) => booksByGenre(gql, g)))).flat());
 ctx.actions.fetchMoods = viaHardcover(moodsViaProxy,
   async (gql, moods) => (await Promise.all(moods.map((m) => booksByTag(gql, 'Mood', m)))).flat());
 
