@@ -12,6 +12,7 @@ import {
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress, activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
+  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
@@ -20,6 +21,7 @@ import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcom
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
 import { libraryView } from './library.js';
+import { openBookView } from './openbook.js';
 import { celebrate, art } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -820,7 +822,7 @@ function showHits(hits) {
         if (!have) return chooseStatus(hit, hits);
         // Already there: go straight to it instead.
         document.getElementById('add-dialog').close();
-        ctx.actions.openBook(have, addProfile);
+        ctx.actions.editBook(have, addProfile);
       },
     },
       coverEl({ cover: hit.image }),
@@ -938,9 +940,31 @@ function chooseStatus(hit, hits) {
 
 /* ------------------------------------------------------------- book dialog */
 
+const ownerOf = (book, owner) => owner
+  ?? state.profiles.find((p) => (state.libraries[p.id]?.books ?? []).some((b) => b.id === book.id));
+
+/** A click on a book anywhere: open it (openbook.js). Its Edit button leads to editBook. */
 ctx.actions.openBook = (book, owner) => {
-  const profile = owner
-    ?? state.profiles.find((p) => (state.libraries[p.id]?.books ?? []).some((b) => b.id === book.id));
+  const profile = ownerOf(book, owner);
+  if (!profile) return toast('Could not tell whose shelf that book is on.', true);
+  openBookView(ctx, findBookIn(profile.id, book.id) ?? book, profile);
+};
+
+/** An emoji on someone's rating or finish - anonymous until there are accounts. */
+ctx.actions.react = (profile, book, on, emoji) => saveLibrary(profile.id,
+  (lib) => addReaction(lib, book.id, on, emoji), `React ${emoji} to ${profile.name}'s ${on === 'rating' ? 'rating of' : 'finishing'} ${book.title}`);
+
+ctx.actions.saveSeriesPerson = (profile, seriesId, person) => saveLibrary(profile.id, (lib) => {
+  upsertSeriesPerson(lib, seriesId, person);
+  return lib;
+}, `Who's who: ${person.name}`);
+
+ctx.actions.removeSeriesPerson = (profile, seriesId, person) => saveLibrary(profile.id,
+  (lib) => removeSeriesPerson(lib, seriesId, person.id), `Who's who: remove ${person.name}`);
+
+/** The editing panel: shelf, rating, dates, note, format. */
+ctx.actions.editBook = (book, owner) => {
+  const profile = ownerOf(book, owner);
   if (!profile) return toast('Could not tell whose shelf that book is on.', true);
   const dialog = document.getElementById('book-dialog');
   document.getElementById('book-title').textContent = book.title;
@@ -950,6 +974,7 @@ ctx.actions.openBook = (book, owner) => {
     status: book.status, rating: book.rating ?? null, note: book.note ?? '',
     readOn: readOnOf(book), started: book.started ?? '', finished: book.finished ?? '',
     page: book.progress?.page ?? '',
+    audiobook: isAudiobook(book), hours: audioHours(book) || '', narrators: (book.audio?.narrators ?? []).join(', '),
   };
   // Closing with edits unsaved asks first (see wireDialogs).
   const initial = JSON.stringify(draft);
@@ -987,6 +1012,8 @@ ctx.actions.openBook = (book, owner) => {
     h('label', { class: 'field' }, h('span', { text: 'Note' }),
       h('textarea', { placeholder: 'Optional', oninput: (e) => { draft.note = e.target.value; } }, book.note ?? '')),
 
+    audiobookField(book, draft),
+
     // Dates are deliberately tucked away: they are never required, and burying
     // them keeps the common case to two clicks.
     h('details', { class: 'optional' },
@@ -1017,6 +1044,39 @@ ctx.actions.openBook = (book, owner) => {
 
   dialog.showModal();
 };
+
+/**
+ * "I listened to it": marks an audiobook, and fills in its length and
+ * narrator from Hardcover's most-read English recording, which can be
+ * corrected by hand.
+ */
+function audiobookField(book, draft) {
+  const hours = h('input', { type: 'number', min: '0', step: '0.1', inputmode: 'decimal', value: draft.hours, placeholder: 'Hours',
+    'aria-label': 'Listening hours', class: 'page-input', oninput: (e) => { draft.hours = e.target.value; } });
+  const narrators = h('input', { type: 'text', value: draft.narrators, placeholder: 'Narrator', 'aria-label': 'Narrated by',
+    oninput: (e) => { draft.narrators = e.target.value; } });
+  const hint = h('span', { class: 'hint' });
+  const extra = h('div', { class: 'audio-extra', hidden: !draft.audiobook },
+    h('span', { class: 'row' }, hours, h('span', { class: 'count', text: 'hours' }), narrators), hint);
+  const fillIn = async () => {
+    if (draft.hours || draft.narrators || !book.hardcoverId) return;
+    hint.textContent = 'Looking up the recording…';
+    try {
+      const d = await loadDetails(ctx, book.hardcoverId);
+      if (d?.audio?.seconds && !draft.hours) { draft.hours = String(Math.round(d.audio.seconds / 360) / 10); hours.value = draft.hours; }
+      if (d?.audio?.narrators?.length && !draft.narrators) { draft.narrators = d.audio.narrators.join(', '); narrators.value = draft.narrators; }
+      hint.textContent = d?.audio ? 'Filled in from Hardcover — change it if yours was different.' : 'Hardcover has no audiobook details for this one.';
+    } catch { hint.textContent = ''; }
+  };
+  return h('div', { class: 'field' }, h('span', { text: 'Format' }),
+    h('label', { class: 'check' },
+      h('input', { type: 'checkbox', checked: draft.audiobook, onchange: (e) => {
+        draft.audiobook = e.target.checked;
+        extra.hidden = !draft.audiobook;
+        if (draft.audiobook) fillIn();
+      } }), ' Audiobook — I listened to it'),
+    extra);
+}
 
 /** Shelf names as people say them; the stored values stay as they are. */
 const SHELF_LABEL = { tbr: 'Want to read', reading: 'Reading now', read: 'Finished', abandoned: 'Gave up on' };
@@ -1161,6 +1221,10 @@ async function applyEdit(profile, book, draft) {
       started: draft.started || null,
       finished: draft.finished || null,
     });
+    setAudiobook(target, draft.audiobook && {
+      seconds: Number(draft.hours) > 0 ? Number(draft.hours) * 3600 : null,
+      narrators: String(draft.narrators).split(',').map((n) => n.trim()).filter(Boolean),
+    });
     if (draft.page !== '' && draft.page != null && Number(draft.page) !== target.progress?.page) {
       setProgress(target, draft.page);
     }
@@ -1190,7 +1254,7 @@ function finishedMoment(profile, book) {
   const message = goal.target && goal.done === goal.target
     ? `Finished ${book.title} — and that's your ${goal.target}-book goal for the year!`
     : `Finished ${book.title}!`;
-  toast(message, false, book.rating ? null : { label: 'Rate it', run: () => ctx.actions.openBook(findBookIn(profile.id, book.id) ?? book, profile) });
+  toast(message, false, book.rating ? null : { label: 'Rate it', run: () => ctx.actions.editBook(findBookIn(profile.id, book.id) ?? book, profile) });
 }
 
 /** "Finished!" on the reading spotlight. */

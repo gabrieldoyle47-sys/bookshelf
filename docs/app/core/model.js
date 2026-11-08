@@ -798,7 +798,9 @@ export function setAudiobook(book, audio) {
     return book;
   }
   book.format = 'audiobook';
-  if (audio?.seconds) book.audio = { seconds: audio.seconds, narrators: audio.narrators ?? [] };
+  const narrators = (audio?.narrators ?? []).map((n) => cleanText(n)).filter(Boolean).slice(0, 6);
+  if (audio?.seconds > 0 || narrators.length) book.audio = { seconds: audio?.seconds > 0 ? Math.round(audio.seconds) : null, narrators };
+  else delete book.audio;
   return book;
 }
 

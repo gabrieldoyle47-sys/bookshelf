@@ -127,3 +127,15 @@ test('a new book never lands in the trophy cabinet', () => {
   assert.deepEqual(merged.shelves[0].keys, ['e:Romance', 'b:hc:7']);
   assert.deepEqual(merged.shelves[2].keys, []);
 });
+
+test('a recap keeps the story and drops the publisher puff', async () => {
+  const { storySentences, earlierBooks } = await import('../docs/app/core/memory.js');
+  const text = '#1 New York Times bestselling author returns! Kaladin has been dragged from his home. He fights to save his men. Then more happens.';
+  assert.equal(storySentences(text), 'Kaladin has been dragged from his home. He fights to save his men.');
+  assert.equal(storySentences(''), '');
+  const lib = { books: [
+    book(1, { series: { id: '9', position: 1 } }), book(2, { series: { id: '9', position: 2 } }),
+    book(3, { series: { id: '9', position: 1.5 }, status: 'tbr' }), book(4, { series: { id: '9', position: 3 } }),
+  ] };
+  assert.deepEqual(earlierBooks(lib, '9', 3).map((b) => b.id), ['hc:1', 'hc:2']);
+});

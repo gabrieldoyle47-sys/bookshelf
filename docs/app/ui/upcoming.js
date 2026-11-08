@@ -16,6 +16,7 @@ import {
 } from './dom.js';
 import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js';
 import { getConfig } from './storage.js';
+import { previouslyOn } from './memory.js';
 import { cssArt } from './shelfhero.js';
 import { emptyArt } from './art.js';
 import { upcomingFrom, authorUpcoming, trackedUpcoming } from '../core/watch.js';
@@ -435,10 +436,15 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
     h('div', { class: 'row' }, calendarLink(item, 'btn secondary small')),
     buyLinks(item, { released }));
 
+  // Before a new book in a series: what happened in the ones already read.
+  const recap = profile && !preview && item.seriesId && item.position > 1
+    ? previouslyOn(ctx, profile, { seriesId: item.seriesId, seriesName: item.seriesName, before: item.position }) : null;
+
   fill(body,
     h('div', { class: 'release-top', style: cssArt(item.image) },
       h('div', { class: 'hero-wash', 'aria-hidden': 'true' }), coverSlot, metaSlot),
     links,
+    recap,
     preview ? null : history(ctx, item, profile),
     extra,
     actions);
