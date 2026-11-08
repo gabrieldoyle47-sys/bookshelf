@@ -2799,3 +2799,7 @@ select:disabled { cursor: not-allowed; }
 .audio-extra[hidden] { display: none; }
 .audio-extra .row { gap: .5rem; flex-wrap: wrap; align-items: center; }
 .audio-extra input:not(.page-input) { flex: 1 1 160px; }
+/* Reactions under a finish in the group feed, lined up with the text. */
+.feed-react { padding: 0 .75rem .4rem calc(.75rem + 32px + .7rem); margin-top: -.2rem; }
+.feed-react .react-chip, .feed-react .react-add { border-color: var(--border); }
+.feed-react .react-pick { background: var(--surface-2); }

@@ -20,6 +20,7 @@ import {
 } from '../core/together.js';
 import { frag, pageHead, emptyState, plural } from './views.js';
 import { emptyArt } from './art.js';
+import { reactionBar } from './openbook.js';
 
 /** "Both of us" while there are two of you, "Everyone" once there are more. */
 export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : profiles.length > 2 ? 'Everyone' : 'Together');
@@ -138,7 +139,8 @@ export function togetherView(ctx) {
       finished: 'finished', started: 'started', added: 'wants to read',
       recommended: 'recommended',
     };
-    const open = (item) => () => (item.id === viewer && item.type !== 'recommended'
+    // Anyone's own book opens as a book; a recommendation is not on their shelf yet.
+    const open = (item) => () => (item.type !== 'recommended'
       ? ctx.actions.openBook(item.book, byId[item.id])
       : ctx.actions.openBookPreview(item.book));
     return h('section', { class: 'section tg-activity' },
@@ -151,7 +153,10 @@ export function togetherView(ctx) {
             h('em', { text: it.book.title }),
             it.type === 'recommended' ? ` to ${byId[it.to]?.name ?? 'someone'}` : null,
             it.rating ? h('span', { class: 'feed-stars' }, starsEl(it.rating)) : null),
-          h('span', { class: 'feed-when', text: fmtAgo(it.at) })))))
+          h('span', { class: 'feed-when', text: fmtAgo(it.at) })),
+        // A finish can be cheered - its rating if it has one, else the finishing.
+        it.type === 'finished' ? h('div', { class: 'feed-react' },
+          reactionBar(ctx, byId[it.id], it.book, it.rating ? 'rating' : 'finished')) : null)))
         : emptyArt('together', 'Nothing dated yet — finishing or starting a book shows up here.'));
   }
 
