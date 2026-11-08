@@ -996,6 +996,50 @@
       "readOn": null,
       "started": null,
       "finished": null
+    },
+    {
+      "id": "hc:429071",
+      "hardcoverId": "429071",
+      "title": "Malice",
+      "authors": [
+        {
+          "id": "234040",
+          "name": "John Gwynne"
+        }
+      ],
+      "series": {
+        "id": "2438",
+        "name": "The Faithful and the Fallen",
+        "position": 1,
+        "booksCount": 12
+      },
+      "pages": 640,
+      "released": "2012-01-01",
+      "releaseYear": 2012,
+      "cover": "https://assets.hardcover.app/editions/3146515/1337347644345757.jpg",
+      "slug": "malice-the-faithful-and-the-fallen",
+      "genres": [
+        "Fantasy",
+        "Epic Fantasy",
+        "Adventure",
+        "Grimdark",
+        "Science Fiction & Fantasy",
+        "Action & Adventure"
+      ],
+      "moods": [
+        "Adventurous",
+        "tense",
+        "dark",
+        "mysterious",
+        "emotional"
+      ],
+      "status": "tbr",
+      "rating": null,
+      "note": "",
+      "added": "2026-11-08",
+      "readOn": null,
+      "started": null,
+      "finished": null
     }
   ],
   "watch": {
