@@ -38,7 +38,7 @@ export function seriesSection(ctx, profile) {
     }
     return h('div', { class: `sp-row${s.complete ? ' complete' : ''}` },
       h('div', { class: 'sp-head' },
-        h('strong', { class: 'sp-name', text: s.name }),
+        h('a', { class: 'sp-name name-link', href: `#/series/${s.id}`, title: `About ${s.name}`, text: s.name }),
         h('span', { class: 'sp-count', text: s.complete ? `All ${s.released} read` : `${s.read} of ${s.released} read` })),
       h('div', { class: 'sp-bar', role: 'list', 'aria-label': `${s.name}: ${s.read} of ${s.released} read` },
         s.slots.map((slot) => h('button', {

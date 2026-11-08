@@ -144,7 +144,7 @@ function seriesColumn(ctx, profile, library) {
       const extras = g.books.filter((b) => b.extra);
       return h('div', { class: 'series-rec' },
         h('div', { class: 'series-rec-head' },
-          h('strong', { text: g.name }),
+          h('a', { class: 'name-link strong', href: `#/series/${g.id}`, title: `About ${g.name}`, text: g.name }),
           g.reached ? h('span', { class: 'count', text: `you’re at book ${g.reached}` }) : null,
           g.queued ? h('span', { class: 'count', text: `· book ${g.queued.position} is on your pile` }) : null),
         main.length ? h('div', { class: 'rec-rows' }, main.map((b) => seriesRow(ctx, profile, b, b === g.next, g.queued))) : null,

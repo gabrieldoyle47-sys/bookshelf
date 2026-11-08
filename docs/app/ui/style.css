@@ -2803,3 +2803,79 @@ select:disabled { cursor: not-allowed; }
 .feed-react { padding: 0 .75rem .4rem calc(.75rem + 32px + .7rem); margin-top: -.2rem; }
 .feed-react .react-chip, .feed-react .react-add { border-color: var(--border); }
 .feed-react .react-pick { background: var(--surface-2); }
+
+/* Author and series names that lead to their pages: quiet until hovered. */
+.name-link { color: inherit; text-decoration: none; background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; transition: background-size var(--med) var(--ease); }
+.name-link:hover, .name-link:focus-visible { background-size: 100% 1px; }
+.name-link.strong { font-weight: 700; }
+
+/* ============================================= author and series pages */
+.pg { display: grid; gap: 1.2rem; }
+.pg-loading { display: grid; gap: .8rem; }
+.pg-sk-head { height: 140px; border-radius: var(--radius-lg); }
+.pg-head { display: flex; align-items: center; gap: 1.4rem; flex-wrap: wrap; }
+.pg-photo { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; flex: 0 0 auto;
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--border-strong), var(--shadow); }
+.pg-photo.none { display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font: 600 2.6rem var(--display); }
+.pg-title { min-width: 0; flex: 1 1 280px; }
+.pg-title h1 { margin: .15rem 0 .3rem; font-size: clamp(2rem, 1.4rem + 2vw, 2.8rem); line-height: 1.05; }
+.pg-sub { color: var(--text-dim); font-size: .95rem; }
+.pg-sub a { color: inherit; }
+.pg-shelfs { display: flex; flex-wrap: wrap; gap: .4rem .9rem; margin-top: .6rem; font-size: .86rem; color: var(--text-dim); }
+.pg-shelf { display: inline-flex; align-items: center; gap: .4rem; }
+.pg-shelf .avatar-chip { width: 22px; height: 22px; font-size: .7rem; }
+.pg-bio { margin: 0; max-width: 72ch; color: var(--text-dim); line-height: 1.6; white-space: pre-line; }
+.pg-bio.clamp { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.pg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 1.1rem .9rem; }
+.pg-card { display: grid; gap: .3rem; align-content: start; text-align: left; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+.pg-card .cover { width: 100%; height: auto; aspect-ratio: 2 / 3; border-radius: 4px 8px 8px 4px; transition: transform var(--med) var(--ease), box-shadow var(--med) var(--ease); }
+.pg-card:hover .cover, .pg-card:focus-visible .cover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.pg-card:not(.owned) .cover { filter: saturate(.85); }
+.pg-card-title { font: 600 .92rem/1.2 var(--display); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pg-card-meta { font-size: .74rem; color: var(--text-faint); }
+.pg-readers { display: inline-flex; gap: 3px; }
+.pg-reader .avatar-chip { width: 20px; height: 20px; font-size: .62rem; box-shadow: 0 0 0 2px var(--bg); }
+.pg-reader.reading .avatar-chip { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent); }
+.pg-reader.tbr .avatar-chip { opacity: .45; }
+
+/* The series page. */
+.pg-stack { position: relative; width: 150px; height: 140px; flex: 0 0 auto; }
+.pg-stack > span { position: absolute; left: calc(var(--i) * 22px); top: calc(var(--i) * 4px); transform: rotate(calc(var(--i) * 4deg - 6deg)); }
+.pg-stack .cover { width: 72px; height: 108px; box-shadow: var(--shadow); border-radius: 3px 6px 6px 3px; }
+.pg-trophy { display: inline-flex; align-items: center; gap: .5rem; margin-top: .6rem; padding: .3rem .8rem .3rem .4rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--star) 14%, transparent); color: var(--text); font-size: .86rem; font-weight: 600; }
+.pg-trophy svg { width: 22px; height: 30px; }
+.pg-columns { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 1.6rem; align-items: start; }
+.pg-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.pg-row { display: flex; align-items: center; gap: .6rem; border-radius: var(--radius-sm); padding-right: .6rem; }
+.pg-row:hover { background: var(--surface-2); }
+.pg-row-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .75rem; padding: .45rem .6rem; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; }
+.pg-row .cover { width: 38px; height: 57px; flex: 0 0 38px; }
+.pg-row .book-main { display: grid; gap: .1rem; min-width: 0; }
+.pg-pos { width: 1.8rem; text-align: right; font: 600 1.1rem var(--display); color: var(--text-faint); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.pg-row.upcoming .book-title { font-style: italic; }
+.pg-row.upcoming .pg-pos { color: var(--accent); }
+.pg-row.extra .pg-pos { font-size: .85rem; }
+.pg-hc-rating { font-size: .74rem; color: var(--text-faint); display: inline-flex; align-items: center; gap: .2rem; }
+.pg-hc-rating .stars-el { font-size: .74rem; }
+.pg-extras { margin-top: .8rem; }
+.pg-extras > summary { cursor: pointer; color: var(--text-dim); font-size: .88rem; font-weight: 600; padding: .3rem 0; }
+.pg-side { position: sticky; top: 1rem; display: grid; gap: .2rem; padding: 1rem 1.1rem; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--border); }
+.pg-side-head { display: flex; align-items: center; gap: .5rem; font-weight: 700; font-size: .9rem; margin-bottom: .3rem; }
+.pg-side-head .avatar-chip { width: 24px; height: 24px; font-size: .72rem; }
+.pg-side .memory { --rule: var(--border); }
+.pg-next { border-top: 1px solid var(--border); padding-top: .8rem; display: grid; gap: .35rem; }
+.pg-next .k { font: 700 .66rem var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+@media (max-width: 860px) {
+  .pg-columns { grid-template-columns: 1fr; }
+  .pg-side { position: static; }
+}
+@media (max-width: 560px) {
+  .pg-photo { width: 84px; height: 84px; }
+  .pg-stack { width: 120px; height: 110px; }
+  .pg-stack .cover { width: 58px; height: 87px; }
+  .pg-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+}
+.pg-more { justify-self: start; margin-top: 1rem; }
+.pg-folded { padding: .5rem .6rem; gap: .75rem; }
+.pg-folded:hover { background: none; }

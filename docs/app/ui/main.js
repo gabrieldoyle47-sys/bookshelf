@@ -5,7 +5,10 @@
 
 import { h, clear, fill, fmtDate, fmtReadOn, fmtRating, authorNames, coverEl, seriesLabel, toast } from './dom.js';
 import * as storage from './storage.js';
-import { createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy, booksByGenre, discoverViaProxy } from '../core/hardcover.js';
+import {
+  createClient, searchBooks, searchViaProxy, booksByIds, booksViaProxy, booksByGenre, discoverViaProxy,
+  authorPage, seriesPage, listBooks, booksByTag, authorViaProxy, seriesViaProxy, listViaProxy, moodsViaProxy,
+} from '../core/hardcover.js';
 import { scoreSuggestions, discoveryGenres } from '../core/suggest.js';
 import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
@@ -22,6 +25,7 @@ import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
 import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
+import { authorView, seriesView } from './pages.js';
 import { celebrate, art } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -87,7 +91,13 @@ async function boot() {
     readRoute();
     // A soft cross-fade between pages where the browser supports it; saves
     // still redraw instantly, since only navigation comes through here.
-    const paint = () => { state.navigated = true; render(); state.navigated = false; };
+    const paint = () => {
+      state.navigated = true;
+      render();
+      state.navigated = false;
+      // An author or series page is a new page, not a tab: start at its top.
+      if (state.route.view === 'author' || state.route.view === 'series') scrollTo({ top: 0 });
+    };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.startViewTransition(paint);
     } else {
@@ -232,6 +242,7 @@ function readRoute() {
 
   if (parts[0] === 'upcoming') state.route = { view: 'all-upcoming' };
   else if (parts[0] === 'shared') state.route = { view: 'shared' };
+  else if ((parts[0] === 'author' || parts[0] === 'series') && /^\d+$/.test(parts[1] ?? '')) state.route = { view: parts[0], id: parts[1] };
   else if (parts[0] === 'p' && parts[1]) {
     // An old bookmark or a typo lands on a real page, and the sidebar and
     // tabs then highlight what is actually showing.
@@ -248,6 +259,8 @@ function pageTitle() {
   const { view, profileId, tab } = state.route;
   if (view === 'all-upcoming') return 'All upcoming';
   if (view === 'shared') return 'Both of us';
+  if (view === 'author') return 'Author';
+  if (view === 'series') return 'Series';
   const name = state.profiles.find((p) => p.id === profileId)?.name;
   const label = PROFILE_TABS.find(([id]) => id === tab)?.[1] ?? 'Shelf';
   return name ? `${label} · ${name}` : null;
@@ -278,6 +291,8 @@ function render() {
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
   if (view === 'shared') return void main.append(togetherView(ctx));
+  if (view === 'author') return void main.append(authorView(ctx, state.route.id));
+  if (view === 'series') return void main.append(seriesView(ctx, state.route.id));
 
   const profile = state.profiles.find((p) => p.id === profileId) ?? state.profiles[0];
   ctx.currentProfile = profile;
@@ -479,6 +494,19 @@ ctx.actions.fetchBooks = async (ids) => {
   if (hardcover) return booksByIds(createClient(hardcover), ids);
   throw new Error('This site is not connected to its backend yet.');
 };
+
+/** Through the Worker on the live site, or straight to Hardcover on localhost. */
+const viaHardcover = (proxied, direct) => async (...args) => {
+  const { hardcover, worker } = storage.getConfig();
+  if (worker) return proxied(worker, ...args);
+  if (hardcover) return direct(createClient(hardcover), ...args);
+  throw new Error('This site is not connected to its backend yet.');
+};
+ctx.actions.fetchAuthor = viaHardcover(authorViaProxy, authorPage);
+ctx.actions.fetchSeries = viaHardcover(seriesViaProxy, seriesPage);
+ctx.actions.fetchList = viaHardcover(listViaProxy, listBooks);
+ctx.actions.fetchMoods = viaHardcover(moodsViaProxy,
+  async (gql, moods) => (await Promise.all(moods.map((m) => booksByTag(gql, 'Mood', m)))).flat());
 
 /* ------------------------------------------------------------ suggestions */
 
