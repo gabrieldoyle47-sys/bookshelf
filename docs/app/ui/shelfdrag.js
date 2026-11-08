@@ -8,6 +8,8 @@
  * the bookend, which always opens its shelf.
  */
 
+import { play } from './sound.js';
+
 export function enableDrag(container, { onDrop }) {
   let drag = null;
 
@@ -80,6 +82,7 @@ export function enableDrag(container, { onDrop }) {
     if (!was.started) return;
     was.ghost.remove();
     was.item.classList.remove('drag-source');
+    play('tick');
     onDrop();
   };
   container.addEventListener('pointerup', end);

@@ -3127,3 +3127,20 @@ body { background-image: var(--wallpaper, none); background-attachment: fixed; }
 .lib-theme { width: 40px; height: 40px; }
 .ico-palette { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linejoin='round'%3E%3Cpath d='M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.9 1.4-1.9-.5-1.2.3-2.6 1.7-2.6H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z'/%3E%3Ccircle cx='7.5' cy='11' r='1.2' fill='black'/%3E%3Ccircle cx='10' cy='7' r='1.2' fill='black'/%3E%3Ccircle cx='14.5' cy='7' r='1.2' fill='black'/%3E%3C/svg%3E"); }
 @media (max-width: 560px) { .theme-cards { grid-template-columns: repeat(2, 1fr); } .lib-actions .lib-theme { flex: 0 0 40px; } }
+
+/* ==================================================== sound (sound.js) */
+.sound-slot { padding: 0 .6rem; }
+.sound-controls { display: grid; gap: .35rem; justify-items: start; }
+.sound-pill { display: flex; align-items: center; gap: 2px; padding: 2px; width: fit-content;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; }
+.sound-opt { display: grid; place-items: center; width: 30px; height: 26px; border-radius: 999px; border: 0; background: none; cursor: pointer; color: var(--text-faint); font-size: .9rem; line-height: 1; }
+.sound-opt .ico { width: 15px; height: 15px; }
+.sound-opt.mono { filter: grayscale(1) contrast(.9); opacity: .55; }
+.sound-opt[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); opacity: 1; }
+.sound-opt.mono[aria-pressed="true"] { filter: grayscale(1) contrast(1.1); }
+.sound-opt:hover { opacity: .9; }
+.sound-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sound-sep { width: 1px; height: 16px; background: var(--border-strong); margin: 0 3px; }
+.sound-volume { width: 150px; margin: 0 0 0 4px; accent-color: var(--accent); }
+.ico-sound { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3Cpath d='M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12'/%3E%3C/svg%3E"); }
+.ico-mute { --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9h4l5-4v14l-5-4H4z'/%3E%3Cpath d='M17 9.5l5 5M22 9.5l-5 5'/%3E%3C/svg%3E"); }

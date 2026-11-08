@@ -15,6 +15,7 @@ import { h, fill, coverEl, authorNames, starsEl, fmtReadOn, fmtRating, buyLinks 
 import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary } from '../core/model.js';
 import { shelfPalette } from './art.js';
 import { previouslyOn, whosWhoBox } from './memory.js';
+import { play } from './sound.js';
 
 const STATUS = { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile', abandoned: 'Put down' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -52,6 +53,7 @@ export function openBookView(ctx, book, profile) {
   dialog.showModal();
   dialog.querySelector('.ob-close')?.focus({ preventScroll: true });
 
+  play('flip');
   // Two frames, so the closed state is painted before the cover swings.
   requestAnimationFrame(() => requestAnimationFrame(() => bookEl.classList.remove('closed')));
 
@@ -59,6 +61,7 @@ export function openBookView(ctx, book, profile) {
   function closeBook(then) {
     if (closing) return;
     closing = true;
+    play('flip');
     bookEl.classList.add('closed');
     dialog.classList.add('closing');
     setTimeout(() => {
@@ -142,6 +145,7 @@ export function reactionBar(ctx, profile, book, on) {
   const add = async (emoji) => {
     picking = false;
     for (const b of wrap.querySelectorAll('button')) b.disabled = true;
+    play('tick');
     await ctx.actions.react(profile, book, on, emoji);
     paint();
   };

@@ -27,6 +27,7 @@ import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
 import { applyTheme, themeOf, themePicker } from './themes.js';
+import { play, soundControls } from './sound.js';
 import { celebrate, art, shelfPalette } from './art.js';
 import { cssArt } from './shelfhero.js';
 
@@ -107,6 +108,7 @@ async function boot() {
   });
   wireScroll();
   wireThemeSwitch();
+  wireSound();
   document.getElementById('open-settings').addEventListener('click', openSettings);
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
@@ -210,6 +212,11 @@ function tablistKeys(e) {
 }
 
 /** Auto / Light / Dark, remembered per browser. */
+/** The sound controls under the theme switch (sound.js). */
+function wireSound() {
+  document.getElementById('sound-slot')?.replaceChildren(soundControls());
+}
+
 function wireThemeSwitch() {
   const box = document.getElementById('theme-switch');
   if (!box) return;
@@ -1286,6 +1293,7 @@ async function applyEdit(profile, book, draft) {
  */
 function finishedMoment(profile, book) {
   celebrate();
+  play('chime');
   const lib = state.libraries[profile.id] ?? { books: [] };
   const goal = goalProgress(lib, Number(todayISO().slice(0, 4)));
   const message = goal.target && goal.done === goal.target
@@ -1981,6 +1989,7 @@ ctx.actions.openPicker = (profile) => {
     later(1900, () => {
       stage.querySelector('.slip.flying')?.remove();
       jarEl.classList.add('settled');
+      play('chime');
       reveal(winner);
     });
   }
