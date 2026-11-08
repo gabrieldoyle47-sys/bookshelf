@@ -1027,5 +1027,75 @@
   "tracked": [],
   "goals": {
     "2026": 25
+  },
+  "shelfLayout": {
+    "shelves": [
+      {
+        "title": "Epic Fantasy",
+        "kind": "genre",
+        "keys": [
+          "e:Epic Fantasy",
+          "b:hc:386446",
+          "b:hc:374131",
+          "b:hc:459452",
+          "b:hc:427522",
+          "b:hc:665261",
+          "b:hc:369692",
+          "b:hc:427383",
+          "b:hc:103241",
+          "b:hc:445584",
+          "b:hc:441081",
+          "b:hc:441085",
+          "b:hc:594985",
+          "b:hc:824777",
+          "o:1",
+          "o:2"
+        ]
+      },
+      {
+        "title": "Dystopian",
+        "kind": "genre",
+        "keys": [
+          "e:Dystopian",
+          "b:hc:427473",
+          "b:hc:378044",
+          "b:hc:427456",
+          "b:hc:427678",
+          "o:3",
+          "o:4"
+        ]
+      },
+      {
+        "title": "To read",
+        "kind": "pile",
+        "keys": [
+          "e:To read",
+          "b:hc:80765",
+          "b:hc:330249",
+          "b:hc:385491",
+          "b:hc:427876",
+          "b:hc:620124",
+          "b:hc:77104",
+          "o:5",
+          "o:6"
+        ]
+      },
+      {
+        "title": "Trophies",
+        "kind": "cabinet",
+        "keys": [
+          "t:5982",
+          "t:10001"
+        ]
+      }
+    ],
+    "ornaments": {
+      "1": "plant",
+      "2": "bird",
+      "3": "candle",
+      "4": "globe",
+      "5": "mug",
+      "6": "hourglass"
+    }
   }
 }
