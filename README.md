@@ -65,17 +65,53 @@ You can override any of it with `books watch` / `books unwatch`.
 - **The bookshelf.** Clicking a person opens their bookshelf: every book standing
   in a wooden case — a series together and in order, then each author's books
   together, then authors gathered by genre behind an engraved bookend. Each series
-  has its own cloth colour and finish; books being read carry a ribbon. Hover for
-  a peek, click to open. Filter by read / reading / to read, or arrange as a rainbow.
-  The list view is the *Books* tab.
+  has its own cloth colour; books being read carry a ribbon, audiobooks a small
+  pair of headphones, and spine titles are set in a face that suits the genre.
+  Hover for a peek, click to open. Filter by read / reading / to read, or arrange
+  as a rainbow. The list view is the *Books* tab.
+- **Rearranging.** *Rearrange* lets you drag books, ornaments and trophies anywhere
+  on the shelves (mouse or finger); *Save shelf* keeps the order with that person's
+  shelf, and new books still slot in beside their series. Double-click any ornament
+  to swap it for another — plant, candle, cat, teapot, snow globe and more — or
+  take it off the shelf. *Reset* goes back to the automatic order.
+- **The trophy cabinet.** A glass-fronted shelf under the others holds a trophy for
+  every series you have finished completely: a trinket for its genre (a sword for
+  epic fantasy, a rose for romance, a rocket for science fiction…), in the series'
+  own spine colour, with its name on a brass plaque. Click one for the series page.
+- **The room.** A small window shows the sky as it is outside — dawn, day, dusk or
+  night, worked out from the date — the light on the shelves follows it, and a lamp
+  on top of the case comes on after dark (click it to switch it yourself).
+- **Opening a book.** Click a book anywhere and it opens: the cover swings back and
+  the details are on the pages — rating, note, start and finish dates, days taken,
+  pace, listening hours and narrator — with *Edit* leading to the usual panel.
+  Closing swings the cover shut.
+- **Reactions.** Anyone can leave an emoji on someone's rating or finish, in the open
+  book or the group feed. They are anonymous for now; each one already has room
+  for a name for when accounts arrive.
+- **Remembering a series.** *Previously on…* recaps the books you've read before the
+  one you're opening, from each book's own description and your notes. *Who's who*
+  keeps your notes on the characters, each tagged with the book they first appear
+  in and hidden from anyone not there yet.
+- **Author and series pages.** Author and series names lead to their own pages: an
+  author's bio, where they are from, their best-known books and who has read which;
+  a series in reading order with everyone's progress, what's next, the recap and
+  who's who.
+- **Audiobooks.** Mark a book as listened to and its length and narrator are filled
+  in from Hardcover; listening hours count in Stats and the year story.
 - **Your shelf, drawn.** Each shelf opens with a bookshelf of everything you've
   finished — taller, thicker spines for longer books, a gold band for 5★ — and a
   spotlight on what you're reading, with progress and a finish-date estimate.
-  *Finished!* gets confetti; *Pick my next read* shuffles your to-read pile.
+  *Finished!* gets confetti; *Pick my next read* shakes a jar of paper slips — one
+  per book on your pile, in its spine colour — and unfolds the one that comes out.
 - **Suggest a book.** *Picked for you* on Recommendations (or *Suggest a book* on a
   shelf) finds popular, well-rated books in your most distinctive genres and ranks
   them against your taste — genres and moods weighted by how much you liked each
   book, favourite authors, usual length — saying why each was picked.
+- **Because you loved…** A chip for each of your five-star books; pick one for a row
+  of books like it.
+- **Find a new book.** Search by title or author, browse by vibe (dark, hopeful,
+  funny… up to three at once), or go through an award list — the Hugo, Booker,
+  Pulitzer, Giller, International Booker or NPR's top 100 SFF.
 - **Adding a book** now lets you rate it, date it and add a note before it's saved.
 - **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
   everything, CSV for one shelf) in Settings.
@@ -87,8 +123,21 @@ You can override any of it with `books watch` / `books unwatch`.
   taste match for every pair, a shared activity feed, books read by more than
   one of you with everyone's rating, debates, picks for whoever is viewing, a
   genre map and a this-year leaderboard. With three or more, choose who to compare.
-- **Indigo links.** *Buy* or *Pre-order at Indigo* on upcoming books, next-in-series
-  suggestions and recommendations.
+- **Where to buy.** Upcoming books, suggestions and recommendations link to a search
+  at Indigo, Les Libraires, Renaud-Bray and indiebookstores.ca. Only the stores
+  with stock would be nicer, but none of them allows checking from another site.
+- **Play your year.** On Stats, a full-screen story of a year in books: pages and
+  hours, a heatmap of the days you had a book open and your longest streak, how
+  your taste moved month by month, personal records, a passport stamp for each
+  country your authors come from, your favourites, and a card to save or copy.
+- **Themes.** Each person picks a theme when they're added (or later, from their
+  menu or the palette button on their shelf): an accent colour, a wood for their
+  bookcase and a faint wallpaper, worn by their pages.
+- **Sound, if you want it.** Off by default. A speaker in the sidebar turns on a
+  few quiet sounds (a page turning, a soft chime); three icons beside it play a
+  crackling fire, rain or a café to read by, with a volume slider.
+- **A short tour** on a first visit and for each new person; Settings can show it
+  again.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation
   each offer *Undo* for a few seconds. For anything older, every change is a
   commit, so `git revert` still works.
