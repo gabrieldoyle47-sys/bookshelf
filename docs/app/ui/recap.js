@@ -5,6 +5,7 @@
  * recap only counts books with a read date in that year, and says so.
  */
 
+import { playStory } from './story.js';
 import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, starsEl, fmtRating, toast } from './dom.js';
 import { goalProgress, today } from '../core/model.js';
 import { recapYears, yearInBooks } from '../core/recap.js';
@@ -107,8 +108,12 @@ export function yearSection(ctx, profile) {
   }
   paint();
 
+  // The year as a full-screen story (story.js), for whichever year is chosen.
+  const play = h('button', { class: 'btn play-year', type: 'button', onclick: () => playStory(ctx, profile, current) },
+    h('span', { class: 'play-tri', 'aria-hidden': 'true' }), 'Play your year');
+
   section.append(
-    h('div', { class: 'section-head' }, h('h2', { text: 'Year in books' }), h('div', { class: 'spacer' }), picker),
+    h('div', { class: 'section-head' }, h('h2', { text: 'Year in books' }), h('div', { class: 'spacer' }), picker, play),
     body);
   return section;
 }

@@ -159,3 +159,31 @@ test('because you loved: shared distinctive genres and the same author lead; the
   const v = vibeMatches([{ id: '7', moods: ['Dark', 'tense'] }, { id: '8', moods: ['dark'] }, { id: '9', moods: ['funny'] }], ['dark', 'tense'], lib);
   assert.deepEqual(v.map((s) => s.book.id), ['7', '8']);
 });
+
+test('the year story: reading days, streaks, records and passport stamps', async () => {
+  const { readingDays, longestStreak, records, countryOf, passport, tasteByMonth } = await import('../docs/app/core/story.js');
+  const lib = { books: [
+    book(1, { started: '2026-03-01', finished: '2026-03-03', readOn: '2026-03-03', pages: 300 }),
+    book(2, { finished: '2026-03-05', readOn: '2026-03-05', pages: 900, genres: ['Epic'] }),
+    book(3, { status: 'reading', started: '2026-12-30' }),
+    book(4, { started: '2025-12-30', finished: '2026-01-02', readOn: '2026-01-02', pages: 100 }),
+  ] };
+  const days = readingDays(lib, 2026, '2026-12-31');
+  assert.equal(days.get('2026-03-02'), 1);
+  assert.ok(!days.has('2026-03-04'));
+  assert.ok(days.has('2026-01-01') && !days.has('2025-12-31'), 'clipped to the year');
+  assert.equal(longestStreak(days), 3);
+  const r = records(lib.books.filter((b) => b.status === 'read'));
+  assert.equal(r.fastest.book.id, 'hc:1');
+  assert.equal(r.fastest.perDay, 100);
+  assert.equal(r.longest.id, 'hc:2');
+  assert.equal(r.bestMonth.month, 3);
+  assert.equal(tasteByMonth(lib.books)[2].count, 2);
+  assert.equal(countryOf('Utah, USA'), 'United States');
+  assert.equal(countryOf('Lincoln, Nebraska'), 'United States');
+  assert.equal(countryOf('Montréal, Québec'), 'Canada');
+  assert.equal(countryOf('London, England'), 'United Kingdom');
+  assert.equal(countryOf(''), null);
+  assert.deepEqual(passport([{ name: 'A', location: 'Utah, USA' }, { name: 'B', location: 'Texas' }, { name: 'C', location: 'Sydney, Australia' }, { name: 'D' }]),
+    [{ country: 'United States', authors: ['A', 'B'] }, { country: 'Australia', authors: ['C'] }]);
+});
