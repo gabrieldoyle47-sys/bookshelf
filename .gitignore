@@ -13,3 +13,6 @@ worker/.wrangler/
 
 # Claude Code working copies (agent worktrees) - local only.
 .claude/
+tools/room-art/*.json
+!tools/room-art/notes.json
+tools/room-art/tile.txt

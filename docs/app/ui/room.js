@@ -5,14 +5,21 @@
  * - back wall, side walls, floor and ceiling - and the chosen scene furnishes
  * it:
  *
- *   reading  "Home": a window on the left wall, a print on the right, a fig
- *            in the corner, a side table, a rug
- *   fire     a fireplace on the left wall with a fire going, a wingback
- *            chair, firelight on the floor and the shelves
- *   rain     a dark bedroom on a stormy night: rain and lightning in the
- *            window, a bed with a quilt, the lamp on
- *   cafe     a chalkboard menu, a counter, a café table, pendant lights,
- *            tiles and a checked floor
+ *   library  bookcases lining the side walls, a rolling ladder, panelled
+ *            walnut behind the case, a writing desk with a green banker's
+ *            lamp, a floor globe, a Persian rug
+ *   fire     a chimney breast standing out from the right wall with a fire
+ *            going and a painting over it, a leather wingback turned to the
+ *            fire, a wine table, a basket of logs, firelight on the floor
+ *   rain     a dark bedroom on a stormy night: rain and lightning only in the
+ *            window, the bed against the wall in front with its lamp lit and
+ *            a cat asleep on it
+ *   cafe     a chalkboard menu, a marble-topped counter, a café table between
+ *            bentwood chairs, pendant lights, tiles and a checked floor
+ *
+ * Every room has its window on the left wall, and the light in each room is
+ * one light: the window by day, the fire, the lamps - the furniture's faces
+ * and shadows (room-art.js) and the light on the floor and walls agree on it.
  *
  * The scene is picked with the switch above the room (sceneSwitch), and with
  * sound on its sound plays (sound.js). The window's sky and the light in the
@@ -21,12 +28,14 @@
  * Sunrise and sunset are worked out from the date for a mid-northern latitude
  * (about Montreal's), since the site never asks where anyone is.
  *
- * The drawings are fixed SVG written here, parsed from these constant strings
- * only - nothing typed by anyone goes through the parser.
+ * The drawings are fixed SVG written here and in room-art.js, parsed from
+ * those constant strings only - nothing typed by anyone goes through the
+ * parser.
  */
 
 import { h } from './dom.js';
 import { lampArt } from './art.js';
+import { FURNITURE } from './room-art.js';
 
 /** 'dawn' | 'day' | 'dusk' | 'night' for a moment in local time. */
 export function timeOfDay(date = new Date()) {
@@ -49,6 +58,8 @@ export function timeOfDay(date = new Date()) {
 
 /* ------------------------------------------------------------- drawings */
 
+// The flat drawings: what hangs on the walls or stands on the case. The
+// furniture standing in the room is in room-art.js, drawn in perspective.
 const ART = {
   // A basket of trailing pothos hung from the ceiling on a cord.
   basket: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 80">
@@ -60,17 +71,6 @@ const ART = {
     <path d="M20 58c-6 6-8 14-6 22M70 58c4 6 6 12 4 20" stroke="#3f7d4c" stroke-width="2" fill="none"/>
     <ellipse cx="14" cy="66" rx="5" ry="3.4" fill="#4f9a5c" transform="rotate(-50 14 66)"/>
     <ellipse cx="75" cy="70" rx="5" ry="3.4" fill="#3f7d4c" transform="rotate(50 75 70)"/></svg>`,
-  // The end of a bed: a wooden headboard, pillows, a patchwork quilt, a book left open.
-  bed: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 150">
-    <ellipse cx="130" cy="146" rx="110" ry="5" fill="#000" opacity=".3"/>
-    <path d="M196 16c0-8 8-12 18-12s18 4 18 12v130h-36z" fill="#5a3a26"/><path d="M202 24h24v118h-24z" fill="#4a2f1f"/>
-    <path d="M24 132v14M190 132v14" stroke="#3a2416" stroke-width="7" stroke-linecap="round"/>
-    <rect x="16" y="88" width="182" height="46" rx="8" fill="#e9e1d2"/>
-    <path d="M150 62c0-8 6-12 22-12s22 4 22 12v26h-44z" fill="#f4eee4"/><path d="M118 70c0-6 6-9 18-9s18 3 18 9v18h-36z" fill="#dfe4ea"/>
-    <path d="M10 92c40-10 80-12 128-6 20 2 34 8 40 16v34H10z" fill="#3d5a73"/>
-    <path d="M10 106h168M10 120h168M50 92v44M90 88v48M130 88v48" stroke="#2f4a60" stroke-width="2"/>
-    <path d="M30 98h14v10H30zM104 112h18v10h-18zM64 124h14v8H64z" fill="#b8865a" opacity=".8"/>
-    <path d="M60 86l22-8 22 8-22 4z" fill="#f4ead6"/><path d="M82 78v12" stroke="#c9b48a" stroke-width="1.4"/></svg>`,
   // A fiddle-leaf fig in a tall pot.
   fig: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 260">
     <ellipse cx="60" cy="254" rx="40" ry="6" fill="#000" opacity=".28"/>
@@ -88,57 +88,50 @@ const ART = {
     <circle cx="66" cy="30" r="7" fill="#f2c57a"/>
     <path d="M15 52c12-14 20-16 30-6s16 2 22-6 12-4 18 4v21H15z" fill="#7fa37a"/>
     <path d="M15 58c16-8 30-6 70 0v7H15z" fill="#5d8560"/></svg>`,
-  // A round side table with a stack of books and a small plant.
-  sideTable: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 120">
-    <ellipse cx="45" cy="116" rx="34" ry="4" fill="#000" opacity=".22"/>
-    <path d="M45 60v52M30 112h30" stroke="#6b4a2a" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="45" cy="60" rx="38" ry="8" fill="#8a5f36"/><ellipse cx="45" cy="57" rx="38" ry="8" fill="#a8774a"/>
-    <rect x="16" y="44" width="34" height="9" rx="1.5" fill="#2f4858"/><rect x="19" y="36" width="30" height="8" rx="1.5" fill="#8a2d2d"/>
-    <rect x="17" y="29" width="28" height="7" rx="1.5" fill="#b8861f"/>
-    <path d="M58 56h16l-2 -14H60z" fill="#c26b3f"/>
-    <path d="M66 42c-6-10-2-18 4-18 0 8-2 12-4 18zM66 42c2-10 10-14 14-10-4 6-8 8-14 10zM66 42c-6-6-14-6-16-2 6 4 10 4 16 2z" fill="#4f9a5c"/></svg>`,
-  // A stone fireplace, a fire going, candles and a clock on the mantel.
-  fireplace: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 210">
-    <rect x="18" y="56" width="204" height="150" fill="#9b8f80"/>
-    <path d="M18 56h204v150H18z" fill="url(#stone)" opacity=".5"/>
-    <defs><pattern id="stone" width="40" height="22" patternUnits="userSpaceOnUse"><path d="M0 0h40v22H0z" fill="none" stroke="#7d7264" stroke-width="2"/><path d="M20 0v11M0 11h40M10 11v11M30 11v11" stroke="#7d7264" stroke-width="2"/></pattern></defs>
-    <rect x="6" y="44" width="228" height="14" rx="2" fill="#5a3d26"/><rect x="2" y="40" width="236" height="6" rx="2" fill="#6e4a2e"/>
-    <path d="M62 206V112c0-24 26-40 58-40s58 16 58 40v94z" fill="#1d1512"/>
-    <path d="M62 206V112c0-24 26-40 58-40s58 16 58 40v94z" fill="none" stroke="#6e6457" stroke-width="5"/>
-    <path d="M78 196h84" stroke="#3a2a1e" stroke-width="10" stroke-linecap="round"/>
-    <path d="M84 188l72-10M88 178l66 12" stroke="#5a3a24" stroke-width="9" stroke-linecap="round"/>
+  // The fireplace in the chimney breast: a pale stone surround and mantel, a
+  // deep firebox (its inner walls drawn in so it has depth), a brick back, a
+  // fire on a grate with the glow round it, a brass fender, and on the mantel
+  // a clock between two candles.
+  fireplace: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 172">
+    <defs><radialGradient id="fp-glow" cx="50%" cy="80%" r="60%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".45" stop-color="#f08a2c" stop-opacity=".55"/><stop offset="1" stop-color="#f08a2c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="fp-stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2d8c8"/><stop offset="1" stop-color="#c4b7a3"/></linearGradient>
+    <pattern id="fp-brick" width="16" height="8" patternUnits="userSpaceOnUse"><rect width="16" height="8" fill="#5e2a1c"/><path d="M0 .5h16M0 4.5h16M4 .5v4M12 4.5v4" stroke="#3a180f" stroke-width="1"/></pattern></defs>
+    <rect x="16" y="44" width="168" height="128" fill="url(#fp-stone)"/>
+    <path d="M16 44h12v128H16zM172 44h12v128h-12z" fill="#cfc3b0"/><path d="M28 44v128M172 44v128" stroke="#a89a85" stroke-width="1.4"/>
+    <rect x="4" y="34" width="192" height="11" rx="2" fill="#d9cfbf"/><rect x="4" y="34" width="192" height="3" rx="1.5" fill="#efe7da"/>
+    <path d="M10 45h180l-4 5H14z" fill="#9c8f7c"/>
+    <path d="M48 172V92c0-14 10-22 52-22s52 8 52 22v80z" fill="#a69883"/>
+    <path d="M54 172V94c0-11 9-18 46-18s46 7 46 18v78z" fill="#140c08"/>
+    <path d="M64 172V100c0-8 8-13 36-13s36 5 36 13v72z" fill="url(#fp-brick)"/>
+    <path d="M54 94c0-11 9-18 46-18s46 7 46 18l-10 6c0-8-8-13-36-13s-36 5-36 13z" fill="#2a1710"/>
+    <path d="M54 94l10 6v72H54zM146 94l-10 6v72h10z" fill="#24140d"/>
+    <ellipse cx="100" cy="150" rx="46" ry="34" fill="url(#fp-glow)"/>
+    <path d="M70 166h60" stroke="#1d1411" stroke-width="5" stroke-linecap="round"/>
+    <path d="M72 164v-8M84 164v-8M96 164v-8M108 164v-8M120 164v-8M128 164v-8" stroke="#1d1411" stroke-width="2"/>
+    <path d="M74 158l52-8M78 150l46 9" stroke="#5a3a24" stroke-width="7" stroke-linecap="round"/>
+    <path d="M74 158l52-8" stroke="#ff8a3a" stroke-width="2" stroke-linecap="round" opacity=".7"/>
     <g class="flames">
-      <path class="fl f1" d="M96 186c-6-22 8-30 6-50 14 14 18 30 12 50z" fill="#f08a2c"/>
-      <path class="fl f2" d="M114 186c-4-28 12-40 10-64 16 20 20 42 12 64z" fill="#f4a24c"/>
-      <path class="fl f3" d="M132 186c-2-18 8-26 8-42 12 14 12 30 6 42z" fill="#e8672a"/>
-      <path class="fl f4" d="M110 186c-2-14 6-20 6-32 8 10 10 22 6 32z" fill="#ffd27a"/>
+      <path class="fl f1" d="M80 156c-6-18 6-26 4-42 12 12 16 26 10 42z" fill="#e8672a"/>
+      <path class="fl f2" d="M92 156c-4-26 12-36 9-60 16 20 20 40 11 60z" fill="#f08a2c"/>
+      <path class="fl f3" d="M108 156c-2-18 8-26 8-42 12 14 12 30 5 42z" fill="#f4a24c"/>
+      <path class="fl f4" d="M96 156c-2-14 6-22 6-34 9 12 11 24 6 34z" fill="#ffd27a"/>
+      <path class="fl f2" d="M112 156c-2-10 4-14 4-22 7 8 7 16 3 22z" fill="#ffe7a8"/>
     </g>
-    <rect x="34" y="16" width="8" height="24" rx="1.5" fill="#f4ead6"/><path class="flame" d="M38 4c4 5 4 8 0 11-4-3-4-6 0-11z" fill="#ffb347"/>
-    <rect x="50" y="22" width="7" height="18" rx="1.5" fill="#f4ead6"/><path class="flame" d="M53.5 12c3 4 3 6 0 9-3-3-3-5 0-9z" fill="#ffb347"/>
-    <path d="M176 40c0-14 8-22 18-22s18 8 18 22z" fill="#7a4a2a"/><circle cx="194" cy="28" r="7" fill="#f6efe0"/>
-    <path d="M194 28v-4M194 28l3 2" stroke="#2a1c10" stroke-width="1.2"/></svg>`,
-  // A wingback armchair with a cushion and a folded throw.
-  armchair: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 140">
-    <ellipse cx="65" cy="136" rx="56" ry="5" fill="#000" opacity=".25"/>
-    <path d="M24 122v12M106 122v12" stroke="#3a2416" stroke-width="6" stroke-linecap="round"/>
-    <path d="M22 20c0-10 10-16 43-16s43 6 43 16v70H22z" fill="#7a2e2e"/>
-    <path d="M10 40c0-8 14-10 18-2v60H10z" fill="#8a3434"/><path d="M120 40c0-8-14-10-18-2v60h18z" fill="#8a3434"/>
-    <path d="M6 88h118v34c0 4-3 6-6 6H12c-3 0-6-2-6-6z" fill="#6e2828"/>
-    <path d="M20 84c0-6 6-10 45-10s45 4 45 10v10H20z" fill="#943a3a"/>
-    <rect x="44" y="50" width="42" height="30" rx="8" fill="#e8c88a" transform="rotate(-6 65 65)"/>
-    <path d="M86 74l22 6v30l-18-8z" fill="#c9b48a"/><path d="M90 80l14 4M90 88l14 4M90 96l12 3" stroke="#a8946a" stroke-width="1.4"/>
-    <path d="M30 30c10-6 60-6 70 0" stroke="#5e2222" stroke-width="2" fill="none" opacity=".6"/></svg>`,
-  // A café counter: an espresso machine, cups, a cake under a dome.
-  counter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 150">
-    <rect x="0" y="70" width="250" height="80" fill="#6b4226"/><rect x="0" y="62" width="250" height="10" rx="2" fill="#3a2a1e"/>
-    <path d="M10 82h230M10 104h230M10 126h230" stroke="#5a3820" stroke-width="2"/>
-    <rect x="22" y="14" width="74" height="48" rx="6" fill="#c9cfd4"/><rect x="22" y="14" width="74" height="10" rx="4" fill="#a7afb6"/>
-    <rect x="34" y="30" width="50" height="16" rx="3" fill="#7d878f"/><circle cx="46" cy="38" r="4" fill="#d9a03a"/><circle cx="72" cy="38" r="4" fill="#d9a03a"/>
-    <path d="M40 46v8M78 46v8" stroke="#3a3a3e" stroke-width="3"/>
-    <path class="steam" d="M59 12c-4-5 4-8 0-13" stroke="#fff" stroke-width="2" fill="none" opacity=".4" stroke-linecap="round"/>
-    <path d="M112 46h16v14h-16zM134 48h14v12h-14z" fill="#f4ead6"/><path d="M128 50h4a3 3 0 0 1 0 6h-4" stroke="#f4ead6" stroke-width="2" fill="none"/>
-    <path d="M170 60h52" stroke="#8a8a8a" stroke-width="3"/><path d="M174 58c0-22 44-22 44 0z" fill="rgb(220 235 245 / .4)" stroke="rgb(255 255 255 / .6)" stroke-width="1.5"/>
-    <path d="M182 58v-10h28v10z" fill="#e8b88a"/><path d="M182 50h28" stroke="#f4ead6" stroke-width="3"/><circle cx="196" cy="44" r="3" fill="#c0392b"/></svg>`,
+    <path d="M70 162h60" stroke="#ff9a4a" stroke-width="2" opacity=".55"/>
+    <path d="M40 160h120M40 160v12M160 160v12M40 166h120" stroke="#c99a3e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <circle cx="40" cy="160" r="3" fill="#e0b55a"/><circle cx="160" cy="160" r="3" fill="#e0b55a"/>
+    <rect x="34" y="14" width="7" height="20" rx="1.5" fill="#f4ead6"/><path class="flame" d="M37.5 3c4 5 4 8 0 10-4-2-4-5 0-10z" fill="#ffb347"/>
+    <rect x="159" y="18" width="7" height="16" rx="1.5" fill="#f4ead6"/><path class="flame" d="M162.5 8c3.5 4 3.5 7 0 9-3.5-2-3.5-5 0-9z" fill="#ffb347"/>
+    <path d="M86 34c0-16 6-24 14-24s14 8 14 24z" fill="#6e4426"/><circle cx="100" cy="22" r="8" fill="#f6efe0" stroke="#c99a3e" stroke-width="1.6"/>
+    <path d="M100 22v-5M100 22l3.5 2" stroke="#2a1c10" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M128 34c-2-8 2-12 6-12s8 4 6 12z" fill="#3f6f5f"/><path d="M134 22c-4-6-2-12 2-14M134 22c2-6 8-8 10-6" stroke="#4f8a5c" stroke-width="1.6" fill="none"/></svg>`,
+  // The painting over the mantel: a moonlit lake in a gilt frame.
+  overmantel: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90">
+    <rect x="1" y="1" width="118" height="88" rx="2" fill="#b8892f"/><rect x="5" y="5" width="110" height="80" fill="#8a6420"/><rect x="9" y="9" width="102" height="72" fill="#d9b25a"/>
+    <rect x="13" y="13" width="94" height="64" fill="#1f2c3c"/>
+    <circle cx="80" cy="30" r="7" fill="#efe6c8"/>
+    <path d="M13 56c14-12 22-14 34-6s18 2 26-6 22-4 34 6v27H13z" fill="#2f3f36"/>
+    <path d="M13 64h94v13H13z" fill="#26384a"/><path d="M60 66h40M66 70h28" stroke="#efe6c8" stroke-width="1.2" opacity=".5"/></svg>`,
   // The chalkboard of the day's drinks.
   chalkboard: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120">
     <rect x="2" y="2" width="156" height="116" rx="4" fill="#8a5f36"/><rect x="10" y="10" width="140" height="100" rx="2" fill="#2b3330"/>
@@ -149,16 +142,6 @@ const ART = {
       <text x="80" y="90" font-size="11" font-style="italic">cinnamon buns</text></g>
     <path d="M40 38h80" stroke="#eef0ea" stroke-width="1" opacity=".6"/>
     <path d="M118 96c4 0 8 2 8 6h-16c0-4 4-6 8-6z" fill="#eef0ea" opacity=".7"/></svg>`,
-  // A little round café table, two chairs, two cups.
-  cafeTable: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 110">
-    <ellipse cx="80" cy="106" rx="70" ry="4" fill="#000" opacity=".22"/>
-    <path d="M14 106V60M14 62h28v6M42 106V68" stroke="#2f2f33" stroke-width="3.4" fill="none"/>
-    <path d="M146 106V60M146 62h-28v6M118 106V68" stroke="#2f2f33" stroke-width="3.4" fill="none"/>
-    <path d="M10 40c0-4 4-6 8-6s8 2 8 6v22M150 40c0-4-4-6-8-6s-8 2-8 6v22" stroke="#2f2f33" stroke-width="3" fill="none"/>
-    <path d="M80 56v48M66 106h28" stroke="#2f2f33" stroke-width="4"/>
-    <ellipse cx="80" cy="56" rx="38" ry="6" fill="#d8d2c4"/>
-    <path d="M62 50h12v-8H62zM88 50h12v-8H88z" fill="#f4ead6"/>
-    <path class="steam" d="M68 38c-3-4 3-6 0-10" stroke="#fff" stroke-width="1.6" fill="none" opacity=".4"/></svg>`,
   // A pendant light on a long cord.
   pendant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
     <path d="M30 0v30" stroke="#2f2f33" stroke-width="1.6"/>
@@ -168,7 +151,7 @@ const ART = {
 
 const parsed = new Map();
 function drawing(name, cls = '') {
-  if (!parsed.has(name)) parsed.set(name, new DOMParser().parseFromString(ART[name], 'image/svg+xml').documentElement);
+  if (!parsed.has(name)) parsed.set(name, new DOMParser().parseFromString(FURNITURE[name] ?? ART[name], 'image/svg+xml').documentElement);
   const svg = document.importNode(parsed.get(name), true);
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
@@ -186,7 +169,9 @@ function roomWindow(stormy) {
         ...Array.from({ length: 8 }, (_, n) => h('i', { class: 'raindrop', style: `--n:${n}` }))] : null),
     stormy ? h('i', { class: 'win-flash' }) : null,
     h('div', { class: 'win-frame' }),
-    h('div', { class: 'win-sill' }, stormy ? h('span', { class: 'sill-candle' }, h('i')) : null));
+    h('i', { class: 'win-cafe' }),
+    h('div', { class: 'win-sill' }, stormy ? h('span', { class: 'sill-candle' }, h('i')) : null),
+    h('i', { class: 'win-curtain l' }), h('i', { class: 'win-curtain r' }), h('i', { class: 'win-rod' }));
 }
 
 /**
@@ -198,42 +183,50 @@ function roomWindow(stormy) {
  * throws a patch of light across the floor.
  */
 export function roomBox(scene) {
-  const left = [];
+  // Every room has its window on the left wall.
+  const left = [roomWindow(scene === 'rain')];
   const right = [];
   const floor = [h('div', { class: 'rug' })];
   if (scene === 'fire') {
-    left.push(drawing('fireplace', 'on-wall'));
-    right.push(drawing('print', 'on-wall'));
-    floor.push(h('div', { class: 'fire-pool' }));
+    // A chimney breast standing out from the right wall, near enough the
+    // front that the floor under its fire is in view: the fire in its face,
+    // a painting over the mantel, firelight thrown round it.
+    right.push(h('div', { class: 'chimney' },
+      h('div', { class: 'ch-face front' }, h('i', { class: 'ch-glow' }), drawing('overmantel', 'over-mantel'), drawing('fireplace', 'in-chimney')),
+      h('div', { class: 'ch-face side near' }), h('div', { class: 'ch-face side far' })));
+    floor.push(h('div', { class: 'fire-pool' }), h('div', { class: 'hearth' }));
+  } else if (scene === 'library') {
+    right.push(h('div', { class: 'sun-splash' }), h('div', { class: 'ladder' }));
   } else if (scene === 'cafe') {
-    left.push(drawing('chalkboard', 'on-wall'));
-    right.push(roomWindow(false));
-    floor.push(h('div', { class: 'light-patch from-right' }));
-  } else {
-    left.push(roomWindow(scene === 'rain'));
+    right.push(h('div', { class: 'sun-splash' }), drawing('chalkboard', 'on-wall'));
+  } else if (scene === 'rain') {
     right.push(drawing('print', 'on-wall'));
-    if (scene !== 'rain') floor.push(h('div', { class: 'light-patch' }));
   }
+  // The window's light on the floor (in the bedroom, only when the lightning
+  // flashes), and the lamp's pool under it.
+  floor.push(h('div', { class: 'light-patch' }), h('div', { class: 'lamp-pool' }));
+  // The box holds the perspective and the fade at the top; the shell inside
+  // it is the room itself. Split in two because a mask flattens 3D, so it can
+  // only sit on an element whose children carry the depth.
   return h('div', { class: 'room-box', 'aria-hidden': 'true' },
-    h('div', { class: 'wall back' }),
-    h('div', { class: 'wall side left' }, left),
-    h('div', { class: 'wall side right' }, right),
-    h('div', { class: 'floor' }, floor),
-    h('div', { class: 'ceiling' }));
+    h('div', { class: 'room-shell' },
+      h('div', { class: 'wall back' }),
+      h('div', { class: 'wall side left' }, left),
+      h('div', { class: 'wall side right' }, right),
+      h('div', { class: 'floor' }, floor),
+      h('div', { class: 'ceiling' })));
 }
 
 /** What stands in the room in front, at the corners - it is what makes the room deep. */
 export function roomFront(scene) {
   const items = {
-    fire: [drawing('armchair', 'front right')],
-    rain: [drawing('bed', 'front right')],
+    fire: [drawing('armchair', 'front left'), drawing('logs', 'front right')],
+    rain: [drawing('bed', 'front left')],
     cafe: [drawing('cafeTable', 'front right'), drawing('counter', 'front left')],
-  }[scene] ?? [drawing('sideTable', 'front right')];
+  }[scene] ?? [drawing('globe', 'front left'), drawing('desk', 'front right')];
   return h('div', { class: 'room-front', 'aria-hidden': 'true' },
     scene === 'cafe' ? [drawing('pendant', 'p1'), drawing('pendant', 'p2')] : null,
     scene === 'cafe' ? h('div', { class: 'bokeh' }, Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))) : null,
-    scene === 'rain' ? h('div', { class: 'lightning' }) : null,
-    h('div', { class: 'room-shade' }),
     items);
 }
 
@@ -247,18 +240,24 @@ export const cornerPlant = () => drawing('fig', 'corner-plant');
  */
 export function fitRoom(room) {
   const box = room?.querySelector('.room-box');
+  const shell = room?.querySelector('.room-shell');
   const kase = room?.querySelector('.case');
-  if (!box || !kase) return;
+  if (!box || !shell || !kase) return;
   const r = room.getBoundingClientRect();
   const c = kase.getBoundingClientRect();
   const bottom = Math.max(0, r.bottom - c.bottom);
-  box.style.bottom = `${bottom}px`;
-  const top = parseFloat(getComputedStyle(box).top) || 0;
-  room.style.perspectiveOrigin = `50% ${Math.round(top + (r.height - top - bottom) * 0.42)}px`;
+  shell.style.bottom = `${bottom}px`;
+  const css = getComputedStyle(room);
+  const top = parseFloat(getComputedStyle(shell).top) || 0;
+  // Where the eye stands is the scene's (--eye-x): the fireside room is seen
+  // from a little left of centre, so the chimney breast on the right wall
+  // turns towards us. The eye is always a little above the middle of the case.
+  const eyeX = css.getPropertyValue('--eye-x').trim() || '50%';
+  box.style.perspectiveOrigin = `${eyeX} ${Math.round(top + (r.height - top - bottom) * 0.42)}px`;
 }
 
 /** The four scenes, for the switch on the bookshelf page. */
-export const SCENES = [['reading', 'ico-home', 'Home'], ['fire', 'ico-fire', 'Fireplace'], ['rain', 'ico-rain', 'Rainy'], ['cafe', 'ico-cup', 'Café']];
+export const SCENES = [['library', 'ico-books', 'Library'], ['fire', 'ico-fire', 'Fireplace'], ['rain', 'ico-rain', 'Rainy'], ['cafe', 'ico-cup', 'Café']];
 
 /**
  * The long switch above the room: Home, Fireplace, Rainy night, Café. It

@@ -107,6 +107,30 @@ export function play(name) {
 let bed = null; // { stop, gain }
 
 const AMBIENT = {
+  // A library: the hush of a big room, a clock ticking slowly, now and then a
+  // page turning somewhere.
+  library(c, out) {
+    const src = c.createBufferSource();
+    src.buffer = noise(5, 'brown');
+    src.loop = true;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
+    const g = c.createGain(); g.gain.value = 0.12;
+    src.connect(lp).connect(g).connect(out);
+    src.start();
+    let beat = 0;
+    const tick = setInterval(() => {
+      const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = beat++ % 2 ? 1650 : 1400;
+      const tg = c.createGain(); tg.gain.setValueAtTime(0.012, c.currentTime); tg.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05);
+      o.connect(tg).connect(out); o.start(); o.stop(c.currentTime + 0.06);
+    }, 1000);
+    let page;
+    const turn = () => {
+      try { EFFECTS.flip(c, out); } catch { /* ignore */ }
+      page = setTimeout(turn, 14000 + Math.random() * 22000);
+    };
+    page = setTimeout(turn, 6000);
+    return () => { clearInterval(tick); clearTimeout(page); src.stop(); };
+  },
   // Rain: a hiss of noise, high and low cut, with drops landing at random.
   rain(c, out) {
     const src = c.createBufferSource();
@@ -216,20 +240,21 @@ function stopAmbient() {
 
 /* ---------------------------------------------------------------- controls */
 
-/** The scene the bookshelf's room shows: 'fire', 'rain', 'cafe', or null for home. */
-export const getScene = () => prefs.ambient ?? null;
+/** The scene the bookshelf's room shows: 'library' (the default), 'fire', 'rain' or 'cafe'. */
+export const getScene = () => (['fire', 'rain', 'cafe', 'library'].includes(prefs.ambient) ? prefs.ambient : 'library');
 
 /** Play the scene's background, if sound is on; otherwise make sure it is quiet. */
 function syncAmbient() {
-  if (prefs.effects && prefs.ambient) { if (bed?.kind !== prefs.ambient) startAmbient(prefs.ambient); } else stopAmbient();
+  const scene = getScene();
+  if (prefs.effects) { if (bed?.kind !== scene) startAmbient(scene); } else stopAmbient();
 }
 
 /**
  * Choose the room's scene (from the switch on the bookshelf page). Its sound
- * plays if sound is on; home is quiet.
+ * plays if sound is on.
  */
 export function setScene(id) {
-  prefs.ambient = id && id !== 'reading' ? id : null;
+  prefs.ambient = id || 'library';
   save();
   syncAmbient();
   dispatchEvent(new CustomEvent('bookshelf:scene', { detail: getScene() }));
@@ -261,7 +286,7 @@ export function soundControls() {
   paint();
   // A scene's sound left on last visit resumes on the first click anywhere -
   // browsers do not let a page start sound by itself.
-  if (prefs.ambient && prefs.effects) {
+  if (prefs.effects) {
     document.addEventListener('pointerdown', () => syncAmbient(), { once: true, capture: true });
   }
   return box;

@@ -105,7 +105,7 @@ export function libraryView(ctx, profile) {
   const caseBox = h('div', { class: 'bookcase' });
   const tools = h('div', { class: 'lib-tools' });
   // The room's scene, chosen above it.
-  const scenes = sceneSwitch(getScene() ?? 'reading', (id) => setScene(id));
+  const scenes = sceneSwitch(getScene(), (id) => setScene(id));
   const root = h('div', { class: 'library' }, head, scenes, tools, caseBox, legend());
   const relight = lightRoom(root);
 
@@ -337,11 +337,10 @@ export function libraryView(ctx, profile) {
     const items = shelf.keys.filter((k) => k.startsWith('t:') && trophies.has(k.slice(2)))
       .map((k) => trophyEl(trophies.get(k.slice(2))));
     const placedElsewhere = trophies.size > items.length;
-    return h('section', { class: 'shelf-block cabinet', dataset: { shelf: String(n) }, 'aria-label': 'Trophy cabinet' },
-      h('div', { class: 'cabinet-glass', 'aria-hidden': 'true' }),
+    return h('section', { class: 'shelf-block cabinet', dataset: { shelf: String(n) }, 'aria-label': 'Trophies' },
       items.length ? items : h('p', { class: 'cabinet-empty', text: placedElsewhere
         ? 'The trophies are out on the shelves.'
-        : 'Finish every book in a series and its trophy goes here.' }));
+        : 'Finish every book in a series and its trophy stands up here.' }));
   }
 
   function trophyEl(t) {
@@ -374,7 +373,7 @@ export function libraryView(ctx, profile) {
     if (!root.isConnected) return removeEventListener('bookshelf:scene', onScene);
     const room = caseBox.querySelector('.room');
     if (!room) return;
-    room.dataset.scene = getScene() ?? 'reading';
+    room.dataset.scene = getScene();
     room.querySelector('.room-box')?.replaceWith(roomBox(getScene()));
     room.querySelector('.room-front')?.replaceWith(roomFront(getScene()));
     fitRoom(room);
@@ -456,17 +455,21 @@ function ornamentMenu(anchor, current, onPick) {
 /**
  * The case, standing in its room (room.js): a carved top strung with fairy
  * lights and holding up to two ornaments, a basket of trailing ivy hung beside
- * it, the shelves, a plinth, and the floor lamp. Behind it, the scene; under
- * it, the trophy cabinet hanging from the plinth.
+ * it, the shelves, a plinth, and the floor lamp. Above it on the back wall, a
+ * mantel shelf of trophies; around it, the room (room.js).
  */
 function bookcase(blocks, relight, cabinet = null, top = null) {
   const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
   const motes = Array.from({ length: 9 }, (_, n) => h('i', { class: 'mote', style: `--n:${n}` }));
   const scene = getScene();
-  return h('div', { class: 'room', dataset: { scene: scene ?? 'reading' } },
+  return h('div', { class: 'room', dataset: { scene } },
     roomBox(scene),
     roomFront(scene),
     h('div', { class: 'case-wrap' },
+      // The trophies stand on a mantel shelf high on the back wall.
+      cabinet ? h('div', { class: 'trophy-mantel' }, cabinet,
+        h('span', { class: 'mantel-board', 'aria-hidden': 'true' }),
+        h('span', { class: 'corbel left', 'aria-hidden': 'true' }), h('span', { class: 'corbel right', 'aria-hidden': 'true' })) : null,
       h('div', { class: 'case' },
         cornerPlant(),
         h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
@@ -477,11 +480,7 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
         h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
         h('div', { class: 'case-light', 'aria-hidden': 'true' }),
         h('div', { class: 'case-plinth', 'aria-hidden': 'true' }),
-        floorLamp(relight)),
-      cabinet ? h('div', { class: 'cabinet-hang' },
-        h('span', { class: 'hang-chain left', 'aria-hidden': 'true' }),
-        h('span', { class: 'hang-chain right', 'aria-hidden': 'true' }),
-        cabinet) : null));
+        floorLamp(relight))));
 }
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
