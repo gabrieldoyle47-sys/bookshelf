@@ -736,5 +736,72 @@
     "series": {},
     "authors": {}
   },
-  "tracked": []
+  "tracked": [],
+  "shelfLayout": {
+    "shelves": [
+      {
+        "title": "Romance",
+        "kind": "genre",
+        "key": "genre:Romance",
+        "keys": [
+          "e:Romance",
+          "b:hc:39629",
+          "b:hc:283659",
+          "b:hc:1363844",
+          "b:hc:153090",
+          "b:hc:183545",
+          "b:hc:429015",
+          "b:hc:429018",
+          "b:hc:428931",
+          "b:hc:428290",
+          "b:hc:428929",
+          "b:hc:458947",
+          "b:hc:459744",
+          "b:hc:429046",
+          "b:hc:465201",
+          "b:hc:714600",
+          "b:hc:747398",
+          "o:1",
+          "o:2"
+        ]
+      },
+      {
+        "title": "More books",
+        "kind": "genre",
+        "key": "genre:More books",
+        "keys": [
+          "e:More books",
+          "b:hc:369692",
+          "o:3",
+          "o:4"
+        ]
+      },
+      {
+        "title": "To read",
+        "kind": "pile",
+        "key": "pile",
+        "keys": [
+          "e:To read",
+          "o:5",
+          "o:6"
+        ]
+      },
+      {
+        "title": "Trophies",
+        "kind": "cabinet",
+        "keys": [
+          "t:5509"
+        ]
+      }
+    ],
+    "ornaments": {
+      "1": "plant",
+      "2": "cat",
+      "3": "candle",
+      "4": "cat",
+      "5": "mug",
+      "6": "hourglass"
+    },
+    "top": []
+  }
 }
