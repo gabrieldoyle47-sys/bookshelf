@@ -5,7 +5,16 @@
       "name": "Gabriel",
       "colour": "#0ea5e9",
       "lastSeen": "2026-11-07T21:44:02.867Z",
-      "theme": "classic"
+      "look": {
+        "palette": "classic",
+        "font": "classic",
+        "room": "fire",
+        "wall": "room",
+        "wood": "room",
+        "rug": "room",
+        "lamp": "room",
+        "seasons": false
+      }
     },
     {
       "id": "stephanie",
