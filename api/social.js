@@ -347,7 +347,51 @@ export async function endBuddyRead(db, me, friendId) {
 }
 
 /** Clubs and buddy reads go when an account is purged. */
+/* --------------------------------------------------------- reservations */
+
+const wishIds = (library) => new Set((library?.books ?? []).filter((b) => b.status === 'wish').map((b) => b.id));
+
+/**
+ * Who has said they'll buy which of the owner's wishlist books. Anyone who can
+ * see the shelf sees them - the owner included, so they know not to buy it.
+ * A reservation whose book has left the wishlist is not shown (and is tidied
+ * away the next time the owner saves).
+ */
+export async function reservationsFor(db, library, ownerId) {
+  const wished = wishIds(library);
+  const rows = await all(db, `SELECT r.book_id, r.at, u.id, u.display_name, u.colour, u.sigil FROM reservations r
+    JOIN users u ON u.id = r.by_user AND u.status = 'active' WHERE r.owner = ?`, ownerId);
+  return rows.filter((r) => wished.has(r.book_id)).map((r) => ({
+    bookId: r.book_id, at: r.at, by: { id: r.id, name: r.display_name, colour: r.colour, sigil: parse(r.sigil, null) },
+  }));
+}
+
+/** "I'll buy this for them": one person per book, never on your own shelf. */
+export async function reserve(db, me, owner, library, bookId) {
+  if (owner.id === me.id) no(400, 'That’s your own wishlist.');
+  if (!wishIds(library).has(bookId)) no(404, 'That book isn’t on their wishlist any more.');
+  const taken = await one(db, `SELECT r.by_user, u.display_name FROM reservations r LEFT JOIN users u ON u.id = r.by_user
+    WHERE r.owner = ? AND r.book_id = ?`, owner.id, bookId);
+  if (taken && taken.by_user !== me.id) no(409, `${taken.display_name ?? 'Someone'} is already getting this one.`);
+  if (!taken) await run(db, 'INSERT INTO reservations (owner, book_id, by_user, at) VALUES (?, ?, ?, ?)', owner.id, bookId, me.id, today());
+  return { ok: true };
+}
+
+/** Let a reservation go - only the person who made it can. */
+export async function unreserve(db, me, ownerId, bookId) {
+  await run(db, 'DELETE FROM reservations WHERE owner = ? AND book_id = ? AND by_user = ?', ownerId, bookId, me.id);
+  return { ok: true };
+}
+
+/** After the owner saves: reservations on books no longer wished for go. */
+export async function tidyReservations(db, ownerId, library) {
+  const wished = [...wishIds(library)];
+  if (!wished.length) return run(db, 'DELETE FROM reservations WHERE owner = ?', ownerId);
+  return run(db, `DELETE FROM reservations WHERE owner = ? AND book_id NOT IN (${wished.map(() => '?').join(',')})`, ownerId, ...wished);
+}
+
 export async function forgetUser(db, id) {
+  await run(db, 'DELETE FROM reservations WHERE owner = ? OR by_user = ?', id, id);
   await run(db, 'DELETE FROM club_members WHERE user_id = ?', id);
   await run(db, 'DELETE FROM club_votes WHERE user_id = ?', id);
   await run(db, 'DELETE FROM buddy_reads WHERE a = ? OR b = ?', id, id);

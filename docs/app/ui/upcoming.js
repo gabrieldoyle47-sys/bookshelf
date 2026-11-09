@@ -331,11 +331,14 @@ function trackSearch(ctx, profile) {
               : when ? `${when.date}${when.countdown ? ` · ${when.countdown}` : ''}` : 'No date announced yet' })),
           state
             ? h('span', { class: 'pill', text: state })
-            : out
-              ? h('button', { class: 'btn secondary small', type: 'button',
-                  onclick: () => ctx.actions.addHit(profile, hit) }, 'Want to read')
-              : h('button', { class: 'btn small', type: 'button',
-                  onclick: () => ctx.actions.track(profile, hit) }, 'Track')));
+            : h('span', { class: 'row' },
+              out
+                ? h('button', { class: 'btn secondary small', type: 'button',
+                    onclick: () => ctx.actions.addHit(profile, hit) }, 'Want to read')
+                : h('button', { class: 'btn small', type: 'button',
+                    onclick: () => ctx.actions.track(profile, hit) }, 'Track'),
+              h('button', { class: 'btn secondary small', type: 'button', title: 'Want to buy it',
+                onclick: () => ctx.actions.addHit(profile, hit, 'wish') }, 'Wishlist'))));
       }
     } catch (err) {
       if (mine === seq) hint.textContent = err.message;
@@ -430,7 +433,13 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
               e.currentTarget.disabled = true;
               if (await ctx.actions.addById(profile, item.bookId, item.title)) dialog.close();
               else e.currentTarget.disabled = false;
-            } }, 'Add to want to read'));
+            } }, 'Add to want to read'),
+      onShelf ? null : h('button', { class: 'btn secondary', type: 'button',
+        onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          if (await ctx.actions.addById(profile, item.bookId, item.title, 'wish')) dialog.close();
+          else e.currentTarget.disabled = false;
+        } }, 'Add to wishlist'));
   }
 
   const released = Boolean(item.releaseDate && item.releaseDate <= today());

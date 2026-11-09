@@ -21,7 +21,8 @@ const MIN_POINTS = 3; // below this a chart misleads more than it informs
 
 export function statsView(ctx, profile) {
   const library = ctx.state.libraries[profile.id] ?? { books: [] };
-  const books = library.books;
+  // Stats are about books you have; the wishlist isn't counted.
+  const books = library.books.filter((b) => b.status !== 'wish');
   const read = books.filter((b) => b.status === 'read');
   const rated = read.filter((b) => typeof b.rating === 'number' && b.rating > 0);
   const dated = read.filter((b) => readOnOf(b));

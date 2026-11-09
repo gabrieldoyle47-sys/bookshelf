@@ -290,7 +290,8 @@ export function seriesProgress(seriesState, library, now = today()) {
   for (const id of engaged) {
     const s = seriesState[id];
     if (!s) continue;
-    const mine = books.filter((b) => b.series?.id === id);
+    // A wished-for book isn't yours yet, so it doesn't fill a slot.
+    const mine = books.filter((b) => b.series?.id === id && b.status !== 'wish');
     const byPosition = new Map();
     for (const [bookId, b] of Object.entries(s.books ?? {})) {
       if (!Number.isInteger(b.position) || b.position <= 0) continue;

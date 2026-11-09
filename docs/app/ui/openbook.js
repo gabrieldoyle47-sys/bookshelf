@@ -12,12 +12,13 @@
  */
 
 import { h, fill, coverEl, authorNames, starsEl, fmtReadOn, fmtRating, buyLinks } from './dom.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary, isFavourite } from '../core/model.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary, isFavourite, today } from '../core/model.js';
+import { sigilEl } from './sigil.js';
 import { shelfPalette } from './art.js';
 import { previouslyOn, whosWhoBox } from './memory.js';
 import { play } from './sound.js';
 
-const STATUS = { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile', abandoned: 'Put down' };
+const STATUS = { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile', abandoned: 'Put down', wish: 'On the wishlist' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let dialog = null;
@@ -95,7 +96,7 @@ function leftPage(ctx, book, profile) {
   ].filter(([, v]) => v);
 
   return h('div', { class: 'ob-left' },
-    h('div', { class: 'ob-eyebrow', text: `${profile.name}’s copy · ${STATUS[book.status] ?? ''}` }),
+    h('div', { class: 'ob-eyebrow', text: book.status === 'wish' ? `On ${profile.name}’s wishlist` : `${profile.name}’s copy · ${STATUS[book.status] ?? ''}` }),
     h('h2', { class: 'ob-title', text: book.title }),
     h('div', { class: 'ob-by' }, 'by ',
       author?.id ? h('a', { href: `#/author/${author.id}`, onclick: () => dialog.close() }, authorNames(book)) : authorNames(book)),
@@ -125,11 +126,64 @@ function rightPage(ctx, book, profile, close) {
     book.series?.id && typeof pos === 'number' && pos > 1
       ? previouslyOn(ctx, profile, { seriesId: book.series.id, seriesName: book.series.name, before: pos }) : null,
     book.series?.id ? whosWhoBox(ctx, profile, { seriesId: book.series.id, upTo: typeof pos === 'number' ? pos : Infinity }) : null,
-    book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book)) : null,
+    book.status === 'wish' ? wishBox(ctx, book, profile, close) : null,
+    book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book, { released: !(book.released > today()) })) : null,
     h('div', { class: 'ob-actions' },
       h('button', { class: 'btn secondary ob-close', type: 'button', onclick: () => close() }, 'Close'),
       (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) && book.status === 'read' ? favButton(ctx, profile, book) : null,
-      (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null));
+      (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null,
+      wishButton(ctx, book, profile)));
+}
+
+/* --------------------------------------------------------------- wishlist */
+
+const longDay = (iso) => new Date(`${iso.slice(0, 10)}T12:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+
+/**
+ * A wishlist book, opened: when it comes out, who (if anyone) is buying it,
+ * and - for the owner - "I've got it now", or for anyone else "I'll buy this
+ * for them".
+ */
+function wishBox(ctx, book, profile, close) {
+  const own = ctx.state.canEdit?.(profile.id);
+  const meId = ctx.state.me?.id;
+  const wrap = h('div', { class: 'ob-wish' });
+  const out = book.released && book.released > today() ? book.released : null;
+  const paint = () => {
+    const r = (ctx.state.reservations?.[profile.id] ?? []).find((x) => x.bookId === book.id) ?? null;
+    const busy = (btn, run) => async () => { btn.disabled = true; await run(); paint(); };
+    const reserveBtn = h('button', { class: 'btn small', type: 'button' }, `I’ll buy this for ${profile.name}`);
+    reserveBtn.onclick = busy(reserveBtn, () => ctx.actions.reserve(profile, book, true));
+    const releaseBtn = h('button', { class: 'link-btn', type: 'button' }, 'Let it go');
+    releaseBtn.onclick = busy(releaseBtn, () => ctx.actions.reserve(profile, book, false));
+    const gotBtn = h('button', { class: 'btn small', type: 'button' }, 'I’ve got it — move to To read');
+    gotBtn.onclick = async () => { gotBtn.disabled = true; if (await ctx.actions.gotWish(profile, book)) close(); else gotBtn.disabled = false; };
+    fill(wrap,
+      out ? h('div', { class: 'ob-wish-due', text: `Comes out ${longDay(out)}` })
+        : book.released ? h('div', { class: 'count', text: `Out since ${longDay(book.released)}` }) : null,
+      r ? h('div', { class: 'ob-claim' }, sigilEl(r.by, { size: 'sm' }),
+        h('span', { text: r.by.id === meId ? `You’re getting this for ${profile.name}.` : own ? `${r.by.name} is getting this for you.` : `${r.by.name} is getting this.` }),
+        r.by.id === meId ? releaseBtn : null)
+        : own ? null : h('div', { class: 'ob-claim' }, reserveBtn, h('span', { class: 'count', text: 'Your sigil goes on the spine, so no one else buys it too.' })),
+      own ? h('div', { class: 'row' }, gotBtn) : null);
+  };
+  paint();
+  return wrap;
+}
+
+/** On someone else's shelf: put this book on your own wishlist (unless it's already on your shelf). */
+function wishButton(ctx, book, profile) {
+  const me = ctx.state.me;
+  if (!me || profile.id === me.id) return null;
+  const mine = (ctx.state.libraries[me.id]?.books ?? []).find((b) => String(b.hardcoverId ?? b.id) === String(book.hardcoverId ?? book.id));
+  if (mine) return h('span', { class: 'pill', text: mine.status === 'wish' ? 'On your wishlist' : 'On your shelf' });
+  const btn = h('button', { class: 'btn secondary', type: 'button' }, '+ My wishlist');
+  btn.onclick = async () => {
+    btn.disabled = true;
+    if (await ctx.actions.wishFor(book)) btn.replaceWith(h('span', { class: 'pill', text: 'On your wishlist' }));
+    else btn.disabled = false;
+  };
+  return btn;
 }
 
 /* -------------------------------------------------------------- reactions */

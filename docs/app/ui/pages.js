@@ -38,7 +38,7 @@ function readersOf(ctx, book, seriesId = null) {
   return out;
 }
 
-const STATE = { read: 'read it', reading: 'reading it', tbr: 'wants to read it' };
+const STATE = { read: 'read it', reading: 'reading it', tbr: 'wants to read it', wish: 'wishes for it' };
 
 /** Little faces under a book: who has it, ringed by how far they are. */
 function readerDots(readers) {

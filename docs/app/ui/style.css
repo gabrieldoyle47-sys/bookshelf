@@ -4093,3 +4093,39 @@ a.person-main:hover strong { text-decoration: underline; }
 .cl-side-actions { justify-content: space-between; margin-top: .4rem; }
 .link-btn.danger { color: var(--urgent); }
 @media (max-width: 900px) { .club-columns { grid-template-columns: 1fr; } .cl-side { position: static; } }
+
+/* ------------------------------------------------------------ wishlist */
+/* A ghost: a book you'd like but don't own yet. The outline of a spine in
+   its series colour, the cloth only faintly there, the title in that colour. */
+.lspine.wish {
+  background:
+    repeating-linear-gradient(180deg, transparent 0 6px, color-mix(in srgb, var(--cloth) 10%, transparent) 6px 7px),
+    color-mix(in srgb, var(--cloth) 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cloth) 70%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--cloth) 55%, rgb(255 255 255 / .4)); outline-offset: -4px;
+  filter: none; opacity: .82;
+}
+.lspine.wish .lspine-title { color: color-mix(in srgb, var(--cloth) 45%, #fff6e6); text-shadow: 0 1px 2px rgb(0 0 0 / .55); opacity: .9; }
+.lspine.wish .lspine-num { opacity: .6; }
+.lspine.wish:hover, .lspine.wish:focus-visible { opacity: 1; filter: none; }
+/* Unreleased: a little date tag at the head of the spine. */
+.lspine.due .lspine-title { top: 30px; }
+.lspine-due {
+  position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+  writing-mode: vertical-rl; rotate: 180deg; padding: 2px 1px; border-radius: 2px;
+  font: 700 6.5px/1 var(--sans); letter-spacing: .04em; color: #2c1d08; white-space: nowrap;
+  background: #f4e7c7; box-shadow: 0 1px 2px rgb(0 0 0 / .35);
+}
+/* Someone's getting it: their sigil, pressed at the foot of the ghost. */
+.lspine.reserved .lspine-num { bottom: 18px; }
+.lspine.reserved .lspine-title { bottom: 34px; }
+.lspine-claim { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); }
+.lspine-claim .sigil { --s: 13px; width: 13px; height: 13px; box-shadow: 0 0 0 1.5px rgb(255 250 240 / .85), 0 1px 3px rgb(0 0 0 / .5); }
+.lib-legend .key.ghost { background: rgb(120 90 60 / .12); box-shadow: inset 0 0 0 1.5px #8a6a4a; outline: 1px dashed #b39678; outline-offset: -4px; }
+
+/* In the open book. */
+.ob-wish { display: grid; gap: .55rem; padding: .7rem .8rem; border-radius: var(--radius); background: var(--accent-tint); border: 1px dashed var(--accent-soft); }
+.ob-wish-due { font: 600 .92rem var(--display); }
+.ob-claim { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .9rem; }
+.wish-part { margin-top: 1.4rem; }
+.wish-part .book-row, .wish-part .row-book { opacity: .85; }

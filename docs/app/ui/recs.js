@@ -135,6 +135,11 @@ function suggestionCard(ctx, profile, s) {
           e.currentTarget.disabled = true;
           if (!(await ctx.actions.addHit(profile, b))) e.currentTarget.disabled = false;
         } }, '+ Want to read') : null,
+      ctx.state.canWrite ? h('button', { class: 'btn secondary small', type: 'button', title: 'Want to buy it',
+        onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          if (!(await ctx.actions.addHit(profile, b, 'wish'))) e.currentTarget.disabled = false;
+        } }, '+ Wishlist') : null,
       ctx.state.canWrite ? h('button', { class: 'icon-btn', type: 'button', title: 'Not interested',
         'aria-label': `Not interested in ${b.title}`, onclick: () => ctx.actions.hide(profile, String(b.id), b.title) }, '✕') : null,
       buyLinks({ title: b.title, authorName: authorNames(b) }, { compact: true })));
@@ -202,6 +207,13 @@ function seriesRow(ctx, profile, b, isNext, queued = null) {
           if (!(await ctx.actions.addById(profile, b.bookId, b.title))) e.currentTarget.disabled = false;
         },
       }, '+ Want to read') : null,
+      ctx.state.canWrite ? h('button', {
+        class: 'btn secondary small', type: 'button', title: 'Want to buy it',
+        onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          if (!(await ctx.actions.addById(profile, b.bookId, b.title, 'wish'))) e.currentTarget.disabled = false;
+        },
+      }, '+ Wishlist') : null,
       ctx.state.canWrite ? h('button', {
         class: 'icon-btn', type: 'button', title: 'Not interested',
         'aria-label': `Not interested in ${b.title}`,
@@ -281,7 +293,7 @@ function outcome(rec, onShelf, who = 'you') {
   if (!onShelf) return 'added, since removed';
   return {
     tbr: 'on the to-read pile', reading: `${who === 'you' ? 'reading it now' : `${who} is reading it`}`,
-    read: 'finished', abandoned: 'gave up on it',
+    read: 'finished', abandoned: 'gave up on it', wish: 'on the wishlist',
   }[onShelf.status] ?? 'added';
 }
 

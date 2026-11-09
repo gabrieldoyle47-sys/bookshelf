@@ -8,7 +8,7 @@ import {
   h, clear, starsEl, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
 import {
-  readOnOf, readYearOf, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
+  readOnOf, readYearOf, today, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
 } from '../core/model.js';
 import { visibleEvents, unseenEvents, eventStamp } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
@@ -17,9 +17,9 @@ import { emptyArt } from './art.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-const STATUS_ORDER = ['reading', 'tbr', 'read', 'abandoned'];
+const STATUS_ORDER = ['reading', 'tbr', 'wish', 'read', 'abandoned'];
 const STATUS_LABEL = {
-  reading: 'Reading now', tbr: 'Want to read', read: 'Finished', abandoned: 'Gave up on',
+  reading: 'Reading now', tbr: 'Want to read', read: 'Finished', abandoned: 'Gave up on', wish: 'Wishlist',
 };
 
 function frag(...nodes) {
@@ -230,7 +230,7 @@ export function shelfView(ctx, profile) {
       const spotlit = library.books.some((b) => b.status === 'reading');
       columns.className = `shelf-columns${spotlit ? ' two' : ''}`;
       columns.append(...[
-        plainColumn('tbr', of('tbr'), ctx),
+        plainColumn('tbr', of('tbr'), ctx, of('wish')),
         spotlit ? null : plainColumn('reading', of('reading'), ctx),
         finishedColumn(of('read'), ctx, filters),
       ].filter(Boolean));
@@ -300,15 +300,19 @@ function columnHead(label, count, extra) {
 }
 
 /** A column that is just a list: to-read and currently-reading. */
-function plainColumn(status, books, ctx) {
-  const sorted = [...books].sort((a, b) =>
+function plainColumn(status, books, ctx, wishes = []) {
+  const newest = (list) => [...list].sort((a, b) =>
     String(b.added ?? '').localeCompare(String(a.added ?? '')));
 
   return h('section', { class: 'shelf-col' },
     columnHead(STATUS_LABEL[status], books.length),
     books.length
-      ? h('div', { class: 'books' }, sorted.map((b) => bookRow(b, ctx, sideFor(b))))
-      : h('p', { class: 'col-empty', text: status === 'tbr' ? 'Nothing waiting.' : 'Not reading anything.' }));
+      ? h('div', { class: 'books' }, newest(books).map((b) => bookRow(b, ctx, sideFor(b))))
+      : h('p', { class: 'col-empty', text: status === 'tbr' ? 'Nothing waiting.' : 'Not reading anything.' }),
+    // Under the books you own and haven't read: the ones you'd like to buy.
+    wishes.length ? h('div', { class: 'wish-part' },
+      columnHead(STATUS_LABEL.wish, wishes.length),
+      h('div', { class: 'books' }, newest(wishes).map((b) => bookRow(b, ctx, sideFor(b))))) : null);
 }
 
 /** The finished column, grouped however the reader last chose. */
@@ -367,6 +371,7 @@ function sideFor(book) {
       when ? h('span', { class: 'when', text: when }) : null);
   }
   if (book.status === 'tbr' && book.series) return h('span', { class: 'pill', text: 'series' });
+  if (book.status === 'wish' && book.released > today()) return h('span', { class: 'pill', text: `out ${fmtReadOnShort(book.released)}` });
   if (book.status === 'reading') {
     // Showing the start date is what makes the automatic stamp visible -
     // otherwise it is a silent side effect nobody can check.

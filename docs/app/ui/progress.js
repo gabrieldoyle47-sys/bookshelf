@@ -12,7 +12,7 @@ import { seriesProgress } from '../core/watch.js';
 import { openRelease } from './upcoming.js';
 
 const STATE_LABEL = {
-  read: 'Read', reading: 'Reading now', tbr: 'On your pile', abandoned: 'Gave up',
+  read: 'Read', reading: 'Reading now', tbr: 'On your pile', abandoned: 'Gave up', wish: 'Wished for',
   missing: 'Out, not on your shelf', skipped: 'Not interested', upcoming: 'Not out yet',
 };
 

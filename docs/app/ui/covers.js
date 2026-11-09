@@ -48,6 +48,7 @@ export function layoutToggle(onChange) {
 
 const SECTIONS = [
   ['tbr', 'Want to read'],
+  ['wish', 'Wishlist'],
   ['reading', 'Reading now'],
   ['read', 'Finished'],
 ];

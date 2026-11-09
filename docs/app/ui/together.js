@@ -225,7 +225,13 @@ export function togetherView(ctx) {
             e.currentTarget.disabled = true;
             if (!(await ctx.actions.addById(me, x.book.hardcoverId, x.book.title))) e.currentTarget.disabled = false;
           },
-        }, `+ ${me.name}`)) : null)))
+        }, `+ ${me.name}`), h('button', {
+          class: 'btn secondary small', type: 'button', 'aria-label': `Add ${x.book.title} to ${me.name}'s wishlist`,
+          onclick: async (e) => {
+            e.currentTarget.disabled = true;
+            if (!(await ctx.actions.addById(me, x.book.hardcoverId, x.book.title, 'wish'))) e.currentTarget.disabled = false;
+          },
+        }, '+ Wishlist')) : null)))
         : emptyState(`Nothing rated 4★ or more by the others that ${me.name} is missing.`));
   }
 

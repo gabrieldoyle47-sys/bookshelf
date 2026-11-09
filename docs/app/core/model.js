@@ -5,7 +5,12 @@
  * anything platform-specific.
  */
 
-export const STATUSES = ['tbr', 'reading', 'read', 'abandoned'];
+// 'tbr' is a book you own and haven't read; 'wish' one you'd like to buy -
+// drawn as a ghost spine among the to-read books until it's yours.
+export const STATUSES = ['tbr', 'reading', 'read', 'abandoned', 'wish'];
+
+/** Books on the to-read side of the shelf: owned and waiting, or wished for. */
+export const onPile = (b) => b?.status === 'tbr' || b?.status === 'wish';
 
 /** Ratings at or below this drop the series off the watchlist. */
 export const DISLIKE_AT_OR_BELOW = 2;
@@ -222,6 +227,18 @@ export function bookFromHardcover(hit, { status = 'tbr', rating = null, note = '
   // Adding a book straight onto "reading" or "finished" is a status change
   // like any other, so it gets the same dates.
   return applyStatusDates(book, null);
+}
+
+/**
+ * A copy of a book from someone else's shelf for your own: what Hardcover
+ * says about it, none of what they did with it (rating, note, dates, gifts).
+ */
+export function bookFromShelf(book, { status = 'wish' } = {}) {
+  if (!STATUSES.includes(status)) throw new Error(`Unknown status: ${status}`);
+  const keep = ['id', 'hardcoverId', 'title', 'authors', 'series', 'pages', 'released', 'releaseYear', 'cover', 'slug', 'genres', 'moods'];
+  const copy = Object.fromEntries(keep.map((k) => [k, structuredClone(book[k] ?? null)]));
+  return applyStatusDates({ ...copy, genres: copy.genres ?? [], moods: copy.moods ?? [], authors: copy.authors ?? [],
+    status, rating: null, note: '', added: today(), readOn: null, started: null, finished: null }, null);
 }
 
 export function emptyLibrary() {

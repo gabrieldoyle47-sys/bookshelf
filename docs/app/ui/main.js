@@ -16,7 +16,7 @@ import {
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress,
   addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
-  toggleFavourite, markAnnounced, cleanTags,
+  toggleFavourite, markAnnounced, cleanTags, bookFromShelf, setStatus,
 } from '../core/model.js';
 import { unseenEvents, eventStamp } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
@@ -53,6 +53,8 @@ const state = {
   me: null,
   requests: 0,
   visitors: {},
+  // Wishlist reservations by shelf owner: [{ bookId, by, at }].
+  reservations: {},
 };
 
 const ctx = { state, actions: {} };
@@ -478,6 +480,7 @@ function render() {
   }
   const profile = known(profileId);
   ctx.currentProfile = profile;
+  loadReservations(profile.id);
   // The group page and author pages are seen as whoever is signed in.
   state.viewer = state.me.id;
   const tabs = main.appendChild(profileTabs(profile, tab));
@@ -755,8 +758,8 @@ ctx.actions.goSuggest = (profile) => {
 /* ------------------------------------------------ adding from suggestions */
 
 /** Put a search hit (or a fetched book) on someone's to-read pile. */
-ctx.actions.addHit = async (profile, hit) => {
-  const book = bookFromHardcover(hit, { status: 'tbr' });
+ctx.actions.addHit = async (profile, hit, status = 'tbr') => {
+  const book = bookFromHardcover(hit, { status });
   const ok = await saveLibrary(profile.id, (lib) => {
     if (lib.books.some((b) => b.id === book.id)) throw new Error('That book is already on this shelf.');
     lib.books.push(book);
@@ -764,7 +767,7 @@ ctx.actions.addHit = async (profile, hit) => {
     untrackBook(lib, hit.id);
     return lib;
   }, `Add ${book.title} for ${profile.name}`);
-  if (ok) toast(`Added ${book.title} to ${profile.name}'s want-to-read pile`);
+  if (ok) toast(status === 'wish' ? `${book.title} is on your wishlist` : `Added ${book.title} to ${profile.name}'s want-to-read pile`);
   return ok;
 };
 
@@ -773,15 +776,66 @@ ctx.actions.addHit = async (profile, hit) => {
  * an upcoming release. The watcher's snapshot is too thin to shelve (no
  * authors, genres or page count), so fetch the real record first.
  */
-ctx.actions.addById = async (profile, bookId, title) => {
+ctx.actions.addById = async (profile, bookId, title, status = 'tbr') => {
   try {
     const [hit] = await ctx.actions.fetchBooks([bookId]);
     if (!hit) throw new Error(`Hardcover could not find “${title}”.`);
-    return await ctx.actions.addHit(profile, hit);
+    return await ctx.actions.addHit(profile, hit, status);
   } catch (err) {
     toast(friendlyError(err), true);
     return false;
   }
+};
+
+/* --------------------------------------------------------------- wishlist */
+
+/** A book from someone else's shelf (or anywhere already in shelf shape) onto your wishlist. */
+ctx.actions.wishFor = async (book) => {
+  const me = state.profiles.find((p) => p.id === state.me.id) ?? state.me;
+  const copy = bookFromShelf(book);
+  const ok = await saveLibrary(me.id, (lib) => {
+    if (lib.books.some((b) => String(b.hardcoverId ?? b.id) === String(copy.hardcoverId ?? copy.id))) throw new Error('That book is already on your shelf.');
+    lib.books.push(copy);
+    untrackBook(lib, copy.hardcoverId);
+    return lib;
+  }, `Wish for ${copy.title}`, { quiet: true });
+  if (ok) toast(`${copy.title} is on your wishlist`);
+  return ok;
+};
+
+/** Bought it (or been given it): off the wishlist, onto the to-read pile. */
+ctx.actions.gotWish = async (profile, book) => {
+  const ok = await saveLibrary(profile.id, (lib) => {
+    const b = lib.books.find((x) => x.id === book.id);
+    if (b) setStatus(b, 'tbr');
+    return lib;
+  }, `Got ${book.title}`);
+  if (ok) { play('tick'); toast(`${book.title} is yours — it’s on the to-read pile`); }
+  return ok;
+};
+
+/** Who's buying what on a shelf's wishlist. Quiet: a shelf draws fine without it. */
+async function loadReservations(ownerId) {
+  const books = state.libraries[ownerId]?.books ?? [];
+  if (!books.some((b) => b.status === 'wish')) { state.reservations[ownerId] = []; return; }
+  try {
+    const list = await storage.api(`/reservations?owner=${encodeURIComponent(ownerId)}`);
+    const before = JSON.stringify(state.reservations[ownerId] ?? []);
+    state.reservations[ownerId] = list;
+    if (JSON.stringify(list) !== before && state.route.profileId === ownerId && state.route.tab === 'library') render();
+  } catch { /* the ghosts simply show unclaimed */ }
+}
+
+/** "I'll buy this for them" (or letting it go). One person per book; the API says if someone beat you to it. */
+ctx.actions.reserve = async (owner, book, on) => {
+  try {
+    await storage.api(on ? '/reserve' : '/unreserve', { method: 'POST', body: { owner: owner.id, bookId: book.id } });
+    if (on) { play('stamp'); toast(`Your sigil is on ${book.title} — no one else will buy it for ${owner.name}`); }
+  } catch (err) {
+    toast(friendlyError(err), true);
+  }
+  await loadReservations(owner.id);
+  return true;
 };
 
 ctx.actions.hide = async (profile, bookId, title) => {
@@ -1119,12 +1173,13 @@ function chooseStatus(hit, hits) {
         field(hit.pages ? `Page you're on (of ${hit.pages})` : 'Page you’re on (optional)', h('input', {
           type: 'number', min: '0', max: hit.pages ? String(hit.pages) : null, inputmode: 'numeric',
           placeholder: 'Optional', value: draft.page, oninput: (e) => { draft.page = e.target.value; } }))) : null,
-      draft.status === 'tbr' ? noteBox() : null);
-    submit.textContent = { tbr: 'Add to Want to read', reading: 'Add to Reading now', read: 'Add to Finished' }[draft.status];
+      draft.status === 'tbr' || draft.status === 'wish' ? noteBox() : null,
+      draft.status === 'wish' ? h('p', { class: 'hint', text: 'A ghost spine on your shelf until you have it — friends can say they’ll buy it for you.' }) : null);
+    submit.textContent = { tbr: 'Add to Want to read', reading: 'Add to Reading now', read: 'Add to Finished', wish: 'Add to Wishlist' }[draft.status];
   }
 
   const shelves = h('div', { class: 'seg add-shelves', role: 'tablist', 'aria-label': 'Which shelf' },
-    [['tbr', 'Want to read'], ['reading', 'Reading now'], ['read', 'Already read']].map(([id, label]) => h('button', {
+    [['tbr', 'Want to read'], ['reading', 'Reading now'], ['read', 'Already read'], ['wish', 'Wishlist']].map(([id, label]) => h('button', {
       class: 'seg-btn', type: 'button', role: 'tab', 'aria-selected': String(id === draft.status),
       onclick: (e) => {
         draft.status = id;
@@ -1345,7 +1400,7 @@ function audiobookField(book, draft) {
 }
 
 /** Shelf names as people say them; the stored values stay as they are. */
-const SHELF_LABEL = { tbr: 'Want to read', reading: 'Reading now', read: 'Finished', abandoned: 'Gave up on' };
+const SHELF_LABEL = { tbr: 'Want to read', reading: 'Reading now', read: 'Finished', abandoned: 'Gave up on', wish: 'Wishlist' };
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];

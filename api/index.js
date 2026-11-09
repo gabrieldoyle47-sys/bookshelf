@@ -24,7 +24,7 @@ import {
 } from './auth.js';
 import {
   SocialError, privacyOf, shelfFor, awardIds, cardSummary, myClubs, createClub, clubDetail, clubAction,
-  buddyRead, startBuddyRead, endBuddyRead, forgetUser,
+  buddyRead, startBuddyRead, endBuddyRead, forgetUser, reservationsFor, reserve, unreserve, tidyReservations,
 } from './social.js';
 
 const MAX_BYTES = 512 * 1024;
@@ -277,6 +277,7 @@ async function writeRoute(db, me, input) {
   try { JSON.parse(input.content); } catch { throw new HttpError(400, 'content is not valid JSON'); }
   const version = /^\d+$/.test(String(input.sha ?? '')) ? Number(input.sha) : null;
   const next = await writeFile(db, path, input.content, version);
+  await tidyReservations(db, me.id, JSON.parse(input.content));
   return { ok: true, sha: String(next) };
 }
 
@@ -692,6 +693,18 @@ async function route(request, env) {
     return json(await startBuddyRead(db, me, String(input.friend), input.book));
   }
   if (m === 'POST' && p === '/buddy/end') return json(await endBuddyRead(db, me, String((await body(request)).friend ?? '')));
+  // Wishlist reservations, on any shelf the viewer is allowed to see.
+  if ((m === 'GET' && p === '/reservations') || (m === 'POST' && (p === '/reserve' || p === '/unreserve'))) {
+    const input = m === 'GET' ? { owner: url.searchParams.get('owner') } : await body(request);
+    const owner = await one(db, "SELECT * FROM users WHERE id = ? AND status = 'active'", String(input.owner ?? ''));
+    if (!owner) throw new HttpError(404, 'No one by that name.');
+    const row = await readFile(db, `profiles/${owner.id}/library.json`);
+    const rel = { self: owner.id === me.id, friend: await areFriends(db, me.id, owner.id) };
+    const library = shelfFor(row ? JSON.parse(row.content) : { books: [] }, owner, rel);
+    if (p === '/reservations') return json(await reservationsFor(db, library, owner.id));
+    const bookId = String(input.bookId ?? '').slice(0, 80);
+    return json(p === '/reserve' ? await reserve(db, me, owner, library, bookId) : await unreserve(db, me, owner.id, bookId));
+  }
   if (m === 'POST' && p === '/react') return json(await react(db, me, await body(request)));
   if (m === 'POST' && p === '/recommend') return json(await recommend(db, me, await body(request)));
   if (m === 'POST' && p === '/check') return json(await checkNow(db, env, me));

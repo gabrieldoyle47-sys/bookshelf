@@ -142,3 +142,14 @@ CREATE TABLE IF NOT EXISTS buddy_reads (
   started TEXT NOT NULL,
   PRIMARY KEY (a, b)
 );
+
+-- Wishlist reservations: a member saying "I'll buy you this" on a book on
+-- someone's wishlist. One per book; cleared once the book leaves the wishlist.
+CREATE TABLE IF NOT EXISTS reservations (
+  owner TEXT NOT NULL,
+  book_id TEXT NOT NULL,
+  by_user TEXT NOT NULL,
+  at TEXT NOT NULL,
+  PRIMARY KEY (owner, book_id)
+);
+CREATE INDEX IF NOT EXISTS reservations_by ON reservations (by_user);

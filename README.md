@@ -214,6 +214,21 @@ shelf it actually covers rather than implying it knows the whole picture.
   posts from further into the book stay blurred until you click, a vote on the next
   read, the club's shelf of finished reads, a group taste match and a feed.
 
+## Wishlist
+
+- **Owned vs wanted.** "Want to read" is a book you have and haven't read; **Wishlist**
+  is one you'd like to buy. Add to the wishlist from the add-a-book search (the fourth
+  shelf choice), "+ Wishlist" on suggestions and releases, or "+ My wishlist" when you
+  open a book on someone else's shelf. Switch any book between shelves in Edit.
+- **Ghost spines.** Wishlist books stand among your to-read books as see-through
+  outlines in their series colour. Unreleased ones carry a small date tag. Arrange →
+  Wishlist hides them. They don't count in your stats, badges or series progress.
+- **Opened**, a wishlist book shows when it comes out and where to buy (or pre-order) it.
+  The owner gets "I've got it — move to To read".
+- **"I'll buy this for them."** Anyone who can see the shelf can reserve a wishlist book
+  (one person per book). Their sigil goes on the foot of the ghost, so no one buys it
+  twice; the owner sees it too. It clears when the book leaves the wishlist.
+
 ## Setup
 
 1. **Hardcover token** — sign up, then Settings → API. Put it in `.env` as

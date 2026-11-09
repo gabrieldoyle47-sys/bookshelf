@@ -20,10 +20,10 @@
 
 import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp, toast } from './dom.js';
 import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable, keyOfShelf } from '../core/arrange.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf, isFavourite } from '../core/model.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf, isFavourite, onPile } from '../core/model.js';
 import { earnedBadges } from '../core/badges.js';
 import { badgeStamp } from './badges.js';
-import { sigilMark } from './sigil.js';
+import { sigilMark, sigilEl } from './sigil.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
@@ -32,9 +32,10 @@ import { playRoom } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
 import { THEMES_ON } from './themes.js';
 
-const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read']];
+const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read'], ['wish', 'Wishlist']];
+const GHOSTS = [['on', 'Shown'], ['off', 'Hidden']];
 const ARRANGE = [['shelf', 'By genre'], ['author', 'By author'], ['rainbow', 'Rainbow']];
-const prefs = { filter: 'all', arrange: 'shelf' };
+const prefs = { filter: 'all', arrange: 'shelf', ghosts: 'on' };
 try { Object.assign(prefs, JSON.parse(sessionStorage.getItem('bookshelf.library') ?? '{}')); } catch { /* private mode */ }
 const savePrefs = () => { try { sessionStorage.setItem('bookshelf.library', JSON.stringify(prefs)); } catch { /* ignore */ } };
 
@@ -84,13 +85,16 @@ export function libraryView(ctx, profile) {
     return h('span', { class: 'lib-stat' }, num, ` ${label}`);
   };
 
+    // The wishlist isn't owned books, so it isn't counted in "books".
+  const owned = all.filter((b) => b.status !== 'wish').length;
   const head = h('header', { class: 'lib-head', style: `--who:${profile.colour ?? 'var(--accent)'}` },
     avatar(profile, { size: 'xl' }),
     h('div', { class: 'lib-title' },
       h('div', { class: 'eyebrow', text: 'The bookshelf' }),
       h('h1', { text: `${profile.name}’s shelf` }),
-      h('div', { class: 'lib-stats' }, stat(all.length, all.length === 1 ? 'book' : 'books'),
-        stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'))),
+      h('div', { class: 'lib-stats' }, stat(owned, owned === 1 ? 'book' : 'books'),
+        stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'),
+        n('wish') ? stat(n('wish'), 'wished for') : null)),
     h('div', { class: 'spacer' }),
     h('div', { class: 'lib-actions' },
       // Colours, type, the room and the seasons (decorate.js).
@@ -111,7 +115,7 @@ export function libraryView(ctx, profile) {
   // The trinket follows the shelf the series stands on ("Epic Fantasy"), then
   // its books' own tags - Hardcover tags plenty of fantasy as science fiction too.
   const shelfGenre = new Map();
-  for (const section of arrangeShelf(all.filter((b) => b.status !== 'tbr'))) {
+  for (const section of arrangeShelf(all.filter((b) => !onPile(b)))) {
     for (const b of shelfOrder([section])) shelfGenre.set(b.id, section.genre);
   }
   const trophies = new Map(completedSeries(ctx.state.seriesState ?? {}, library, today()).map((s) => {
@@ -162,6 +166,7 @@ export function libraryView(ctx, profile) {
     const section = (label, ...content) => h('div', { class: 'am-section' }, h('div', { class: 'am-label', text: label }), content);
     fill(menu,
       section('Show', chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books')),
+      section('Wishlist', chips(GHOSTS, () => prefs.ghosts, (v) => { prefs.ghosts = v; }, 'Wishlist books on the shelf')),
       section('Arrange by', chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them')),
       section('Room', scenes),
       canWrite ? h('button', { class: 'btn small am-move', type: 'button', onclick: () => { toggleMenu(false); startEditing(); } },
@@ -172,7 +177,8 @@ export function libraryView(ctx, profile) {
     // The Arrange button is hidden while moving books by hand.
     menuWrap.hidden = Boolean(editing);
     // Off the default view, the button says so.
-    menuBadge.textContent = prefs.filter !== 'all' ? ` · ${FILTERS.find(([id]) => id === prefs.filter)[1]}` : '';
+    menuBadge.textContent = prefs.filter !== 'all' ? ` · ${FILTERS.find(([id]) => id === prefs.filter)?.[1] ?? ''}`
+      : prefs.ghosts === 'off' ? ' · no wishlist' : '';
     if (editing) {
       fill(tools,
         h('p', { class: 'edit-hint' }, h('strong', { text: 'Rearranging. ' }),
@@ -290,7 +296,9 @@ export function libraryView(ctx, profile) {
 
   function paint(withMotion) {
     const filter = editing ? 'all' : prefs.filter;
-    const visible = (b) => b && (filter === 'all' || b.status === filter);
+    // Ghosts (the wishlist) can be hidden, except when it's the wishlist you asked to see.
+    const visible = (b) => b && (filter === 'all' || b.status === filter)
+      && (b.status !== 'wish' || filter === 'wish' || editing || prefs.ghosts !== 'off');
     let i = 0;
     const spine = (b) => spineEl(ctx, profile, b, colourOf(b), withMotion ? i++ : null, Boolean(editing));
     const layout = editing ?? currentLayout();
@@ -571,11 +579,17 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
   const t = Math.max(0, Math.min(1, (pages - 150) / 1000));
   const pos = b.series?.position;
   const fav = isFavourite(ctx.state.libraries[profile.id], b.id);
-  const stamped = activeLook.stamp;
+  const wish = b.status === 'wish';
+  // The owner's stamp marks books they own; a ghost carries the stamp of
+  // whoever has said they'll buy it, if anyone has.
+  const stamped = activeLook.stamp && !wish;
+  const reserved = wish ? reservationOf(ctx, profile, b) : null;
+  const due = wish && b.released && b.released > today() ? b.released : null;
   const label = `${b.title}${seriesLabel(b) ? `, ${seriesLabel(b)}` : ''}${b.rating ? `, rated ${b.rating}` : ''}`
-    + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '') + (fav ? ', a favourite' : '');
+    + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : wish ? ', on the wishlist' : '') + (fav ? ', a favourite' : '')
+    + (due ? `, out ${fmtDay(due)}` : '') + (reserved ? `, ${reserved.by.name} is getting it` : '');
   const el = h('button', {
-    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}${stamped ? ' stamped' : ''}${fav ? ' fav' : ''}`, type: 'button',
+    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}${stamped ? ' stamped' : ''}${fav ? ' fav' : ''}${reserved ? ' reserved' : ''}${due ? ' due' : ''}`, type: 'button',
     style: `--h:${Math.round(86 + t * 30)}px;--w:${Math.round(19 + t * 13)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
     'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
     dataset: { key: `b:${b.id}` },
@@ -587,7 +601,9 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
     b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null,
     // A favourite carries a gold bookmark; every book the owner's sigil, stamped at its foot.
     fav ? h('span', { class: 'lspine-fav', 'aria-hidden': 'true' }) : null,
-    stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilMark(profile)) : null);
+    stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilMark(profile)) : null,
+    due ? h('span', { class: 'lspine-due', 'aria-hidden': 'true', text: shortDay(due) }) : null,
+    reserved ? h('span', { class: 'lspine-claim', 'aria-hidden': 'true', title: `${reserved.by.name} is getting this` }, sigilEl(reserved.by, { size: 'dot', title: '' })) : null);
   if (order != null) el.classList.add('drop');
   el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !editing) peek(el, b); });
   el.addEventListener('pointerleave', hidePeek);
@@ -595,6 +611,13 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
   el.addEventListener('blur', hidePeek);
   return el;
 }
+
+/** Who (if anyone) has said they'll buy this wishlist book. */
+const reservationOf = (ctx, profile, b) => (ctx.state.reservations?.[profile.id] ?? []).find((r) => r.bookId === b.id) ?? null;
+const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+/** "MAR 14" - the tag on an unreleased ghost. */
+const shortDay = (iso) => `${MON[Number(iso.slice(5, 7)) - 1] ?? ''} ${Number(iso.slice(8, 10)) || ''}`.trim();
+const fmtDay = (iso) => new Date(`${iso.slice(0, 10)}T12:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 /* ---------------------------------------------------------------- peek */
 
@@ -615,7 +638,8 @@ function peek(anchor, b) {
       h('div', { class: 'peek-meta', text: [authorNames(b), seriesLabel(b)].filter(Boolean).join(' · ') }),
       b.rating ? starsEl(b.rating) : null,
       h('div', { class: 'peek-meta', text: [
-        { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile' }[b.status], when, b.pages ? `${b.pages} pages` : null,
+        { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile', wish: 'On the wishlist' }[b.status], when,
+        b.status === 'wish' && b.released > today() ? `out ${fmtDay(b.released)}` : null, b.pages ? `${b.pages} pages` : null,
       ].filter(Boolean).join(' · ') }),
       isAudiobook(b) ? h('div', { class: 'peek-meta', text: `🎧 Audiobook${audioHours(b) ? ` · ${audioHours(b)} h` : ''}` }) : null));
   const r = anchor.getBoundingClientRect();
@@ -638,6 +662,7 @@ function legend() {
     h('span', {}, h('i', { class: 'key num' }, '3'), 'Number in the series'),
     h('span', {}, h('i', { class: 'key gilt' }), 'Gold bands: five stars'),
     h('span', {}, h('i', { class: 'key ribbon' }), 'Ribbon: reading now'),
+    h('span', {}, h('i', { class: 'key ghost' }), 'Ghost: on the wishlist'),
     h('span', {}, h('i', { class: 'key tbr' }), 'Crisp and new: to read'),
     h('span', {}, h('i', { class: 'key audio' }), 'Headphones: audiobook'),
     h('span', {}, h('i', { class: 'key fav' }), 'Gold bookmark: a favourite'));

@@ -16,7 +16,7 @@
  * Pure, so the order is tested.
  */
 
-import { cleanTags } from './model.js';
+import { cleanTags, onPile } from './model.js';
 
 // Umbrella genres: true of so many books that they make poor shelves.
 // "Science Fiction" is one - Hardcover's readers tag plenty of epic fantasy
@@ -154,7 +154,7 @@ export function autoShelves(books, mode = 'genre') {
     ornaments[id] = kind;
     return `o:${id}`;
   });
-  const done = list.filter((b) => b.status !== 'tbr');
+  const done = list.filter((b) => !onPile(b));
   if (mode === 'author') {
     // A shelf for each author with two or more books; everyone else shares one.
     const authors = authorsOf(done);
@@ -177,7 +177,7 @@ export function autoShelves(books, mode = 'genre') {
       });
     });
   }
-  const pile = list.filter((b) => b.status === 'tbr');
+  const pile = list.filter(onPile);
   shelves.push({
     title: 'To read', kind: 'pile', key: 'pile',
     keys: ['e:To read', ...shelfOrder(arrangeShelf(pile)).map((b) => `b:${b.id}`), ...addOrnaments(['mug', 'hourglass'])],
@@ -212,7 +212,7 @@ export function mergeLayout(layout, books, mode = 'genre') {
       const b = byId.get(k.slice(2));
       if (!b || placed.has(b.id)) return false;
       // A book that changed sides of the pile is re-placed by the rules.
-      if (pileShelf && ((shelf === pileShelf) !== (b.status === 'tbr'))) return false;
+      if (pileShelf && ((shelf === pileShelf) !== onPile(b))) return false;
       placed.add(b.id);
       return true;
     });
@@ -241,11 +241,11 @@ export function mergeLayout(layout, books, mode = 'genre') {
 
   for (const b of shelfOrder(arrangeShelf(list))) {
     if (placed.has(b.id)) continue;
-    const onPileSide = (shelf) => !pileShelf || ((shelf === pileShelf) === (b.status === 'tbr'));
+    const onPileSide = (shelf) => !pileShelf || ((shelf === pileShelf) === onPile(b));
     const spot = (b.series?.id && insertAfterLast((x, shelf) => x?.series?.id === b.series.id && onPileSide(shelf)))
       || insertAfterLast((x, shelf) => authorKey(x ?? {}) === authorKey(b) && onPileSide(shelf))
       || (() => {
-        const target = b.status === 'tbr' && pileShelf ? pileShelf
+        const target = onPile(b) && pileShelf ? pileShelf
           : shelves.find((s) => keyOfShelf(s) === keyOf(b) && s !== pileShelf)
           ?? [...shelves].reverse().find((s) => s !== pileShelf && s.kind !== 'cabinet') ?? shelves[0];
         return { s: shelves.indexOf(target), i: endOf(target) };
