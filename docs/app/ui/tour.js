@@ -17,11 +17,10 @@ const markToured = () => { try { localStorage.setItem(KEY, '1'); } catch { /* pr
 
 const STEPS = [
   { target: '.case .lspine', title: 'Your bookshelf', text: 'Every book stands here, a series together in its own colour. Click one to open it.' },
-  { target: '.rearrange-btn', title: 'Make it yours', text: 'Rearrange the books and ornaments by hand. Double-click an ornament to swap it for another.' },
+  { target: '.rearrange-btn', title: 'Arrange', text: 'Which books show, how they stand, your room, and moving books and ornaments by hand — all in here.' },
   { target: '.shelf-block.cabinet', title: 'Trophies', text: 'Finish every book in a series and its trophy stands on the mantel above your shelf.' },
   { target: '.tabs, .bottom-nav', title: 'Everything else', text: 'Your books as a list, recommendations, upcoming releases, news and stats.' },
   { target: '#nav .nav-add', title: 'Friends', text: 'Find people by name, send a request, and once they accept, their shelves appear here.' },
-  { target: '.scene-switch', title: 'Your room', text: 'Pick the room your shelf stands in. Decorate changes your colours, type and what is in the room.' },
   { target: '#sound-slot', title: 'Something to read by', text: 'Turn sound on to hear your room — a fire, the rain, a café. Off until you choose.' },
 ];
 

@@ -51,10 +51,28 @@ export function libraryView(ctx, profile) {
   const booksBtn = h('button', { class: 'btn secondary', type: 'button',
     title: 'The same books as a list', onclick: () => { location.hash = `#/p/${profile.id}/shelf`; } }, 'List view');
 
+  // Which books, how they are arranged, the room, and moving them by hand:
+  // all behind one button, so the controls take no room from the books.
+  const menuBadge = h('span', { class: 'arrange-badge' });
   const rearrangeBtn = h('button', {
-    class: 'btn secondary rearrange-btn', type: 'button', onclick: () => startEditing(),
-    title: 'Move books and ornaments by hand', hidden: !canWrite,
-  }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Rearrange');
+    class: 'btn secondary rearrange-btn', type: 'button', 'aria-haspopup': 'dialog', 'aria-expanded': 'false',
+    title: 'Which books, how they stand, the room', onclick: (e) => { e.stopPropagation(); toggleMenu(); },
+  }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Arrange', menuBadge);
+  const menu = h('div', { class: 'arrange-menu', role: 'dialog', 'aria-label': 'Arrange the shelf', hidden: true });
+  const menuWrap = h('div', { class: 'arrange-wrap' }, rearrangeBtn, menu);
+  function toggleMenu(open = menu.hidden) {
+    menu.hidden = !open;
+    rearrangeBtn.setAttribute('aria-expanded', String(open));
+    if (open) {
+      paintMenu();
+      const away = (e) => {
+        if (menuWrap.contains(e.target)) return;
+        toggleMenu(false);
+        document.removeEventListener('pointerdown', away, true);
+      };
+      setTimeout(() => document.addEventListener('pointerdown', away, true));
+    }
+  }
 
   const n = (k) => all.filter((b) => b.status === k).length;
   const stat = (value, label) => {
@@ -76,7 +94,7 @@ export function libraryView(ctx, profile) {
       canWrite && THEMES_ON ? h('button', { class: 'btn secondary lib-decorate', type: 'button',
         title: `Change ${profile.name}’s colours, type and room`, onclick: () => ctx.actions.openDecorate(profile) },
       h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' }), 'Decorate') : null,
-      rearrangeBtn, booksBtn, addBtn));
+      menuWrap, booksBtn, addBtn));
 
   if (!all.length) {
     return h('div', { class: 'library' }, head,
@@ -131,13 +149,26 @@ export function libraryView(ctx, profile) {
         for (const b of e.currentTarget.parentElement.children) b.setAttribute('aria-selected', String(b === e.currentTarget));
         savePrefs();
         paintTools();
+        paintMenu();
         paint(true);
       },
     }, text)));
 
+  function paintMenu() {
+    const section = (label, ...content) => h('div', { class: 'am-section' }, h('div', { class: 'am-label', text: label }), content);
+    fill(menu,
+      section('Show', chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books')),
+      section('Arrange by', chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them')),
+      section('Room', scenes),
+      canWrite ? h('button', { class: 'btn small am-move', type: 'button', onclick: () => { toggleMenu(false); startEditing(); } },
+        h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Move books by hand') : null);
+  }
+
   function paintTools() {
-    // Rearrange lives in the header, by Decorate; hidden while it is in use.
-    rearrangeBtn.hidden = !canWrite || Boolean(editing);
+    // The Arrange button is hidden while moving books by hand.
+    menuWrap.hidden = Boolean(editing);
+    // Off the default view, the button says so.
+    menuBadge.textContent = prefs.filter !== 'all' ? ` · ${FILTERS.find(([id]) => id === prefs.filter)[1]}` : '';
     if (editing) {
       fill(tools,
         h('p', { class: 'edit-hint' }, h('strong', { text: 'Rearranging. ' }),
@@ -152,12 +183,7 @@ export function libraryView(ctx, profile) {
           h('button', { class: 'btn small', type: 'button', onclick: saveEditing }, 'Save shelf')));
       return;
     }
-    fill(tools,
-      chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books'),
-      // The room's scene sits in the same row, so the shelf starts higher.
-      scenes,
-      h('div', { class: 'spacer' }),
-      chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'));
+    fill(tools);
   }
 
   /* ------------------------------------------------------------ rearranging */

@@ -73,8 +73,9 @@ You can override any of it with `books watch` / `books unwatch`.
   pair of headphones.
   Hover for a peek, click to open. Filter by read / reading / to read, or arrange
   as a rainbow. The list view is the *Books* tab.
-- **Arranging.** *By genre*, *By author* (a shelf for each author with two or
-  more books, the rest together) or *Rainbow*. *Rearrange* lets you drag books,
+- **Arranging.** The *Arrange* button holds everything about how the shelf looks:
+  which books show, *By genre*, *By author* (a shelf for each author with two or
+  more books, the rest together) or *Rainbow*, the room, and *Move books by hand*, which lets you drag books,
   ornaments and trophies anywhere (mouse or finger), put up to two ornaments on top
   of the case, and rename, move, add or remove shelves from the bar above each one —
   "Dystopian" can become "Sci-fi", and it still collects the same books. *Save shelf*

@@ -2908,11 +2908,13 @@ select:disabled { cursor: not-allowed; }
   .room[data-scene="fire"] .case-light, .sill-candle i, .scene-thumb { animation: none; transition: none; }
 }
 @media (max-width: 560px) {
-  .room { --inset: 30px; --side: 12px; --depth: 160px; padding-top: 60px; }
+  /* The back wall narrower and the side walls wider, so on a phone too the
+     walls angle away and their window and fireplace show; the case keeps
+     nearly its width (the room's inset gives way instead). */
+  .room { --inset: 6px; --side: 44px; --depth: 220px; padding-top: 50px; }
   .room-item.corner-plant { display: none; }
   .room-item.front { display: none; }
-  /* The side walls are slivers here: the chimney would only show as an edge. */
-  .chimney, .hearth { display: none; }
+  .chimney { --out: 22px; }
   .room-item.pendant { top: 70px; width: 44px; }
   .room-item.pendant.p1 { left: 4%; } .room-item.pendant.p2 { right: 4%; }
   .ivy { left: -26px; width: 56px; top: -80px; }
@@ -3833,3 +3835,32 @@ a.person-main:hover strong { text-decoration: underline; }
 .library .lib-actions .btn { min-height: 36px; padding-inline: .85rem; font-size: .88rem; }
 .library .lib-actions .btn.secondary .ico { width: 15px; height: 15px; }
 @media (max-width: 760px) { .library .lib-actions { flex-wrap: wrap; } }
+
+/* =============================================== the Arrange menu (library.js) */
+.lib-tools:empty { display: none; }
+.arrange-wrap { position: relative; }
+.arrange-wrap[hidden] { display: none; }
+.arrange-badge { font-weight: 500; color: var(--accent); }
+.arrange-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: 340px; padding: .9rem;
+  display: grid; gap: .85rem; border-radius: var(--radius); background: var(--surface);
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow-lg); animation: buy-pop var(--med) var(--ease);
+}
+.arrange-menu[hidden] { display: none; }
+.am-section { display: grid; gap: .45rem; }
+/* A line between each group, so Show, Arrange by and Room read apart. */
+.am-section + .am-section, .am-move { border-top: 1px solid var(--border); padding-top: .85rem; }
+.am-label { font: 700 .66rem var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.am-section .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .3rem; }
+.am-section .seg-btn { padding-inline: .3rem; text-align: center; }
+/* The room: four icons in one even pill, everywhere. */
+.arrange-menu .scene-switch { width: 100%; margin: 0; }
+.arrange-menu .scene-opt { min-height: 36px; padding: .3rem 0; }
+.arrange-menu .scene-opt .scene-label { display: none; }
+.arrange-menu .scene-opt .ico { width: 17px; height: 17px; }
+.am-move { justify-self: stretch; margin-top: 0; gap: .45rem; }
+@media (max-width: 560px) {
+  /* On a phone the menu rises from the bottom like a sheet. */
+  .arrange-menu { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; z-index: 90;
+    border-radius: 16px 16px 0 0; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -12px 40px rgb(0 0 0 / .35); }
+}
