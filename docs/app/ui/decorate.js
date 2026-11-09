@@ -93,7 +93,8 @@ export function openDecorate(profile, { preview, save, cancel }) {
   }
 
   const choice = (name, value, current, label, onPick, extra = null) => h('button', {
-    class: `dec-choice ${name}`, type: 'button', role: 'radio', 'aria-checked': String(value === current), title: label,
+    // Prefixed: plain 'room', 'rug' or 'wall' would pick up the room's own styles.
+    class: `dec-choice dec-${name}`, type: 'button', role: 'radio', 'aria-checked': String(value === current), title: label,
     onclick: () => onPick(value),
   }, extra, h('span', { class: 'dec-label', text: label }));
 
