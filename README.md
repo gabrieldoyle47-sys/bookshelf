@@ -150,7 +150,7 @@ You can override any of it with `books watch` / `books unwatch`.
 - **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
   sound on or off — a few quiet effects (a page turning, a soft chime) and the room's
   background: the crackle of a fire, soft rain with distant thunder, or a café's soft murmur
-  with the odd hiss of steam or ring of the counter bell; the library is a ticking clock — with a volume
+  with the odd hiss of steam or ring of the counter bell; the library is silent — with a volume
   slider beside it.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.

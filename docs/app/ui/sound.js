@@ -112,29 +112,9 @@ let bed = null; // { stop, gain }
 const AMBIENT = {
   // A library: the hush of a big room, a clock ticking slowly, now and then a
   // page turning somewhere.
-  library(c, out) {
-    // Near silence: only a clock ticking slowly, and once in a long while a
-    // page turned very softly somewhere across the room.
-    let beat = 0;
-    const tick = setInterval(() => {
-      const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = beat++ % 2 ? 1650 : 1400;
-      const tg = c.createGain(); tg.gain.setValueAtTime(0.012, c.currentTime); tg.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05);
-      o.connect(tg).connect(out); o.start(); o.stop(c.currentTime + 0.06);
-    }, 1000);
-    const softPage = () => {
-      const s2 = c.createBufferSource(); s2.buffer = noise(0.45);
-      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.7;
-      const t = c.currentTime;
-      bp.frequency.setValueAtTime(2200, t); bp.frequency.exponentialRampToValueAtTime(800, t + 0.4);
-      const pg = c.createGain();
-      pg.gain.setValueAtTime(0.0001, t); pg.gain.exponentialRampToValueAtTime(0.012, t + 0.08);
-      pg.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-      s2.connect(bp).connect(pg).connect(out); s2.start(t);
-    };
-    let page;
-    const turn = () => { softPage(); page = setTimeout(turn, 30000 + Math.random() * 45000); };
-    page = setTimeout(turn, 12000);
-    return () => { clearInterval(tick); clearTimeout(page); };
+  // The library is the quiet room: no sound at all.
+  library() {
+    return () => {};
   },
   // Rain: a soft patter on a window - gentle, high, no roar - with now and
   // then a heavier drop, and thunder far off.
@@ -169,15 +149,9 @@ const AMBIENT = {
     return () => { clearInterval(timer); clearTimeout(rumble); src.stop(); };
   },
   // Fire: the crackle is the fire. Pops and snaps of different sizes, in
-  // clusters, over the faintest low glow - no roar.
+  // clusters, and nothing else.
   fire(c, out) {
-    const src = c.createBufferSource();
-    src.buffer = noise(4, 'brown');
-    src.loop = true;
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180;
-    const g = c.createGain(); g.gain.value = 0.06;
-    src.connect(lp).connect(g).connect(out);
-    src.start();
+    // Only the crackle: no low roar under it.
     const pop = (at, big) => {
       const s = c.createBufferSource(); s.buffer = noise(big ? 0.05 : 0.015);
       const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = big ? 1.2 : 2.5;
@@ -197,7 +171,7 @@ const AMBIENT = {
       timer = setTimeout(crackle, 60 + Math.random() * 380);
     };
     crackle();
-    return () => { clearTimeout(timer); src.stop(); };
+    return () => { clearTimeout(timer); };
   },
   // A café: a soft, distant murmur of conversation - warm noise that swells
   // and settles slowly, never shaped into "voices" - with, now and then, the
