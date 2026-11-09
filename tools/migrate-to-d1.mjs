@@ -38,7 +38,7 @@ const codes = [];
 profiles.filter((p) => !p.removed).forEach((p, i) => {
   file(`profiles/${p.id}/library.json`);
   const c = code();
-  const profile = { name: p.name, colour: p.colour ?? null, look: p.look ?? (p.theme ? { palette: p.theme } : null), role: i === 0 ? 'admin' : 'member' };
+  const profile = { name: p.name, colour: p.colour ?? null, look: p.look ?? (p.theme ? { palette: p.theme } : null), role: i === 0 ? 'admin' : 'member', lastSeen: p.lastSeen ?? null };
   sql.push(`INSERT INTO claims (code, legacy_id, profile) VALUES (${q(c)}, ${q(p.id)}, ${q(JSON.stringify(profile))});`);
   codes.push(`${p.name.padEnd(12)} ${c}${i === 0 ? '   (admin)' : ''}`);
 });

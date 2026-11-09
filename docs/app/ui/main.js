@@ -14,7 +14,7 @@ import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
-  setProgress, goalProgress, activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
+  setProgress, goalProgress,
   addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
@@ -28,9 +28,10 @@ import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
 import { applyLook, THEMES_ON } from './themes.js';
 import { openDecorate } from './decorate.js';
+import { signInScreen, forcePasswordChange, accountSection, friendsView, adminView } from './account.js';
 import { play, soundControls } from './sound.js';
 import { startTour, toured } from './tour.js';
-import { celebrate, art, shelfPalette } from './art.js';
+import { celebrate, art, shelfPalette, emptyArt } from './art.js';
 import { cssArt } from './shelfhero.js';
 
 const state = {
@@ -39,6 +40,11 @@ const state = {
   suggestions: {},
   route: { view: 'profile', profileId: null, tab: 'library' },
   canWrite: false,
+  // Who is signed in, friend requests waiting, and members being looked at
+  // who are not friends (they are not in the sidebar).
+  me: null,
+  requests: 0,
+  visitors: {},
 };
 
 const ctx = { state, actions: {} };
@@ -60,36 +66,97 @@ async function boot() {
   // the cache before rendering anything misleading.
   if (await storage.ensureFresh(site)) return;
   await storage.adoptLocalConfig();
-  state.canWrite = storage.canWrite();
-  try {
-    // Every file is a round trip to GitHub through the Worker, so fetch them
-    // side by side: the page used to wait for each shelf in turn, after the
-    // release data, before drawing anything.
-    const loadProfiles = storage.loadJSON('profiles.json', { profiles: [] }).then(async (doc) => {
-      // Removed people are kept in the file (so they can be restored) but
-      // nothing else on the site sees them.
-      const profiles = activeProfiles(doc);
-      state.allProfiles = doc.profiles ?? [];
-      const libs = await Promise.all(profiles.map((p) => storage.loadJSON(
-        `profiles/${p.id}/library.json`, { books: [], watch: { series: {}, authors: {} } })));
-      state.profiles = profiles;
-      profiles.forEach((p, i) => { state.libraries[p.id] = libs[i]; });
-    });
-    await Promise.all([loadProfiles, loadWatchState()]);
-  } catch (err) {
-    document.getElementById('main').replaceChildren(
-      h('div', { class: 'card' },
-        h('h2', { text: 'Could not load your data' }),
-        h('p', { text: friendlyError(err, { saving: false }) }),
-        h('button', { class: 'btn', type: 'button', onclick: () => location.reload() }, 'Try again')));
-    return;
-  }
+  wireOnce();
+  // A session the API stops accepting (signed out elsewhere, suspended)
+  // brings back the sign-in screen.
+  addEventListener('bookshelf:signedout', () => showSignIn());
+  if (!storage.getSession()) return showSignIn();
+  await start();
+}
 
+/** Signed in: load who they are, their shelf and their friends', and draw. */
+async function start({ isNew = false } = {}) {
+  document.body.classList.remove('signed-out');
+  try {
+    state.me = await storage.api('/me');
+  } catch (err) {
+    if (err.status === 401) return showSignIn();
+    return showError(err);
+  }
+  if (state.me.mustChangePassword) return forcePasswordChange(() => start());
+  state.canWrite = true;
+  try {
+    await Promise.all([loadPeople(), loadWatchState()]);
+  } catch (err) {
+    return showError(err);
+  }
+  readRoute();
+  state.navigated = true;
+  render();
+  state.navigated = false;
+  // A first visit gets the short tour, once the books have landed.
+  if ((isNew || !toured()) && state.route.view === 'profile' && state.route.tab === 'library') setTimeout(() => startTour({ name: isNew ? state.me.name : null }), 1600);
+}
+
+/** Themselves and their friends (profiles.json is made for whoever asks), with shelves. */
+async function loadPeople() {
+  const doc = await storage.loadJSON('profiles.json', { profiles: [] });
+  const profiles = doc.profiles ?? [];
+  const libs = await Promise.all(profiles.map((p) => storage.loadJSON(
+    `profiles/${p.id}/library.json`, { books: [], watch: { series: {}, authors: {} } })));
+  state.profiles = profiles;
+  state.libraries = {};
+  profiles.forEach((p, i) => { state.libraries[p.id] = libs[i]; });
+  state.visitors = {};
+  storage.api('/friends').then((f) => { state.requests = f.incoming.length; renderSidebar(); }).catch(() => {});
+}
+
+/** After a friend is added or removed: the sidebar and shared pages change. */
+ctx.actions.reloadFriends = async () => {
+  await loadPeople();
+  render();
+};
+
+/** A member who is not a friend, being looked at: their profile and shelf, fetched on demand. */
+async function loadVisitor(id) {
+  try {
+    const profile = await storage.api(`/member?id=${encodeURIComponent(id)}`);
+    const library = await storage.loadJSON(`profiles/${id}/library.json`, { books: [] });
+    state.visitors[id] = profile;
+    state.libraries[id] = library;
+  } catch {
+    state.visitors[id] = null;
+  }
+  render();
+}
+
+function showSignIn() {
+  state.me = null;
+  state.canWrite = false;
+  document.body.classList.add('signed-out');
+  document.querySelectorAll('dialog[open]').forEach((d) => d.close());
+  applyLook(null);
+  clear(document.getElementById('nav'));
+  document.getElementById('main').replaceChildren(signInScreen((user, opts) => start(opts)));
+}
+
+function showError(err) {
+  document.getElementById('main').replaceChildren(
+    h('div', { class: 'card' },
+      h('h2', { text: 'Could not load your data' }),
+      h('p', { text: friendlyError(err, { saving: false }) }),
+      h('button', { class: 'btn', type: 'button', onclick: () => location.reload() }, 'Try again')));
+}
+
+/** Listeners that last the whole visit, signed in or not. */
+function wireOnce() {
   window.addEventListener('hashchange', () => {
+    if (!state.me) return;
     // Going to another page (a link, or the browser's back button) should not
     // leave the last page's panel open on top of the new one - unless it holds
     // unsaved edits, which are asked about rather than thrown away.
     for (const d of document.querySelectorAll('dialog[open]')) {
+      if (d.classList.contains('decorate')) continue;
       if (!d.isDirty?.() || confirm('Discard your unsaved changes?')) d.close();
     }
     readRoute();
@@ -99,8 +166,8 @@ async function boot() {
       state.navigated = true;
       render();
       state.navigated = false;
-      // An author or series page is a new page, not a tab: start at its top.
-      if (state.route.view === 'author' || state.route.view === 'series') scrollTo({ top: 0 });
+      // A page that is not a tab starts at its top.
+      if (['author', 'series', 'friends', 'admin'].includes(state.route.view)) scrollTo({ top: 0 });
     };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.startViewTransition(paint);
@@ -111,7 +178,7 @@ async function boot() {
   wireScroll();
   wireThemeSwitch();
   wireSound();
-  document.getElementById('open-settings').addEventListener('click', openSettings);
+  document.getElementById('open-settings').addEventListener('click', () => { if (state.me) openSettings(); });
   document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
   // On a phone the menu is a drawer: tapping outside it or pressing Escape closes it.
   document.getElementById('nav-scrim').addEventListener('click', () => toggleMenu(false));
@@ -121,13 +188,6 @@ async function boot() {
   wireAddDialog();
   wireDialogs();
   document.addEventListener('keydown', tablistKeys);
-
-  readRoute();
-  state.navigated = true;
-  render();
-  state.navigated = false;
-  // A first visit gets the short tour, once the books have landed.
-  if (!toured() && state.route.view === 'profile' && state.route.tab === 'library') setTimeout(() => startTour(), 1600);
 }
 
 /**
@@ -252,17 +312,21 @@ function toggleMenu(force) {
 function readRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
 
+  const me = state.me?.id ?? state.profiles[0]?.id ?? null;
   if (parts[0] === 'upcoming') state.route = { view: 'all-upcoming' };
   else if (parts[0] === 'shared') state.route = { view: 'shared' };
+  else if (parts[0] === 'friends') state.route = { view: 'friends' };
+  else if (parts[0] === 'admin' && state.me?.role === 'admin') state.route = { view: 'admin' };
   else if ((parts[0] === 'author' || parts[0] === 'series') && /^\d+$/.test(parts[1] ?? '')) state.route = { view: parts[0], id: parts[1] };
   else if (parts[0] === 'p' && parts[1]) {
     // An old bookmark or a typo lands on a real page, and the sidebar and
     // tabs then highlight what is actually showing.
-    const profileId = state.profiles.some((p) => p.id === parts[1]) ? parts[1] : state.profiles[0]?.id ?? null;
+    // A member who is not a friend is fetched when drawn (loadVisitor).
+    const profileId = /^[a-z0-9_-]{1,40}$/.test(parts[1]) ? parts[1] : me;
     const tab = PROFILE_TABS.some(([id]) => id === parts[2]) ? parts[2] : 'library';
     state.route = { view: 'profile', profileId, tab };
   } else {
-    state.route = { view: 'profile', profileId: state.profiles[0]?.id ?? null, tab: 'library' };
+    state.route = { view: 'profile', profileId: me, tab: 'library' };
   }
 }
 
@@ -270,10 +334,12 @@ function readRoute() {
 function pageTitle() {
   const { view, profileId, tab } = state.route;
   if (view === 'all-upcoming') return 'All upcoming';
-  if (view === 'shared') return 'Both of us';
+  if (view === 'shared') return groupLabel(state.profiles);
+  if (view === 'friends') return 'Friends';
+  if (view === 'admin') return 'Admin';
   if (view === 'author') return 'Author';
   if (view === 'series') return 'Series';
-  const name = state.profiles.find((p) => p.id === profileId)?.name;
+  const name = (state.profiles.find((p) => p.id === profileId) ?? state.visitors[profileId])?.name;
   const label = PROFILE_TABS.find(([id]) => id === tab)?.[1] ?? 'Shelf';
   return name ? `${label} · ${name}` : null;
 }
@@ -286,24 +352,22 @@ function render() {
   // Keyboard focus on the tab strip survives the redraw, so arrowing through
   // the tabs does not drop focus back to the top of the page.
   const tabFocused = Boolean(document.activeElement?.closest?.('.tabs'));
+  if (!state.me) return;
   renderSidebar();
   const main = clear(document.getElementById('main'));
   toggleMenu(false);
   const title = pageTitle();
   document.title = title ? `${title} — Bookshelf` : 'Bookshelf';
 
-  if (!state.profiles.length) {
-    main.append(h('div', { class: 'card' },
-      h('h2', { text: 'No profiles yet' }),
-      h('p', { text: 'Create one from the terminal:  node src/cli.js profile add gabriel "Gabriel"' })));
-    return;
-  }
-
   const { view, profileId, tab } = state.route;
+  const known = (id) => state.profiles.find((p) => p.id === id) ?? state.visitors[id];
+  // Only your own shelf can be changed; everything else is to look at (and,
+  // for friends, react to). The shared pages act on your own shelf.
+  state.canWrite = view !== 'profile' || profileId === state.me.id;
 
   // Someone's pages wear their theme; an author or series page wears the
   // theme of whoever was looking; the shared pages, the site's own.
-  const themed = view === 'profile' ? state.profiles.find((p) => p.id === profileId) ?? state.profiles[0]
+  const themed = view === 'profile' ? known(profileId) ?? state.profiles[0]
     : view === 'author' || view === 'series' ? state.profiles.find((p) => p.id === state.viewer) : null;
   // Their look - or the one being tried in the Decorate panel.
   const look = themed && THEMES_ON ? state.lookPreview?.[themed.id] ?? lookOf(themed) : null;
@@ -315,11 +379,23 @@ function render() {
   if (view === 'shared') return void main.append(togetherView(ctx));
   if (view === 'author') return void main.append(authorView(ctx, state.route.id));
   if (view === 'series') return void main.append(seriesView(ctx, state.route.id));
+  if (view === 'friends') return void main.append(friendsView(ctx));
+  if (view === 'admin') return void main.append(adminView(ctx));
 
-  const profile = state.profiles.find((p) => p.id === profileId) ?? state.profiles[0];
+  // A member who is not a friend: fetched once, then drawn.
+  if (!known(profileId)) {
+    if (!(profileId in state.visitors)) {
+      state.visitors[profileId] = undefined;
+      loadVisitor(profileId);
+      return void main.append(h('p', { class: 'hint', text: 'Opening their shelf…' }));
+    }
+    if (state.visitors[profileId] === null) return void main.append(emptyArt('books', 'There is no member by that name.'));
+    return void main.append(h('p', { class: 'hint', text: 'Opening their shelf…' }));
+  }
+  const profile = known(profileId);
   ctx.currentProfile = profile;
-  // The group page shows picks for whoever was looking at their own shelf.
-  state.viewer = profile.id;
+  // The group page and author pages are seen as whoever is signed in.
+  state.viewer = state.me.id;
   const tabs = main.appendChild(profileTabs(profile, tab));
   main.append(bottomNav(profile, tab));
   // On a phone the tab strip scrolls sideways; keep the current tab in view.
@@ -342,7 +418,9 @@ const TAB_ICONS = { library: 'ico-shelf', shelf: 'ico-books', recs: 'ico-sparkle
 const SHORT = { library: 'Shelf', shelf: 'Books', recs: 'For you', upcoming: 'Upcoming', new: 'News', stats: 'Stats' };
 
 function bottomNav(profile, current) {
-  const badges = { recs: newRecCount(state.libraries[profile.id]), new: unseenNews(profile) };
+  // Unread news and books sent are the owner's business, not a visitor's.
+  const own = profile.id === state.me?.id;
+  const badges = own ? { recs: newRecCount(state.libraries[profile.id]), new: unseenNews(profile) } : {};
   return h('nav', { class: 'bottom-nav', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'bn-item', type: 'button', 'aria-current': id === current ? 'page' : null, 'aria-label': label,
@@ -356,10 +434,10 @@ function bottomNav(profile, current) {
 function profileTabs(profile, current) {
   // Each tab carries its own share of the sidebar badge, so the number there
   // can be traced to where the news actually is.
-  const counts = {
+  const counts = profile.id === state.me?.id ? {
     recs: newRecCount(state.libraries[profile.id]),
     new: unseenNews(profile),
-  };
+  } : {};
   return h('div', { class: 'tabs', role: 'tablist', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'tab', type: 'button', role: 'tab',
@@ -379,11 +457,10 @@ function renderSidebar() {
   const nav = clear(document.getElementById('nav'));
   const { view, profileId } = state.route;
 
-  const people = h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'People' }));
-  for (const p of state.profiles) {
-    const n = unseenCount(p);
+  const personItem = (p) => {
+    const n = p.id === state.me.id ? unseenCount(p) : 0;
     const menu = profileMenuHandlers(p);
-    people.append(h('button', {
+    return h('button', {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'profile' && p.id === profileId ? 'page' : null,
       'aria-haspopup': 'menu',
@@ -393,15 +470,17 @@ function renderSidebar() {
     },
       h('span', { class: 'dot avatar', 'aria-hidden': 'true', style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase() }),
       p.name,
-      n ? h('span', { class: 'badge', text: String(n), 'aria-label': `${n} new` }) : null));
-  }
-  if (state.canWrite) {
-    people.append(h('button', {
-      class: 'nav-item nav-add', type: 'button',
-      onclick: () => ctx.actions.openNewProfile(),
-    }, h('span', { class: 'avatar-add', 'aria-hidden': 'true', text: '+' }), 'Add a person'));
-  }
-  nav.append(people);
+      n ? h('span', { class: 'badge', text: String(n), 'aria-label': `${n} new` }) : null);
+  };
+  const me = state.profiles.find((p) => p.id === state.me.id);
+  const friends = state.profiles.filter((p) => p.id !== state.me.id);
+
+  nav.append(h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'You' }), me ? personItem(me) : null));
+  nav.append(h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'Friends' }),
+    friends.map(personItem),
+    h('button', { class: 'nav-item nav-add', type: 'button', 'aria-current': view === 'friends' ? 'page' : null, onclick: () => go('#/friends') },
+      h('span', { class: 'avatar-add', 'aria-hidden': 'true', text: '+' }), friends.length ? 'Find people' : 'Find friends',
+      state.requests ? h('span', { class: 'badge', text: String(state.requests), 'aria-label': `${state.requests} friend request${state.requests === 1 ? '' : 's'}` }) : null)));
 
   nav.append(h('div', { class: 'nav-group' },
     h('div', { class: 'nav-label', text: 'Together' }),
@@ -410,11 +489,14 @@ function renderSidebar() {
       'aria-current': view === 'all-upcoming' ? 'page' : null,
       onclick: () => go('#/upcoming'),
     }, h('span', { class: 'ico ico-calendar', 'aria-hidden': 'true' }), 'All upcoming'),
-    h('button', {
+    friends.length ? h('button', {
       class: 'nav-item', type: 'button',
       'aria-current': view === 'shared' ? 'page' : null,
       onclick: () => go('#/shared'),
-    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), groupLabel(state.profiles))));
+    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), groupLabel(state.profiles)) : null,
+    state.me.role === 'admin' ? h('button', {
+      class: 'nav-item', type: 'button', 'aria-current': view === 'admin' ? 'page' : null, onclick: () => go('#/admin'),
+    }, h('span', { class: 'ico ico-settings', 'aria-hidden': 'true' }), 'Admin') : null));
 
   paintSync();
 }
@@ -427,12 +509,7 @@ function renderSidebar() {
 function paintSync() {
   const sync = document.getElementById('sync-state');
   sync.classList.toggle('busy', pending > 0);
-  sync.textContent = pending > 0 ? 'Saving…' : {
-    local: 'local · saving to disk',
-    live: 'All changes saved',
-    token: 'synced to GitHub',
-    'read-only': 'read-only',
-  }[storage.writeMode()];
+  sync.textContent = pending > 0 ? 'Saving…' : state.me ? `Signed in as @${state.me.username}` : '';
 }
 
 /* ------------------------------------------------------------------ saving */
@@ -461,7 +538,7 @@ function friendlyError(err, { saving = true } = {}) {
  */
 async function saveLibrary(profileId, mutate, message) {
   if (!state.canWrite) {
-    toast('Read-only — add a GitHub token in Settings to make changes.', true);
+    toast('Only your own shelf can be changed.', true);
     return false;
   }
   const path = `profiles/${profileId}/library.json`;
@@ -673,7 +750,7 @@ ctx.actions.openRelease = (item, profile) => openRelease(ctx, item, profile);
  */
 ctx.actions.openRecommend = (from, book = null) => {
   const others = state.profiles.filter((p) => p.id !== from.id);
-  if (!others.length) return toast('There is nobody else to recommend to yet.', true);
+  if (!others.length) return toast('Add a friend first — books can be sent to friends.', true);
   const dialog = document.getElementById('rec-dialog');
   const body = clear(document.getElementById('rec-body'));
   const title = document.getElementById('rec-title');
@@ -687,10 +764,15 @@ ctx.actions.openRecommend = (from, book = null) => {
     let note = '';
     const send = h('button', { class: 'btn', type: 'button', onclick: async () => {
       send.disabled = true;
-      const ok = await saveLibrary(to.id,
-        (lib) => addRecommendation(lib, { book: record, from: from.id, note }),
-        `${from.name} recommends ${record.title} to ${to.name}`);
-      if (ok) { dialog.close(); toast(`Sent ${record.title} to ${to.name}`); } else send.disabled = false;
+      try {
+        await storage.api('/recommend', { method: 'POST', body: { to: to.id, book: record, note } });
+        state.libraries[to.id] = await storage.loadJSON(`profiles/${to.id}/library.json`, { books: [] });
+        dialog.close();
+        toast(`Sent ${record.title} to ${to.name}`);
+      } catch (err) {
+        toast(friendlyError(err), true);
+        send.disabled = false;
+      }
     } });
     // Recommending something they already have is a wasted message - say so
     // before it is sent rather than after.
@@ -1005,8 +1087,23 @@ ctx.actions.openBook = (book, owner) => {
 };
 
 /** An emoji on someone's rating or finish - anonymous until there are accounts. */
-ctx.actions.react = (profile, book, on, emoji) => saveLibrary(profile.id,
-  (lib) => addReaction(lib, book.id, on, emoji), `React ${emoji} to ${profile.name}'s ${on === 'rating' ? 'rating of' : 'finishing'} ${book.title}`);
+ctx.actions.react = async (profile, book, on, emoji) => {
+  try {
+    const { reactions } = await storage.api('/react', { method: 'POST', body: { owner: profile.id, bookId: book.id, on, emoji } });
+    const lib = state.libraries[profile.id];
+    if (lib) { lib.reactions ??= {}; lib.reactions[book.id] = reactions; }
+    return true;
+  } catch (err) {
+    toast(friendlyError(err), true);
+    return false;
+  }
+};
+
+/** Whether a shelf is yours to change. */
+ctx.state.canEdit = (ownerId) => Boolean(state.me) && ownerId === state.me.id;
+
+/** Whether someone may react on a shelf: their own, or a friend's. */
+ctx.state.canReact = (ownerId) => Boolean(state.me) && state.profiles.some((p) => p.id === ownerId);
 
 ctx.actions.saveSeriesPerson = (profile, seriesId, person) => saveLibrary(profile.id, (lib) => {
   upsertSeriesPerson(lib, seriesId, person);
@@ -1570,13 +1667,11 @@ ctx.actions.checkNow = async (button) => {
 };
 
 ctx.actions.markSeen = async (profile) => {
+  if (profile.id !== state.me.id) return;
   try {
-    const next = await storage.mutateJSON('profiles.json', { profiles: [] }, (data) => {
-      const p = data.profiles.find((x) => x.id === profile.id);
-      if (p) p.lastSeen = new Date().toISOString();
-      return data;
-    }, `Mark ${profile.name}'s news as read`);
-    setProfiles(next);
+    const me = await storage.api('/me', { method: 'PATCH', body: { newsSeen: true } });
+    const p = state.profiles.find((x) => x.id === me.id);
+    if (p) p.lastSeen = me.lastSeen;
     render();
   } catch (err) {
     toast(friendlyError(err), true);
@@ -1585,143 +1680,23 @@ ctx.actions.markSeen = async (profile) => {
 
 /* --------------------------------------------------------------- profiles */
 
-/**
- * The one write path for profiles.json, on the same queue as shelf saves so
- * a new profile and its first book cannot race each other.
- */
-async function saveProfiles(mutate, message) {
-  if (!state.canWrite) {
-    toast('Read-only — add a GitHub token in Settings to make changes.', true);
-    return null;
-  }
-  pending++;
-  paintSync();
-  const run = queue.then(async () => {
-    try {
-      const next = await storage.mutateJSON('profiles.json', { profiles: [] }, mutate, message);
-      setProfiles(next);
-      return next;
-    } catch (err) {
-      toast(friendlyError(err), true);
-      return null;
-    }
-  });
-  queue = run;
-  const result = await run;
-  pending--;
-  render();
-  return result;
-}
-
-/** Keep the full list (for restoring) and the visible one in step. */
-function setProfiles(doc) {
-  state.allProfiles = doc.profiles ?? [];
-  state.profiles = activeProfiles(doc);
-}
-
-/** "+ Add a person": a name and a colour, and they have a shelf. */
-ctx.actions.openNewProfile = () => {
-  const dialog = document.getElementById('profile-dialog');
-  document.getElementById('profile-title').textContent = 'Add a person';
-  const body = clear(document.getElementById('profile-body'));
-  const used = new Set(state.profiles.map((p) => p.colour));
-  let colour = PROFILE_COLOURS.find((c) => !used.has(c)) ?? PROFILE_COLOURS[0];
-  let theme = 'classic';
-  const error = h('p', { class: 'hint error', role: 'alert' });
-
-  const preview = h('span', { class: 'avatar-chip xl', 'aria-hidden': 'true' });
-  const input = h('input', { type: 'text', maxlength: '30', placeholder: 'Their first name', autocomplete: 'off', 'aria-describedby': 'profile-error' });
-  error.id = 'profile-error';
-  const paintPreview = () => {
-    preview.style.background = colour;
-    preview.textContent = (input.value.trim() || '?').slice(0, 1).toUpperCase();
-  };
-  input.addEventListener('input', () => { error.textContent = ''; paintPreview(); });
-
-  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Colour' },
-    PROFILE_COLOURS.map((c) => h('button', {
-      class: 'swatch', type: 'button', role: 'radio', 'aria-checked': String(c === colour),
-      'aria-label': `Colour ${c}${used.has(c) ? ' (already used)' : ''}`, style: `background:${c}`,
-      onclick: (e) => {
-        colour = c;
-        for (const s of swatches.children) s.setAttribute('aria-checked', String(s === e.currentTarget));
-        paintPreview();
-      },
-    })));
-
-  const create = h('button', { class: 'btn', type: 'submit' }, 'Create profile');
-  const form = h('form', {
-    class: 'profile-form',
-    onsubmit: async (e) => {
-      e.preventDefault();
-      const name = input.value.trim();
-      // Check before writing anything, so a clash never leaves a stray shelf.
-      try {
-        addPerson({ profiles: structuredClone(state.allProfiles ?? state.profiles) }, { name, colour, theme });
-      } catch (err) {
-        error.textContent = err.message;
-        input.focus();
-        return;
-      }
-      create.disabled = true;
-      let made = null;
-      const doc = await saveProfiles((data) => { made = addPerson(data, { name, colour, theme }); return data; },
-        `Add ${name}`);
-      if (!doc || !made) { create.disabled = false; return; }
-      // An empty shelf file, so the new person exists everywhere at once -
-      // the nightly check and the other browsers - before their first book.
-      // Written directly: reading a file that cannot exist yet would only
-      // log a 404 for nothing.
-      state.libraries[made.id] = emptyLibrary();
-      try {
-        await storage.saveJSON(`profiles/${made.id}/library.json`, state.libraries[made.id], `Create ${made.name}'s shelf`);
-      } catch (err) {
-        toast(friendlyError(err), true);
-      }
-      dialog.close();
-      go(`#/p/${made.id}`);
-      toast(`Welcome, ${made.name} — add the book you are reading to get started`);
-      // Their first look at their own (empty) shelf comes with the tour.
-      setTimeout(() => startTour({ name: made.name }), 1200);
-    },
-  },
-    h('div', { class: 'row profile-preview' }, preview,
-      h('label', { class: 'field grow' }, h('span', { text: 'Name' }), input)),
-    h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
-    THEMES_ON ? h('div', { class: 'field' }, h('span', { text: 'Colours for their pages' }), palettePicker(theme, (id) => { theme = id; }),
-      h('span', { class: 'hint', text: 'The rest - type, room, seasons - is in Decorate on their shelf.' })) : null,
-    error,
-    h('p', { class: 'hint', text: 'Anyone with the link can see and edit every shelf here, including this one.' }),
-    h('div', { class: 'row end' }, create));
-
-  body.append(form);
-  paintPreview();
-  dialog.showModal();
-  input.focus();
-};
-
-/** Palette cards, for Add a person. */
-function palettePicker(current, onPick) {
-  const group = h('div', { class: 'dec-grid palettes', role: 'radiogroup', 'aria-label': 'Colours' });
-  for (const t of PROFILE_THEMES) {
-    group.append(h('button', {
-      class: 'dec-choice palette', type: 'button', role: 'radio', 'aria-checked': String(t.id === current), title: t.name,
-      onclick: (e) => {
-        for (const b of group.children) b.setAttribute('aria-checked', String(b === e.currentTarget));
-        onPick(t.id);
-      },
-    }, h('span', { class: 'dec-swatch', style: `--c:${t.accent ?? '#a2461f'};--c2:${t.accent2 ?? t.accent ?? '#c98a5a'}` }),
-    h('span', { class: 'dec-label', text: t.name })));
-  }
-  return group;
-}
-
 /** Save part of someone's look: colours, type, room, room options, seasons. */
 ctx.actions.saveLook = async (profile, changes, { quiet = false } = {}) => {
-  const doc = await saveProfiles((data) => { setProfileLook(data, profile.id, changes); return data; },
-    `Decorate ${profile.name}'s shelf`);
-  if (doc && !quiet) toast('Saved — everyone who visits sees it this way.');
-  return Boolean(doc);
+  if (profile.id !== state.me.id) return false;
+  // The same checks as ever (core/model.js), then saved with the account.
+  const doc = { profiles: [structuredClone(profile)] };
+  setProfileLook(doc, profile.id, changes);
+  try {
+    const me = await storage.api('/me', { method: 'PATCH', body: { look: doc.profiles[0].look } });
+    const p = state.profiles.find((x) => x.id === me.id);
+    if (p) p.look = me.look;
+    if (!quiet) toast('Saved — everyone who visits sees it this way.');
+    render();
+    return true;
+  } catch (err) {
+    toast(friendlyError(err), true);
+    return false;
+  }
 };
 
 /** The Decorate panel on someone's shelf: try a look live, then keep it or not. */
@@ -1737,69 +1712,6 @@ ctx.actions.openDecorate = (profile) => {
     },
     cancel: () => { clearPreview(); render(); },
   });
-};
-
-/**
- * Removing a person, behind a deliberate confirmation: it says exactly what
- * goes, and the button stays disabled until their name is typed - the
- * pattern GitHub uses before deleting a repository. Nothing is destroyed:
- * the shelf file stays and Settings can bring them back.
- */
-ctx.actions.openRemoveProfile = (profile) => {
-  if (state.profiles.length <= 1) return toast('The last profile cannot be removed.', true);
-  const dialog = document.getElementById('profile-dialog');
-  document.getElementById('profile-title').textContent = `Remove ${profile.name}?`;
-  const body = clear(document.getElementById('profile-body'));
-  const lib = state.libraries[profile.id] ?? { books: [] };
-  const count = (status) => lib.books.filter((b) => b.status === status).length;
-  const facts = [
-    `${lib.books.length} book${lib.books.length === 1 ? '' : 's'} (${count('read')} finished, ${count('reading')} reading, ${count('tbr')} to read)`,
-    (lib.recommendations ?? []).length ? `${lib.recommendations.length} recommendation${lib.recommendations.length === 1 ? '' : 's'} sent to them` : null,
-    (lib.tracked ?? []).length ? `${lib.tracked.length} tracked release${lib.tracked.length === 1 ? '' : 's'}` : null,
-    Object.keys(lib.goals ?? {}).length ? 'their reading goals' : null,
-  ].filter(Boolean);
-
-  const input = h('input', { type: 'text', autocomplete: 'off', spellcheck: 'false', 'aria-label': `Type ${profile.name} to confirm` });
-  const remove = h('button', { class: 'btn danger-solid', type: 'submit', disabled: true }, `Remove ${profile.name}`);
-  // Exact, case and all: a confirmation you can satisfy by accident is not one.
-  input.addEventListener('input', () => { remove.disabled = input.value.trim() !== profile.name; });
-
-  body.append(h('form', {
-    class: 'profile-form',
-    onsubmit: async (e) => {
-      e.preventDefault();
-      if (input.value.trim() !== profile.name) return;
-      remove.disabled = true;
-      const doc = await saveProfiles((data) => { removeProfile(data, profile.id); return data; }, `Remove ${profile.name}`);
-      if (!doc) { remove.disabled = false; return; }
-      dialog.close();
-      if (state.route.profileId === profile.id) go(`#/p/${state.profiles[0].id}`);
-      toast(`Removed ${profile.name}`, false, { label: 'Undo', run: () => ctx.actions.restoreProfile(profile) });
-    },
-  },
-    h('div', { class: 'danger-note' },
-      h('p', {}, h('strong', { text: `${profile.name} will disappear from every page` }),
-        ' — their shelf, their What’s new, and the group page. This includes:'),
-      h('ul', {}, facts.map((f) => h('li', { text: f }))),
-      h('p', { class: 'hint', text: 'Their data is kept, not deleted: you can bring them back from Settings.' })),
-    h('label', { class: 'field' },
-      h('span', {}, 'To confirm, type ', h('strong', { text: profile.name }), ' below'),
-      input),
-    h('div', { class: 'row end' },
-      h('button', { class: 'btn secondary', type: 'button', onclick: () => dialog.close() }, 'Cancel'),
-      remove)));
-  dialog.showModal();
-  input.focus();
-};
-
-ctx.actions.restoreProfile = async (profile) => {
-  const doc = await saveProfiles((data) => { restoreProfile(data, profile.id); return data; }, `Restore ${profile.name}`);
-  if (!doc) return;
-  // Their shelf was left alone while they were away; fetch it fresh.
-  state.libraries[profile.id] = await storage.loadJSON(
-    `profiles/${profile.id}/library.json`, { books: [], watch: { series: {}, authors: {} } });
-  render();
-  toast(`${profile.name} is back`);
 };
 
 /* ------------------------------------------------- profile context menu */
@@ -1824,10 +1736,17 @@ function openProfileMenu(profile, x, y, opener) {
   menuEl = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `${profile.name} options` },
     h('div', { class: 'ctx-head', text: profile.name }),
     item('Open shelf', () => go(`#/p/${profile.id}`)),
-    state.canWrite && THEMES_ON ? item('Decorate…', () => ctx.actions.openDecorate(profile)) : null,
-    item('Add a person…', () => ctx.actions.openNewProfile()),
-    h('div', { class: 'ctx-sep', role: 'separator' }),
-    item(`Remove ${profile.name}…`, () => ctx.actions.openRemoveProfile(profile), 'danger'));
+    profile.id === state.me.id && THEMES_ON ? item('Decorate…', () => ctx.actions.openDecorate(profile)) : null,
+    profile.id === state.me.id ? item('Account settings…', () => openSettings()) : null,
+    profile.id !== state.me.id ? h('div', { class: 'ctx-sep', role: 'separator' }) : null,
+    profile.id !== state.me.id ? item(`Remove ${profile.name} as a friend…`, async () => {
+      if (!confirm(`Remove ${profile.name} from your friends?`)) return;
+      try {
+        await storage.api('/friends/remove', { method: 'POST', body: { id: profile.id } });
+        if (state.route.profileId === profile.id) go(`#/p/${state.me.id}`);
+        await ctx.actions.reloadFriends();
+      } catch (err) { toast(friendlyError(err), true); }
+    }, 'danger') : null);
   document.body.append(menuEl);
   // Keep it on screen near the pointer.
   const r = menuEl.getBoundingClientRect();
@@ -2048,11 +1967,11 @@ const csvCell = (v) => {
  */
 function yourData() {
   const stamp = todayISO();
-  const who = ctx.currentProfile ?? state.profiles[0];
+  const who = state.profiles.find((p) => p.id === state.me.id);
   const backup = () => download(`bookshelf-backup-${stamp}.json`, `${JSON.stringify({
     exported: new Date().toISOString(),
-    profiles: state.allProfiles ?? state.profiles,
-    libraries: state.libraries,
+    profile: state.me,
+    library: state.libraries[state.me.id],
   }, null, 2)}\n`, 'application/json');
   const csv = () => {
     const lib = state.libraries[who.id] ?? { books: [] };
@@ -2065,79 +1984,31 @@ function yourData() {
   };
   return h('details', { class: 'optional' },
     h('summary', { text: 'Your data' }),
-    h('p', { class: 'hint', text: 'Every change is already kept in the site’s history. These give you a copy of your own.' }),
+    h('p', { class: 'hint', text: 'A copy of your own shelf, to keep or take to another tracker.' }),
     h('div', { class: 'row' },
-      h('button', { class: 'btn secondary small', type: 'button', onclick: backup }, 'Download everything (JSON)'),
+      h('button', { class: 'btn secondary small', type: 'button', onclick: backup }, 'Download my shelf (JSON)'),
       who ? h('button', { class: 'btn secondary small', type: 'button', onclick: csv }, `Download ${who.name}’s shelf (CSV)`) : null));
-}
-
-/** Settings' list of removed people, each with a way back. */
-function removedPeople(dialog) {
-  const removed = (state.allProfiles ?? []).filter((p) => p.removed);
-  if (!removed.length) return null;
-  return h('details', { class: 'optional', open: true },
-    h('summary', { text: `Removed people (${removed.length})` }),
-    h('div', { class: 'hidden-list' }, removed.map((p) => h('div', { class: 'hidden-row' },
-      h('span', { class: 'row' }, avatar(p), h('span', { text: `${p.name} · removed ${fmtDate(String(p.removed).slice(0, 10))}` })),
-      h('button', {
-        class: 'btn secondary small', type: 'button', disabled: !state.canWrite,
-        onclick: () => { dialog.close(); ctx.actions.restoreProfile(p); },
-      }, 'Restore')))));
 }
 
 function openSettings() {
   const dialog = document.getElementById('settings-dialog');
   const body = clear(document.getElementById('settings-body'));
-  const cfg = storage.getConfig();
-  const draft = { ...cfg };
+  const me = state.profiles.find((p) => p.id === state.me.id) ?? state.me;
 
   body.append(
+    accountSection(ctx, { ...state.me, ...me }, {
+      onChanged: async () => { state.me = await storage.api('/me'); await loadPeople(); render(); },
+      onSignedOut: () => { dialog.close(); showSignIn(); },
+    }),
     h('div', { class: 'row settings-tour' },
       h('span', { class: 'hint', text: 'New here, or forgotten what is where?' }),
       h('button', { class: 'btn secondary small', type: 'button', onclick: () => {
         dialog.close();
-        const p = state.profiles.find((x) => x.id === state.route.profileId) ?? state.profiles[0];
-        go(`#/p/${p.id}`);
+        go(`#/p/${state.me.id}`);
         setTimeout(() => startTour(), 700);
       } }, 'Show the tour')),
-    h('p', { class: 'hint', text: {
-      local: 'Running locally: changes are written straight to the files on disk.',
-      live: 'Everything is set up — anyone with this link can add books. Nothing to configure.',
-      token: 'Saving with a GitHub token stored in this browser.',
-      'read-only': 'This site is not connected to its backend yet, so nothing can be saved.',
-    }[storage.writeMode()] }),
-
-    // With the backend connected there is genuinely nothing to set, and a
-    // form of token fields made it look as if there was. They stay reachable
-    // for running the site without the Worker.
-    h('details', { class: 'optional', ...(['token', 'read-only'].includes(storage.writeMode()) ? { open: true } : {}) },
-      h('summary', { text: 'Advanced: use your own tokens' }),
-      h('label', { class: 'field' }, h('span', { text: 'Hardcover API token (for searching)' }),
-        h('input', { type: 'text', value: cfg.hardcover, placeholder: 'hc_pat_…', autocomplete: 'off',
-          oninput: (e) => { draft.hardcover = e.target.value.trim(); } })),
-
-      !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub repo' }),
-        h('input', { type: 'text', value: cfg.repo, placeholder: 'user/bookshelf', autocomplete: 'off',
-          oninput: (e) => { draft.repo = e.target.value.trim(); } })),
-
-      !storage.isLocal && h('label', { class: 'field' }, h('span', { text: 'GitHub token (Contents: read and write)' }),
-        h('input', { type: 'text', value: cfg.token, placeholder: 'github_pat_…', autocomplete: 'off',
-          oninput: (e) => { draft.token = e.target.value.trim(); } })),
-
-      h('p', { class: 'hint', text: 'Anything entered here stays in this browser and is never committed to the repo — which is public.' })),
-
-    removedPeople(dialog),
-
     yourData(),
-
-    h('div', { class: 'row end' },
-      h('button', { class: 'btn', type: 'button', onclick: () => {
-        storage.setConfig(draft);
-        state.canWrite = storage.canWrite();
-        dialog.close();
-        toast('Settings saved');
-        render();
-      } }, 'Save')));
+    h('div', { class: 'row end' }, h('button', { class: 'btn secondary', type: 'button', onclick: () => dialog.close() }, 'Close')));
 
   dialog.showModal();
 }

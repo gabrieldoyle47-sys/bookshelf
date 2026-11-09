@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
   must_change_pw INTEGER NOT NULL DEFAULT 0,
   created TEXT NOT NULL,
   deleted_at TEXT,                              -- purged 30 days after
-  last_seen TEXT
+  last_seen TEXT,                               -- last activity (admin page)
+  news_seen TEXT                                -- What's new read up to here
 );
 
 -- Signed-in devices. Only a hash of each token is kept, so a copy of the

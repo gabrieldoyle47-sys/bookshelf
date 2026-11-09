@@ -128,7 +128,7 @@ function rightPage(ctx, book, profile, close) {
     book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book)) : null,
     h('div', { class: 'ob-actions' },
       h('button', { class: 'btn secondary ob-close', type: 'button', onclick: () => close() }, 'Close'),
-      ctx.state.canWrite ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null));
+      (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null));
 }
 
 /* -------------------------------------------------------------- reactions */
@@ -139,7 +139,8 @@ function rightPage(ctx, book, profile, close) {
  */
 export function reactionBar(ctx, profile, book, on) {
   const wrap = h('span', { class: 'reacts' });
-  const canWrite = ctx.state.canWrite;
+  // Your own shelf or a friend's (the API checks the same).
+  const canWrite = ctx.state.canReact ? ctx.state.canReact(profile.id) : ctx.state.canWrite;
   let picking = false;
 
   const add = async (emoji) => {

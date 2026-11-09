@@ -99,7 +99,9 @@ const setting = async (db, key, fallback) => (await one(db, 'SELECT value FROM s
 function publicProfile(u, extra = {}) {
   let look = null;
   try { look = u.look ? JSON.parse(u.look) : null; } catch { /* ignore */ }
-  return { id: u.id, username: u.username, name: u.display_name, colour: u.colour, look, lastSeen: u.last_seen, ...extra };
+  // `lastSeen` is how far through What's new they have read (the name the
+  // site has always used); activity is `last_seen`, for the admin page only.
+  return { id: u.id, username: u.username, name: u.display_name, colour: u.colour, look, lastSeen: u.news_seen, ...extra };
 }
 
 /** What a person knows about themselves. */
@@ -203,10 +205,12 @@ async function signUp(db, input) {
   const legacy = claim ? JSON.parse(claim.profile) : {};
   const pw = await hashPassword(password);
   const at = nowIso();
-  await run(db, `INSERT INTO users (id, username, display_name, email, pw_hash, pw_salt, pw_iter, role, colour, look, created, last_seen)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  await run(db, `INSERT INTO users (id, username, display_name, email, pw_hash, pw_salt, pw_iter, role, colour, look, created, last_seen, news_seen)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   id, username, name, email, pw.hash, pw.salt, pw.iterations, legacy.role === 'admin' ? 'admin' : 'member',
-  legacy.colour ?? input.colour ?? null, legacy.look ? JSON.stringify(legacy.look) : null, at, at);
+  legacy.colour ?? input.colour ?? null, legacy.look ? JSON.stringify(legacy.look) : null, at, at,
+  // A claimed shelf keeps how far through its news it had read.
+  legacy.lastSeen ?? at);
   if (claim) await run(db, 'UPDATE claims SET used_by = ?, used_at = ? WHERE code = ?', id, at, claim.code);
   if (invite) await run(db, 'UPDATE invites SET used_by = ?, used_at = ? WHERE code = ?', id, at, invite.code);
   if (!await readFile(db, `profiles/${id}/library.json`)) {
@@ -361,6 +365,7 @@ async function updateMe(db, me, input) {
     if (!/^#[0-9a-f]{6}$/i.test(String(input.colour))) throw new HttpError(400, 'That colour is not valid.');
     sets.push('colour = ?'); args.push(input.colour);
   }
+  if (input.newsSeen) { sets.push('news_seen = ?'); args.push(nowIso()); }
   if ('look' in input) {
     const look = JSON.stringify(input.look ?? null);
     if (look.length > 2000) throw new HttpError(400, 'look too large');
@@ -399,7 +404,7 @@ async function adminRoute(db, me, request, url) {
   const path = url.pathname.replace(/^\/admin/, '');
   if (request.method === 'GET' && path === '/users') {
     const rows = await all(db, 'SELECT * FROM users ORDER BY created');
-    return rows.map((u) => ({ ...selfProfile(u), status: u.status, created: u.created, deletedAt: u.deleted_at }));
+    return rows.map((u) => ({ ...selfProfile(u), status: u.status, created: u.created, deletedAt: u.deleted_at, active: u.last_seen }));
   }
   const act = path.match(/^\/users\/([a-z0-9_-]+)\/(suspend|unsuspend|delete|restore|reset-password)$/);
   if (request.method === 'POST' && act) {

@@ -57,7 +57,9 @@ const server = createServer(async (req, res) => {
   // app means localhost works with no setup at all. This endpoint exists only
   // on the dev server; on GitHub Pages each person pastes their own token.
   if (req.method === 'GET' && rel === '/api/config') {
-    return send(res, 200, JSON.stringify({ hardcover: (await loadToken()) ?? '' }), TYPES['.json']);
+    // With the accounts API running locally (npx wrangler dev in api/), the
+    // site talks to it exactly as the live site talks to the deployed one.
+    return send(res, 200, JSON.stringify({ hardcover: (await loadToken()) ?? '', worker: process.env.BOOKSHELF_API ?? '' }), TYPES['.json']);
   }
 
   if (req.method !== 'GET') return send(res, 405, 'Method not allowed');

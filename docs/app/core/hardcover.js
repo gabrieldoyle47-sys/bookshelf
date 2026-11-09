@@ -79,8 +79,15 @@ export async function searchBooks(gql, query, perPage = 8) {
  * Search through the Worker, which holds the Hardcover token server-side.
  * Same results as searchBooks, no token needed in the browser.
  */
+/**
+ * Headers for calls through the API: the signed-in session. Set by the site
+ * once someone signs in (storage.js); empty in Node, where nothing proxies.
+ */
+export const proxy = { headers: () => ({}) };
+const proxied = (url) => fetch(url, { headers: proxy.headers() });
+
 export async function searchViaProxy(workerUrl, query, perPage = 8) {
-  const res = await fetch(`${workerUrl}/search?q=${encodeURIComponent(query)}&n=${perPage}`);
+  const res = await proxied(`${workerUrl}/search?q=${encodeURIComponent(query)}&n=${perPage}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Search failed (${res.status})`);
@@ -611,7 +618,7 @@ export async function listBooks(gql, id, limit = 60) {
 
 /** The Worker versions of the above, for the live site. */
 async function viaProxy(workerUrl, path) {
-  const res = await fetch(`${workerUrl}${path}`);
+  const res = await proxied(`${workerUrl}${path}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Could not load (${res.status})`);
@@ -626,7 +633,7 @@ export const moodsViaProxy = async (w, moods) =>
 
 /** Suggestion candidates through the Worker, for up to four genres at once. */
 export async function discoverViaProxy(workerUrl, genres) {
-  const res = await fetch(`${workerUrl}/discover?genres=${encodeURIComponent(genres.join('|'))}`);
+  const res = await proxied(`${workerUrl}/discover?genres=${encodeURIComponent(genres.join('|'))}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Could not load suggestions (${res.status})`);
@@ -636,7 +643,7 @@ export async function discoverViaProxy(workerUrl, genres) {
 
 /** Book details through the Worker, which holds the Hardcover token. */
 export async function booksViaProxy(workerUrl, ids) {
-  const res = await fetch(`${workerUrl}/book?ids=${encodeURIComponent(ids.join(','))}`);
+  const res = await proxied(`${workerUrl}/book?ids=${encodeURIComponent(ids.join(','))}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Could not load book details (${res.status})`);

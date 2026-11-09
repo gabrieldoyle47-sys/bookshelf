@@ -45,8 +45,9 @@ export function libraryView(ctx, profile) {
   const canWrite = ctx.state.canWrite;
   const animate = ctx.state.navigated && !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const addBtn = h('button', { class: 'btn', type: 'button', disabled: !canWrite,
-    onclick: () => ctx.actions.openAdd(profile) }, '+ Add a book');
+  // Only on your own shelf; a friend's is to look at.
+  const addBtn = canWrite ? h('button', { class: 'btn', type: 'button',
+    onclick: () => ctx.actions.openAdd(profile) }, '+ Add a book') : null;
   const booksBtn = h('button', { class: 'btn secondary', type: 'button',
     onclick: () => { location.hash = `#/p/${profile.id}/shelf`; } }, 'Browse as a list →');
 

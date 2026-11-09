@@ -51,7 +51,7 @@ export function previouslyOn(ctx, profile, { seriesId, seriesName, before }) {
  * without spoiling it.
  */
 export function whosWhoBox(ctx, profile, { seriesId, upTo, open = false }) {
-  const canWrite = ctx.state.canWrite;
+  const canWrite = ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite;
   const body = h('div', { class: 'who-body' });
   const count = h('span', { class: 'count' });
   const box = h('details', { class: 'memory who', open },

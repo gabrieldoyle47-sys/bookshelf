@@ -1,14 +1,13 @@
 /**
- * Read/write adapter for the web app.
+ * Talking to the API: who is signed in, and reading and writing their data.
  *
- * Two backends, one interface:
- *   - local  — the dev server in src/serve.js accepts PUT and writes to disk.
- *   - github — commits through the Contents API, which is how the published
- *              site works, since GitHub Pages itself is read-only.
- *
- * Paths are given relative to the data directory ("profiles.json"), and each
- * backend maps them to the right place.
+ * Everything goes through the accounts API (api/index.js), carrying the
+ * signed-in session. Paths are the same ones the site always used
+ * ("profiles/gabriel/library.json"); the API decides who may read or change
+ * each. A session the API no longer accepts signs this browser out.
  */
+
+import { proxy } from '../core/hardcover.js';
 
 const CONFIG_KEY = 'bookshelf.config';
 
@@ -47,34 +46,68 @@ export function setConfig(patch) {
  * Anything explicitly set in this browser wins.
  */
 export async function adoptLocalConfig() {
-  if (!isLocal || getConfig().hardcover) return;
+  if (!isLocal) return;
   try {
     const res = await fetch('./api/config');
     if (!res.ok) return;
-    const { hardcover } = await res.json();
-    if (hardcover) setConfig({ hardcover });
+    const { hardcover, worker } = await res.json();
+    if (hardcover && !getConfig().hardcover) setConfig({ hardcover });
+    if (worker) setConfig({ worker: worker.replace(/\/$/, '') });
   } catch {
     // The dev server may not be the thing serving these files; harmless.
   }
 }
 
-/**
- * Can we write? Locally always; on Pages through the Worker, which holds the
- * credentials so nobody has to paste anything.
- */
-export function canWrite() {
-  if (isLocal) return true;
-  const { repo, token, worker } = getConfig();
-  return Boolean(worker || (repo && token));
+/* ----------------------------------------------------------------- session */
+
+const SESSION_KEY = 'bookshelf.session';
+
+export function getSession() {
+  try { return localStorage.getItem(SESSION_KEY) || null; } catch { return null; }
 }
 
-/** Which write path is in use — for wording the UI honestly. */
-export function writeMode() {
-  if (isLocal) return 'local';
-  const { repo, token, worker } = getConfig();
-  if (worker) return 'live';
-  if (repo && token) return 'token';
-  return 'read-only';
+export function setSession(token) {
+  try {
+    if (token) localStorage.setItem(SESSION_KEY, token); else localStorage.removeItem(SESSION_KEY);
+  } catch { /* private mode: signed in for this visit only */ }
+  memorySession = token || null;
+}
+
+// Private mode can refuse localStorage; the session still lasts the visit.
+let memorySession = null;
+const session = () => getSession() ?? memorySession;
+const authHeaders = () => (session() ? { Authorization: `Bearer ${session()}` } : {});
+proxy.headers = authHeaders;
+
+/** Signed in? Then their own shelf can be changed. */
+export const canWrite = () => Boolean(session());
+
+/** For wording the UI honestly. */
+export const writeMode = () => (session() ? 'live' : 'signed-out');
+
+/**
+ * A call to the API. A refused session (401) means signed out: the token is
+ * dropped and the page is told, so it can show the sign-in screen.
+ */
+export async function api(path, { method = 'GET', body, signedOut = true } = {}) {
+  const { worker } = getConfig();
+  if (!worker) throw new Error('This site is not connected to its backend yet.');
+  const res = await fetch(`${worker}${path}`, {
+    method,
+    headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...authHeaders() },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && signedOut && session()) {
+    setSession(null);
+    dispatchEvent(new CustomEvent('bookshelf:signedout'));
+  }
+  if (!res.ok) {
+    const err = new Error(data.error ?? `Something went wrong (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
 }
 
 /**
@@ -86,7 +119,9 @@ export async function loadSiteConfig() {
     const res = await fetch(`./site.json?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return null;
     const site = await res.json();
-    if (site.workerUrl) setConfig({ worker: site.workerUrl.replace(/\/$/, '') });
+    // The accounts API, or (before it) the old Worker.
+    const url = site.apiUrl ?? site.workerUrl;
+    if (url && !(isLocal && getConfig().worker)) setConfig({ worker: url.replace(/\/$/, '') });
     return site;
   } catch {
     // No site.json yet: the token path still works.
@@ -138,54 +173,10 @@ export async function ensureFresh(site) {
   }
 }
 
-/* ------------------------------------------------------------------ base64 */
-
-// btoa() only handles latin-1, and book titles are full of accents and CJK.
-function toBase64(text) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-function fromBase64(b64) {
-  const binary = atob(b64.replace(/\s/g, ''));
-  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-/* ------------------------------------------------------------------ github */
-
-const shas = new Map(); // data path -> blob sha, needed to write without clobbering
-
-function ghUrl(rel) {
-  const { repo } = getConfig();
-  return `https://api.github.com/repos/${repo}/contents/docs/data/${rel}`;
-}
-
-async function ghFetch(url, options = {}) {
-  const { token } = getConfig();
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  });
-  return res;
-}
-
 /* -------------------------------------------------------------------- read */
 
-/**
- * Read a JSON file.
- *
- * When a token is present we read through the Contents API rather than the
- * static file: Pages caches hard and lags a commit by up to a minute, so the
- * static copy can easily be older than something we wrote ten seconds ago.
- */
+const versions = new Map(); // data path -> version, so a save never clobbers
+
 export async function loadJSON(rel, fallback, options = {}) {
   const text = await loadText(rel, options);
   if (text === null) return structuredClone(fallback);
@@ -197,111 +188,29 @@ export async function loadJSON(rel, fallback, options = {}) {
   }
 }
 
-/**
- * `forWrite` is set when the text is about to be edited and saved back. Then
- * a failed fresh read is an error rather than a cue to use the static copy:
- * that copy can be a minute or more behind, and saving an edit made to it
- * would quietly undo whatever was committed in between.
- */
-export async function loadText(rel, { forWrite = false } = {}) {
-  const { repo, token, worker } = getConfig();
-  const unreadable = () => new Error('Could not fetch the latest copy to save to, so nothing was saved. Try again in a moment.');
-
-  // Pages serves a cached copy for up to a minute after a commit, so someone
-  // could add a book and reload straight into a version that predates it.
-  // Reading back through the proxy avoids that entirely.
-  if (!isLocal && worker) {
-    try {
-      const res = await fetch(`${worker}/read?path=${encodeURIComponent(rel)}`);
-      if (res.status === 404) return null;
-      if (res.ok) {
-        const body = await res.json();
-        if (body.sha) shas.set(rel, body.sha);
-        return body.content;
-      }
-      if (forWrite) throw unreadable();
-    } catch (err) {
-      if (forWrite) throw err instanceof TypeError ? unreadable() : err;
-      // Fall through to the static copy rather than showing nothing.
-    }
+/** A document as text, or null when there is none yet. */
+export async function loadText(rel) {
+  try {
+    const body = await api(`/read?path=${encodeURIComponent(rel)}`);
+    if (body.sha) versions.set(rel, body.sha);
+    return body.content;
+  } catch (err) {
+    if (err.status === 404) return null;
+    throw err instanceof TypeError ? new Error('Could not reach the server — check your connection.') : err;
   }
-
-  if (!isLocal && repo && token) {
-    const res = await ghFetch(ghUrl(rel));
-    if (res.status === 404) return null;
-    if (res.ok) {
-      const body = await res.json();
-      shas.set(rel, body.sha);
-      return fromBase64(body.content ?? '');
-    }
-    if (forWrite) throw unreadable();
-    // Fall through to the static copy rather than failing outright — a bad
-    // token should degrade to read-only, not to a broken site.
-    console.warn(`GitHub read failed for ${rel} (${res.status}); falling back to static copy`);
-  }
-
-  const res = await fetch(`./data/${rel}?t=${Date.now()}`, { cache: 'no-store' });
-  if (!res.ok) return null;
-  return res.text();
 }
 
 /* ------------------------------------------------------------------- write */
 
-export async function saveJSON(rel, value, message) {
+export async function saveJSON(rel, value) {
   const text = `${JSON.stringify(value, null, 2)}\n`;
-
-  if (isLocal) {
-    const res = await fetch(`./data/${rel}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: text,
-    });
-    if (!res.ok) throw new Error(`Local save failed: ${await res.text()}`);
-    return;
+  try {
+    const body = await api('/write', { method: 'POST', body: { path: rel, content: text, ...(versions.has(rel) ? { sha: versions.get(rel) } : {}) } });
+    if (body.sha) versions.set(rel, body.sha);
+  } catch (err) {
+    if (err.status === 409) throw new ConflictError(`${rel} changed underneath us`);
+    throw err;
   }
-
-  const { repo, token, worker } = getConfig();
-
-  if (worker) {
-    const res = await fetch(`${worker}/write`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      // The sha of the copy this change was made to. A Worker that knows it
-      // refuses the write if the file has moved on since, and mutateJSON then
-      // replays the change on the fresh copy instead of overwriting it.
-      body: JSON.stringify({ path: rel, content: text, message: message ?? `Update ${rel}`, ...(shas.has(rel) ? { sha: shas.get(rel) } : {}) }),
-    });
-    if (res.status === 409) throw new ConflictError(`${rel} changed underneath us`);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(`Could not save: ${body.error ?? res.status}`);
-    }
-    const body = await res.json();
-    if (body.sha) shas.set(rel, body.sha);
-    return;
-  }
-
-  if (!repo || !token) throw new Error('This site is not connected to its backend yet.');
-
-  const res = await ghFetch(ghUrl(rel), {
-    method: 'PUT',
-    body: JSON.stringify({
-      message: message ?? `Update ${rel}`,
-      content: toBase64(text),
-      ...(shas.has(rel) ? { sha: shas.get(rel) } : {}),
-    }),
-  });
-
-  if (res.status === 409 || res.status === 422) {
-    throw new ConflictError(`${rel} changed underneath us`);
-  }
-  if (res.status === 401 || res.status === 403) {
-    throw new Error('GitHub rejected the token. Check it has Contents: read and write on this repo.');
-  }
-  if (!res.ok) throw new Error(`GitHub save failed (${res.status}): ${(await res.text()).slice(0, 200)}`);
-
-  const body = await res.json();
-  if (body.content?.sha) shas.set(rel, body.content.sha);
 }
 
 export class ConflictError extends Error {}
@@ -316,14 +225,14 @@ export class ConflictError extends Error {}
  */
 export async function mutateJSON(rel, fallback, mutate, message) {
   for (let attempt = 0; attempt < 3; attempt++) {
-    const current = await loadJSON(rel, fallback, { forWrite: true });
+    const current = await loadJSON(rel, fallback);
     const next = mutate(structuredClone(current));
     try {
       await saveJSON(rel, next, message);
       return next;
     } catch (err) {
       if (err instanceof ConflictError && attempt < 2) {
-        shas.delete(rel);
+        versions.delete(rel);
         continue;
       }
       throw err;
@@ -332,7 +241,7 @@ export async function mutateJSON(rel, fallback, mutate, message) {
   throw new Error(`Could not save ${rel} — it kept changing underneath us. Reload and try again.`);
 }
 
-/** events.jsonl is append-only and written by the Action; the app only reads. */
+/** events.jsonl is written by the nightly check; the site only reads it. */
 export async function loadEvents() {
   const text = await loadText('events.jsonl');
   if (!text) return [];
@@ -345,11 +254,4 @@ export async function loadEvents() {
  * Ask the backend to check every watched series for new books and dates now,
  * instead of waiting for the nightly run.
  */
-export async function runCheckNow() {
-  const { worker } = getConfig();
-  if (!worker) throw new Error('This site is not connected to its backend.');
-  const res = await fetch(`${worker}/check`, { method: 'POST' });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.error ?? `Check failed (${res.status})`);
-  return body;
-}
+export const runCheckNow = () => api('/check', { method: 'POST' });
