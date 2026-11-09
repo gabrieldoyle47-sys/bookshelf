@@ -34,7 +34,6 @@
  */
 
 import { h } from './dom.js';
-import { lampArt } from './art.js';
 import { FURNITURE } from './room-art.js';
 
 /** 'dawn' | 'day' | 'dusk' | 'night' for a moment in local time. */
@@ -142,6 +141,26 @@ const ART = {
       <text x="80" y="90" font-size="11" font-style="italic">cinnamon buns</text></g>
     <path d="M40 38h80" stroke="#eef0ea" stroke-width="1" opacity=".6"/>
     <path d="M118 96c4 0 8 2 8 6h-16c0-4 4-6 8-6z" fill="#eef0ea" opacity=".7"/></svg>`,
+  // The library's pendant: green cased glass on a brass fitting, like the banker's lamp.
+  pendantLibrary: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
+    <path d="M30 0v26" stroke="#b8893a" stroke-width="2"/><rect x="26" y="24" width="8" height="8" rx="1.5" fill="#c99a52"/>
+    <path d="M8 54c0-15 10-24 22-24s22 9 22 24z" fill="#2f6b4f"/><path d="M14 46c4-8 10-12 16-12" stroke="#5fa07f" stroke-width="2.4" fill="none" opacity=".6"/>
+    <path d="M7 54h46" stroke="#b8893a" stroke-width="3" stroke-linecap="round"/>
+    <ellipse class="pendant-bulb" cx="30" cy="56" rx="9" ry="4" fill="#fff0bf"/></svg>`,
+  // The fireside's: a black iron lantern with a candle bulb.
+  pendantFire: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
+    <path d="M30 0v14" stroke="#2a2420" stroke-width="2"/><circle cx="30" cy="16" r="3" fill="none" stroke="#2a2420" stroke-width="2"/>
+    <path d="M18 24h24l-4-5H22z" fill="#2a2420"/>
+    <path d="M20 24h20v30H20z" fill="rgb(255 200 120 / .22)"/>
+    <ellipse class="pendant-bulb" cx="30" cy="42" rx="4" ry="7" fill="#fff0bf"/>
+    <path d="M20 24v30M40 24v30M30 24v30M20 39h20" stroke="#2a2420" stroke-width="2.2"/>
+    <path d="M16 54h28l-4 5H20z" fill="#2a2420"/><path d="M30 59v5" stroke="#2a2420" stroke-width="2"/></svg>`,
+  // The bedroom's: a soft linen drum shade, light spilling below it.
+  pendantRain: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
+    <path d="M30 0v26" stroke="#d8cfc0" stroke-width="1.6"/>
+    <path d="M9 30h42l-2 22H11z" fill="#e8dcc6"/><path d="M9 30h42" stroke="#cdbfa6" stroke-width="2"/>
+    <path d="M14 34v15M22 34v15M30 34v15M38 34v15M46 34v15" stroke="#d9cbb2" stroke-width="1" opacity=".7"/>
+    <ellipse class="pendant-bulb" cx="30" cy="53" rx="18" ry="3" fill="#fff0bf"/></svg>`,
   // A pendant light on a long cord.
   pendant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 70">
     <path d="M30 0v30" stroke="#2f2f33" stroke-width="1.6"/>
@@ -218,14 +237,14 @@ export function roomBox(scene) {
 }
 
 /** What stands in the room in front, at the corners - it is what makes the room deep. */
-export function roomFront(scene) {
+export function roomFront(scene, onLamp = () => {}) {
   const items = {
     fire: [drawing('armchair', 'front left'), drawing('logs', 'front right')],
     rain: [drawing('bed', 'front left')],
     cafe: [drawing('cafeTable', 'front right'), drawing('counter', 'front left')],
   }[scene] ?? [drawing('globe', 'front left'), drawing('desk', 'front right')];
   return h('div', { class: 'room-front', 'aria-hidden': 'true' },
-    scene === 'cafe' ? [drawing('pendant', 'p1'), drawing('pendant', 'p2')] : null,
+    ceilingLamps(scene, onLamp),
     scene === 'cafe' ? h('div', { class: 'bokeh' }, Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))) : null,
     items);
 }
@@ -284,23 +303,24 @@ export function hangingBasket() {
 }
 
 /**
- * The floor lamp: a brass arc standing beside the case, its arm reaching
- * over the top. It follows the time of day (and stays on on a rainy day)
- * unless someone has clicked it, which holds for the rest of the visit.
+ * The room's lights: two lamps hanging from the ceiling either side of the
+ * case, in the room's own style. They follow the time of day (on at dusk and
+ * night, always in the bedroom and the café) unless someone has clicked one,
+ * which holds for the rest of the visit.
  */
 let lampOverride = null;
+const LAMP_ART = { library: 'pendantLibrary', fire: 'pendantFire', rain: 'pendantRain', cafe: 'pendant' };
 
-export function floorLamp(onChange) {
-  const el = h('button', { class: 'floor-lamp', type: 'button', tabindex: '-1', 'aria-hidden': 'true', title: 'Lamp' },
-    h('span', { class: 'fl-glow' }),
-    h('span', { class: 'fl-pole' }),
-    h('span', { class: 'fl-base' }),
-    lampArt());
-  el.addEventListener('click', () => {
-    lampOverride = !el.classList.contains('on');
-    onChange();
+function ceilingLamps(scene, onChange) {
+  return ['p1', 'p2'].map((pos) => {
+    const el = drawing(LAMP_ART[scene] ?? 'pendantLibrary', `pendant ${pos}`);
+    el.setAttribute('title', 'Light');
+    el.addEventListener('click', () => {
+      lampOverride = !el.closest('.library')?.classList.contains('lamp-on');
+      onChange();
+    });
+    return el;
   });
-  return el;
 }
 
 /**
@@ -312,8 +332,7 @@ export function lightRoom(library) {
     const tod = timeOfDay();
     library.dataset.tod = tod;
     const scene = library.querySelector('.room')?.dataset.scene;
-    const on = lampOverride ?? (tod === 'night' || tod === 'dusk' || scene === 'rain');
-    library.querySelector('.floor-lamp')?.classList.toggle('on', on);
+    const on = lampOverride ?? (tod === 'night' || tod === 'dusk' || scene === 'rain' || scene === 'cafe');
     library.classList.toggle('lamp-on', on);
   };
   paint();

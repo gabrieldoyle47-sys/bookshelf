@@ -366,24 +366,6 @@ export function ornament(name) {
 
 /* --------------------------------------------------------------- the lamp */
 
-/**
- * The head of the floor lamp: the top of the arc and a brass dome shade. The
- * pole and base are CSS, so the lamp can be as tall as the case. The bulb and
- * shade are restyled by .floor-lamp.on at night.
- */
-const LAMP = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 96">
-  <path d="M141 96V34C141 14 122 6 98 6 70 6 44 12 34 30" fill="none" stroke="#b8893a" stroke-width="4" stroke-linecap="round"/>
-  <path d="M141 96V34C141 14 122 6 98 6" fill="none" stroke="#f0d18a" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
-  <circle cx="34" cy="31" r="3.2" fill="#9c7330"/>
-  <ellipse class="lamp-bulb" cx="34" cy="56" rx="9" ry="5" fill="#6b5a40"/>
-  <path class="lamp-shade" d="M34 32c-14 0-22 10-24 24h48c-2-14-10-24-24-24z" fill="#a8873f"/>
-  <path d="M12 56h44" stroke="#7a5a26" stroke-width="2.4" stroke-linecap="round"/>
-  <path d="M22 40c4-4 9-6 13-6" stroke="#f3dca0" stroke-width="2" fill="none" stroke-linecap="round" opacity=".55"/></svg>`;
-
-export function lampArt() {
-  const doc = new DOMParser().parseFromString(LAMP, 'image/svg+xml');
-  return document.importNode(doc.documentElement, true);
-}
 
 /* ---------------------------------------------------------------- trophies */
 

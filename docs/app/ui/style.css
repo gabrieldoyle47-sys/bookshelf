@@ -2502,8 +2502,8 @@ select:disabled { cursor: not-allowed; }
 .wall.back { inset: 0; }
 /* The lamp warms the back wall behind it. */
 .wall.back::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 1.4s ease; z-index: 1;
-  background: radial-gradient(40% 45% at 92% 10%, rgb(255 200 130 / .28), transparent 70%); }
-.library.lamp-on .room:not([data-scene="cafe"]) .wall.back::before { opacity: 1; }
+  background: radial-gradient(30% 40% at 8% 18%, rgb(255 200 130 / .22), transparent 70%), radial-gradient(30% 40% at 92% 18%, rgb(255 200 130 / .22), transparent 70%); }
+.library.lamp-on .room .wall.back::before { opacity: 1; }
 .wall.side { top: 0; height: 100%; width: var(--depth); }
 .wall.side.left { right: 100%; transform-origin: right center; transform: rotateY(90deg);
   box-shadow: var(--shade), inset -70px 0 60px -30px rgb(0 0 0 / .3); }
@@ -2624,10 +2624,9 @@ select:disabled { cursor: not-allowed; }
 .library[data-tod="dusk"] .sun-splash { --sun: 255 160 90; --sun-a: .22; }
 .library[data-tod="night"] .sun-splash { --sun: 170 190 255; --sun-a: .07; }
 /* The lamp's pool of light on the floor below it, when it is on. */
-.lamp-pool { position: absolute; right: 0; top: 0; width: 46%; height: 70%; mix-blend-mode: screen; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
-  background: radial-gradient(60% 50% at 82% 10%, rgb(255 205 140 / .3), transparent 75%); }
-.library.lamp-on .room:not([data-scene="cafe"]) .lamp-pool { opacity: 1; }
-.room[data-scene="fire"] .lamp-pool { left: 0; right: auto; background: radial-gradient(60% 50% at 18% 10%, rgb(255 205 140 / .3), transparent 75%); }
+.lamp-pool { position: absolute; inset: 0 0 30% 0; mix-blend-mode: screen; pointer-events: none; opacity: 0; transition: opacity 1.4s ease;
+  background: radial-gradient(30% 50% at 12% 30%, rgb(255 205 140 / .26), transparent 75%), radial-gradient(30% 50% at 88% 30%, rgb(255 205 140 / .26), transparent 75%); }
+.library.lamp-on .room .lamp-pool { opacity: 1; }
 /* Firelight across the floor from the hearth, and the hearth stone itself:
    a slab in front of the opening, standing out from the chimney breast. */
 .fire-pool { position: absolute; right: 0; top: 0; width: 80%; height: 100%; mix-blend-mode: screen; pointer-events: none;
@@ -2675,10 +2674,7 @@ select:disabled { cursor: not-allowed; }
   background: radial-gradient(50% 50% at 50% 92%, rgb(255 150 60 / .4), rgb(255 120 40 / .1) 55%, transparent 75%);
   animation: glow 2.2s ease-in-out infinite alternate; }
 .room[data-scene="fire"] .wall.side.right { box-shadow: var(--shade), inset 70px 0 60px -30px rgb(0 0 0 / .35), inset 0 0 0 9999px rgb(0 0 0 / .1); }
-/* The lamp stands on the left of the case here, by the chair: the fire has the right. */
-.room[data-scene="fire"] .floor-lamp { left: auto; right: calc(100% + 10px); transform: scaleX(-1); }
 .room[data-scene="fire"] .room-item.corner-plant { display: none; }
-.library.lamp-on .room[data-scene="fire"] .wall.back::before { background: radial-gradient(40% 45% at 8% 10%, rgb(255 200 130 / .28), transparent 70%); }
 
 /* On the side walls, laid flat on them, so they recede with them. */
 .room-item { position: absolute; display: block; }
@@ -2806,8 +2802,15 @@ select:disabled { cursor: not-allowed; }
 .room-item.pendant.p2 { right: calc(var(--side) + var(--inset) * .4); }
 .room-item.pendant::before { content: ''; position: absolute; left: 50%; bottom: 99%; height: 400px; width: 1.6px; background: #2f2f33; }
 .room-item.pendant::after { content: ''; position: absolute; left: 50%; top: 70%; width: 260px; height: 260px; transform: translate(-50%, -26%); mix-blend-mode: screen;
-  background: radial-gradient(circle, rgb(255 214 150 / .38), rgb(255 214 150 / .1) 40%, transparent 62%); }
-.room-item.pendant .pendant-bulb { filter: drop-shadow(0 0 6px rgb(255 230 170 / .95)); }
+  background: radial-gradient(circle, rgb(255 214 150 / .38), rgb(255 214 150 / .1) 40%, transparent 62%); opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+/* The room's lights: click either to switch them. Lit at dusk and night. */
+.room-item.pendant { pointer-events: auto; cursor: pointer; }
+.room-item.pendant .pendant-bulb { fill: #cfc4a6; transition: fill .8s ease, filter .8s ease; }
+.library.lamp-on .room-item.pendant::after { opacity: 1; }
+.library.lamp-on .room-item.pendant .pendant-bulb { fill: #fff0bf; filter: drop-shadow(0 0 7px rgb(255 230 170 / .95)); }
+.room-item.pendant::before { background: #2f2f33; }
+.room[data-scene="library"] .room-item.pendant::before { background: #8a6a3a; }
+.room[data-scene="rain"] .room-item.pendant::before { background: #8a8478; }
 /* Bokeh: the café's lights out of focus, only either side of the case, never on the books. */
 .bokeh { position: absolute; inset: 0 0 40% 0; }
 .bokeh i { position: absolute; width: 46px; height: 46px; border-radius: 50%; filter: blur(5px);
@@ -2866,27 +2869,6 @@ select:disabled { cursor: not-allowed; }
 .room[data-scene="cafe"] .case-light { mix-blend-mode: screen; background: radial-gradient(90% 70% at 50% 0%, rgb(255 205 140 / .1), transparent 70%); }
 .library[data-tod="day"] .bulb { opacity: .55; box-shadow: 0 0 4px 1px rgb(255 200 110 / .4); animation: none; }
 
-/* The floor lamp, beside the right of the case (pendants instead in the café). */
-.floor-lamp {
-  --head: 150px; position: absolute; left: calc(100% + 10px); top: -64px; bottom: 0; width: 30px; z-index: 3;
-  padding: 0; border: 0; background: none; cursor: pointer;
-}
-.room[data-scene="cafe"] .floor-lamp { display: none; }
-.floor-lamp svg { position: absolute; top: 0; right: 6px; width: var(--head); height: auto; overflow: visible; }
-.fl-pole { position: absolute; left: 13px; top: calc(var(--head) * .6); bottom: 8px; width: 4px; border-radius: 2px;
-  background: linear-gradient(90deg, #8a6230, #f0d18a 45%, #9c7330); }
-.fl-base { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; border-radius: 50% 50% 4px 4px;
-  background: linear-gradient(180deg, #c99a52, #7a5530); box-shadow: 0 4px 8px -2px rgb(0 0 0 / .5); }
-.floor-lamp .lamp-bulb, .floor-lamp .lamp-shade { transition: fill .8s ease, filter .8s ease; }
-.fl-glow {
-  position: absolute; pointer-events: none; opacity: 0; transition: opacity 1.4s ease; mix-blend-mode: screen;
-  left: calc(15px - var(--head) * .713 - 130px); top: calc(var(--head) * .36); width: 260px; height: 300px;
-  background: radial-gradient(60% 55% at 50% 0%, rgb(255 210 140 / .34), rgb(255 200 120 / .1) 55%, transparent 80%);
-  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
-}
-.floor-lamp.on .fl-glow { opacity: 1; }
-.floor-lamp.on .lamp-bulb { fill: #fff0bf; filter: drop-shadow(0 0 8px rgb(255 214 140 / .95)); }
-.floor-lamp.on .lamp-shade { fill: #c9a44f; filter: drop-shadow(0 0 10px rgb(255 205 130 / .55)); }
 
 /* The hanging basket, top left, its vine down the side of the case. */
 .ivy { position: absolute; left: -44px; right: auto; top: -96px; bottom: 50px; width: 76px; pointer-events: none; z-index: 3; }
@@ -2933,9 +2915,6 @@ select:disabled { cursor: not-allowed; }
   .chimney, .hearth { display: none; }
   .room-item.pendant { top: 70px; width: 44px; }
   .room-item.pendant.p1 { left: 4%; } .room-item.pendant.p2 { right: 4%; }
-  .floor-lamp { --head: 100px; width: 22px; left: calc(100% + 4px); top: -44px; }
-  .fl-pole { left: 9px; }
-  .fl-glow { left: calc(11px - var(--head) * .713 - 100px); width: 200px; height: 220px; }
   .ivy { left: -26px; width: 56px; top: -80px; }
   .ivy .room-item.basket { width: 56px; }
   .ivy::before { left: 27px; }

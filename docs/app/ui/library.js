@@ -24,7 +24,7 @@ import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/mod
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
-import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, floorLamp, lightRoom } from './room.js';
+import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, lightRoom } from './room.js';
 import { getScene, setScene } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
 import { THEMES_ON } from './themes.js';
@@ -375,7 +375,7 @@ export function libraryView(ctx, profile) {
     if (!room) return;
     room.dataset.scene = getScene();
     room.querySelector('.room-box')?.replaceWith(roomBox(getScene()));
-    room.querySelector('.room-front')?.replaceWith(roomFront(getScene()));
+    room.querySelector('.room-front')?.replaceWith(roomFront(getScene(), relight));
     fitRoom(room);
     relight();
   };
@@ -455,7 +455,7 @@ function ornamentMenu(anchor, current, onPick) {
 /**
  * The case, standing in its room (room.js): a carved top strung with fairy
  * lights and holding up to two ornaments, a basket of trailing ivy hung beside
- * it, the shelves, a plinth, and the floor lamp. Above it on the back wall, a
+ * it, the shelves and a plinth. Above it on the back wall, a
  * mantel shelf of trophies; around it, the room (room.js).
  */
 function bookcase(blocks, relight, cabinet = null, top = null) {
@@ -464,7 +464,7 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
   const scene = getScene();
   return h('div', { class: 'room', dataset: { scene } },
     roomBox(scene),
-    roomFront(scene),
+    roomFront(scene, relight),
     h('div', { class: 'case-wrap' },
       // The trophies stand on a mantel shelf high on the back wall.
       cabinet ? h('div', { class: 'trophy-mantel' }, cabinet,
@@ -479,8 +479,7 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
         // The light from the window, falling across to the right-hand side.
         h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
         h('div', { class: 'case-light', 'aria-hidden': 'true' }),
-        h('div', { class: 'case-plinth', 'aria-hidden': 'true' }),
-        floorLamp(relight))));
+        h('div', { class: 'case-plinth', 'aria-hidden': 'true' }))));
 }
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
