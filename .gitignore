@@ -18,3 +18,6 @@ tools/room-art/*.json
 tools/room-art/tile.txt
 api/.dev.vars
 api/.wrangler/
+
+# Shelves live in the accounts database now; never commit a copy.
+docs/data/

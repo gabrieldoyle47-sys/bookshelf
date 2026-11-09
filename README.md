@@ -9,25 +9,29 @@ position in it, the page count, the release date — is filled in from
 a daily job checks whether a new book has appeared, whether a release date has been
 announced or moved, and whether something is out.
 
-There is no server and no database. The site is static, your books are JSON files in
-this repo, and every change is a commit — so you can see exactly when a release date
-slipped by reading the git history.
+It's for a small club of readers (about twenty). Everyone has an account; your shelf
+is yours to change, members can look at each other's, and friends can react to each
+other's ratings and send each other books. The site itself is static (GitHub Pages);
+accounts and shelves live in a small database behind a Cloudflare Worker, so nothing
+personal is in this public repo.
 
 ## Using it
 
-**On the website.** Open the link, pick your name in the sidebar, and press *Add a
+**On the website.** Open the link, create an account (or sign in), and press *Add a
 book*. Search, pick the right edition, choose a shelf. That's the whole
-interaction — on a laptop or a phone, for anyone you share the link with.
+interaction — on a laptop or a phone. *Find friends* in the sidebar finds people by
+name; once they accept, their shelves sit under yours.
 
-**On your own machine,** if you'd rather use a terminal:
+**On your own machine,** run the API and the site side by side:
 
 ```bash
-node src/serve.js       # then open http://localhost:4173
-node src/cli.js --help  # or skip the browser entirely
+cd api && npx wrangler dev --local --port 8787   # the API, with a local database
+BOOKSHELF_API=http://localhost:8787 node src/serve.js   # then open http://localhost:4173
 ```
 
-Running locally, changes are written straight to the files on disk and the Hardcover
-token is read from `.env` — nothing else to configure.
+The local database starts empty: create it with
+`npx wrangler d1 execute bookshelf --local --file=schema.sql` (in `api/`), and put
+`HARDCOVER_TOKEN` and `SERVICE_KEY` in `api/.dev.vars`.
 
 ## The rules it follows on its own
 
@@ -122,13 +126,9 @@ You can override any of it with `books watch` / `books unwatch`.
   funny… up to three at once), or go through an award list — the Hugo, Booker,
   Pulitzer, Giller, International Booker or NPR's top 100 SFF.
 - **Adding a book** now lets you rate it, date it and add a note before it's saved.
-- **Auto / Light / Dark** switch in the sidebar, and a backup download (JSON for
-  everything, CSV for one shelf) in Settings.
-- **People.** *+ Add a person* in the sidebar gives someone their own shelf.
-  Right-click a person (long-press on a phone) to remove them; it asks you to
-  type their name first. Removed people are kept, not deleted, and can be
-  restored from Settings.
-- **Both of us / Everyone.** The group page works for any number of people:
+- **Auto / Light / Dark** switch in the sidebar, and a download of your own shelf
+  (JSON or CSV) in Settings.
+- **Both of us / Everyone.** The group page (you and your friends) works for any number of people:
   taste match for every pair, a shared activity feed, books read by more than
   one of you with everyone's rating, debates, picks for whoever is viewing, a
   genre map and a this-year leaderboard. With three or more, choose who to compare.
@@ -139,14 +139,14 @@ You can override any of it with `books watch` / `books unwatch`.
   hours, a heatmap of the days you had a book open and your longest streak, how
   your taste moved month by month, personal records, a passport stamp for each
   country your authors come from, your favourites, and a card to save or copy.
-- **Decorate.** *Decorate* on a shelf (or *Decorate…* on a person's menu) opens a
-  panel to change their look, previewed live: colours for every page of their
+- **Decorate.** *Decorate* on your shelf (or *Decorate…* on your name's menu) opens a
+  panel to change your look, previewed live: colours for every page of their
   profile (eight palettes — Classic, Forest & olive, Ocean & teal, Rose & apricot,
   Midnight & violet, Sunset & gold, Monochrome ink, Lavender & sage), the heading
   typeface (Classic serif, Elegant, Storybook, Modern), their room and what is in it
   (walls, bookcase wood, rug, ceiling lamps), and *Follow the seasons*: blossom,
   summer light, falling leaves or snow at the window, and a slight seasonal tint to
-  the pages. It's saved with the profile, so everyone who visits sees it that way.
+  the pages. It's saved with your account, so everyone who visits sees it that way.
 - **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
   sound on or off — a few quiet effects (a page turning, a soft chime) and the room's
   background: a crackling fire, rain with distant thunder, or a café — with a volume
@@ -154,8 +154,7 @@ You can override any of it with `books watch` / `books unwatch`.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation
-  each offer *Undo* for a few seconds. For anything older, every change is a
-  commit, so `git revert` still works.
+  each offer *Undo* for a few seconds.
 
 ## Reading dates
 
@@ -174,39 +173,54 @@ so is a month. Exact `started`/`finished` live in the *Reading dates* panel belo
 Anything derived from dates — reading pace, books per year — says how much of your
 shelf it actually covers rather than implying it knows the whole picture.
 
+## Accounts
+
+- **Joining.** Anyone with the link can create an account — a username (for signing in
+  and being found; fixed), a display name, an email (only for getting back in; never
+  shown) and a password — unless the admin switches joining to invite codes only.
+- **Who sees what.** Every signed-in member can look at every shelf. Only you can change
+  yours. Friends (request, then accept) appear in your sidebar, share the group pages,
+  and can react to each other's ratings and finishes and send each other books.
+- **Account settings** (Settings): display name and colour, password, email, sign out,
+  sign out everywhere, and deleting your account.
+- **Admin** (the first account): suspend or delete members (deleted accounts can be
+  restored for 30 days, then they're gone), give someone a temporary password, switch
+  joining between open and invite-only and make invite codes, and see how much of
+  Hardcover the site uses.
+- **Passwords** are stored only as a salted PBKDF2 hash; sessions as a hash of a random
+  token. Nobody — including the admin — can read a password.
+
 ## Setup
 
-1. **Hardcover token** — sign up, then Settings → API. Put it in `.env`:
-   ```
-   HARDCOVER_API_TOKEN=hc_pat_…
-   ```
-   `.env` is gitignored. **This repo is public — never commit a token to it.**
-
+1. **Hardcover token** — sign up, then Settings → API. Put it in `.env` as
+   `HARDCOVER_API_TOKEN=…` (gitignored; **this repo is public — never commit a token**).
 2. **GitHub Pages** — Settings → Pages → source `main`, folder `/docs`.
+3. **The API** — in `api/`: `npx wrangler d1 create bookshelf` (put the id in
+   `wrangler.toml`), `npx wrangler d1 execute bookshelf --remote --file=schema.sql`,
+   `npx wrangler secret put HARDCOVER_TOKEN`, `npx wrangler secret put SERVICE_KEY`,
+   then `npx wrangler deploy`, and put its URL in `docs/site.json` as `apiUrl`.
+4. **The nightly check** — repo Settings → Secrets and variables → Actions: secrets
+   `HARDCOVER_API_TOKEN` and `SERVICE_KEY` (the same key as the API's), and a variable
+   `BOOKSHELF_API` with the API's URL.
 
-3. **Actions secret** — Settings → Secrets → Actions → `HARDCOVER_API_TOKEN`.
-
-4. **The backend** — deploy the Worker in `worker/` and put its URL in
-   `docs/site.json`. It holds the GitHub and Hardcover tokens, which a static
-   site can't, and that's what makes the link work with nothing to set up.
-
-That's it. After that there is **one link**, it works on any device, and anyone
-you give it to can add books — no accounts, no tokens, no settings. Writes are
-open on purpose; every change is a commit, so anything unwanted is one
-`git revert` away.
+The nightly check (`src/run-check-api.js`) goes through the shelves one at a time,
+each in a minute of its own, and fetches a series or author only on the first turn
+that needs it that night — so twenty people never come near Hardcover's 60 calls a
+minute. Each person is also held to 40 lookups a minute while using the site.
 
 ## Layout
 
 ```
-docs/app/core/    shared by the browser and the watcher — hardcover, model, diff engine
+docs/app/core/    shared by the browser, the API and the watcher — hardcover, model, diff engine
 docs/app/ui/      the website
-docs/data/        your books; the source of truth
-src/              cli.js, run-check.js (the daily watcher), serve.js (local dev)
-test/             the diff engine's tests
+api/              the accounts API (Cloudflare Worker + D1): auth, shelves, friends, admin
+src/              run-check-api.js (the nightly watcher), serve.js (local dev)
+tools/            the shelf migration and the room-art generator
+test/             tests
 ```
 
-`docs/app/core/` is imported unchanged by both the browser and Node, which is why the
-rules that decide what gets announced exist in exactly one place.
+`docs/app/core/` is imported unchanged by the browser, the API and Node, which is why
+the rules that decide what gets announced exist in exactly one place.
 
 ## What it can't do
 

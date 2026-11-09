@@ -9,7 +9,7 @@ crons = ["17 4 * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "bookshelf"
-database_id = "local-only"
+database_id = "91548f49-f65e-4d76-824c-6c43c1dbf001"
 
 # Secrets live with Cloudflare, never in this repo:
 #   npx wrangler secret put HARDCOVER_TOKEN
