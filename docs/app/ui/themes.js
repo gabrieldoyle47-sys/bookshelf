@@ -1,22 +1,18 @@
 /**
- * A person's theme: chosen when they are added, changed from their menu or
- * their bookshelf, and worn by their pages - two colours that tint the
- * background, surfaces, buttons and tabs, the wood of their bookcase, and a
- * faint wallpaper behind it all. Classic is the site's own look, untouched.
+ * A person's look, worn by their pages: a colour palette that tints the
+ * background, surfaces, buttons and tabs (Classic is the site's own look,
+ * untouched), a heading typeface, and the wood of their bookcase. The room
+ * itself - which room, its walls, rug, lamps and the seasons - is drawn by
+ * the bookshelf page from the same look (library.js, room.js).
  *
- * The accent and wood are CSS (style.css, "Profile themes"); this sets which
- * one is on, and draws the wallpaper, which needs the accent baked into it.
+ * The palette and wood are CSS (style.css, "Profile themes"); this sets which
+ * are on, and draws the wallpaper, which needs the accent baked into it.
  */
 
-import { h } from './dom.js';
+import { PROFILE_THEMES, PROFILE_FONTS, lookOf } from '../core/model.js';
 
-/**
- * Themes are switched off while the bookshelf's room and its scenes are
- * worked out - the two need designing together. Everything below still
- * works; set this to true to bring them back.
- */
-export const THEMES_ON = false;
-import { PROFILE_THEMES } from '../core/model.js';
+/** Themes are on: each profile's pages wear its owner's look. */
+export const THEMES_ON = true;
 
 // Small repeating motifs, one tile each. `C` is replaced by the theme's own
 // accent - a fixed hex value from PROFILE_THEMES, never anything typed.
@@ -29,21 +25,29 @@ const PATTERNS = {
   stripes: '<path d="M16 0v64M48 0v64" stroke="C" stroke-width="1.2"/>',
 };
 
-export const themeOf = (profile) => PROFILE_THEMES.find((t) => t.id === profile?.theme) ?? PROFILE_THEMES[0];
+/** The palette in a profile's look. */
+export const themeOf = (profile) => PROFILE_THEMES.find((t) => t.id === lookOf(profile).palette) ?? PROFILE_THEMES[0];
 
-/** Put a theme on (null for the site's own look). */
-export function applyTheme(theme) {
+/**
+ * Put a look on the page, or (with null) the site's own. Applies to <html>,
+ * so every page of that profile wears it until another profile is shown.
+ */
+export function applyLook(look) {
   const root = document.documentElement;
+  const theme = look ? PROFILE_THEMES.find((t) => t.id === look.palette) : null;
+  const font = look ? PROFILE_FONTS.find((f) => f.id === look.font) : null;
+
+  if (font && font.id !== 'classic') root.dataset.font = font.id; else delete root.dataset.font;
+  if (look && look.wood !== 'room' && look.wood !== 'walnut') root.dataset.wood = look.wood; else delete root.dataset.wood;
+
   if (!theme || theme.id === 'classic') {
     delete root.dataset.ptheme;
-    delete root.dataset.wood;
     root.style.removeProperty('--wallpaper');
     root.style.removeProperty('--p-accent');
     root.style.removeProperty('--p-accent-2');
     return;
   }
   root.dataset.ptheme = theme.id;
-  root.dataset.wood = theme.wood;
   root.style.setProperty('--p-accent', theme.accent);
   root.style.setProperty('--p-accent-2', theme.accent2 ?? theme.accent);
   const tile = PATTERNS[theme.wallpaper];
@@ -55,22 +59,5 @@ export function applyTheme(theme) {
   }
 }
 
-/** Theme cards to choose from: a swatch of the accent on a strip of the wood. */
-export function themePicker(current, onPick) {
-  const group = h('div', { class: 'theme-cards', role: 'radiogroup', 'aria-label': 'Theme' });
-  const paint = (selected) => {
-    for (const card of group.children) card.setAttribute('aria-checked', String(card.dataset.id === selected));
-  };
-  for (const t of PROFILE_THEMES) {
-    group.append(h('button', {
-      class: `theme-card wood-${t.wood}`, type: 'button', role: 'radio', dataset: { id: t.id },
-      'aria-checked': String(t.id === current), title: t.name,
-      onclick: () => { paint(t.id); onPick(t.id); },
-    },
-      // Classic is the site's own terracotta, whatever is showing now.
-      h('span', { class: 'tc-swatch', style: `--c:${t.accent ?? '#a2461f'};--c2:${t.accent2 ?? t.accent ?? '#a2461f'}` }),
-      h('span', { class: 'tc-wood', 'aria-hidden': 'true' }),
-      h('span', { class: 'tc-name', text: t.name })));
-  }
-  return group;
-}
+/** Kept for callers that think in palettes: a palette alone, everything else default. */
+export const applyTheme = (theme) => applyLook(theme ? { ...lookOf({}), palette: theme.id } : null);

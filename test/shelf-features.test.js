@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   addReaction, reactionSummary, setAudiobook, audioHours, upsertSeriesPerson, whosWho,
-  addProfile, setProfileTheme,
+  addProfile, setProfileTheme, lookOf, setProfileLook, seasonOf,
 } from '../docs/app/core/model.js';
 import { autoShelves, mergeLayout } from '../docs/app/core/arrange.js';
 import { completedSeries, snapshotSeries } from '../docs/app/core/watch.js';
@@ -48,7 +48,7 @@ test('a profile gets a theme when made and can change it', () => {
   assert.equal(p.theme, 'forest');
   assert.equal(addProfile(doc, { name: 'Jo', theme: 'nope' }).theme, 'classic');
   setProfileTheme(doc, 'sam', 'midnight');
-  assert.equal(doc.profiles[0].theme, 'midnight');
+  assert.equal(lookOf(doc.profiles[0]).palette, 'midnight');
   assert.throws(() => setProfileTheme(doc, 'sam', 'neon'), /Unknown theme/);
 });
 
@@ -211,4 +211,27 @@ test('a renamed shelf still collects its genre, and the top of the case keeps tw
   const merged = mergeLayout(saved, [book(8, { authors: [{ id: 'z', name: 'Z' }] }), book(9, { authors: [{ id: 'y', name: 'Y' }] })]);
   assert.deepEqual([...merged.shelves[0].keys].sort(), ['b:hc:8', 'b:hc:9', 'e:Sci-fi', 'o:1'], 'both land on the renamed shelf');
   assert.deepEqual(merged.top, ['o:2', 'o:3']);
+});
+
+test('a look: defaults, the old theme carried over, and only known values kept', () => {
+  assert.deepEqual(lookOf({}), { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false });
+  assert.equal(lookOf({ theme: 'rose' }).palette, 'rose', 'a profile saved before looks keeps its colours');
+  const doc = { profiles: [{ id: 'a', name: 'A', theme: 'ocean' }] };
+  setProfileLook(doc, 'a', { room: 'cafe', wood: 'cherry', font: 'comic-sans', seasons: true, evil: '<x>' });
+  const look = doc.profiles[0].look;
+  assert.equal(look.palette, 'ocean');
+  assert.equal(look.room, 'cafe');
+  assert.equal(look.wood, 'cherry');
+  assert.equal(look.font, 'classic', 'an unknown font falls back');
+  assert.equal(look.seasons, true);
+  assert.equal('evil' in look, false);
+  assert.equal(doc.profiles[0].theme, undefined);
+});
+
+test('seasons by date', () => {
+  assert.equal(seasonOf(new Date(2026, 0, 10)), 'winter');
+  assert.equal(seasonOf(new Date(2026, 3, 10)), 'spring');
+  assert.equal(seasonOf(new Date(2026, 6, 10)), 'summer');
+  assert.equal(seasonOf(new Date(2026, 9, 10)), 'autumn');
+  assert.equal(seasonOf(new Date(2026, 11, 25)), 'winter');
 });

@@ -250,6 +250,17 @@ function syncAmbient() {
 }
 
 /**
+ * Play the room being looked at - an owner's room on their shelf - without
+ * announcing a change of room.
+ */
+export function playRoom(id) {
+  if (prefs.ambient === id) return;
+  prefs.ambient = id;
+  save();
+  syncAmbient();
+}
+
+/**
  * Choose the room's scene (from the switch on the bookshelf page). Its sound
  * plays if sound is on.
  */

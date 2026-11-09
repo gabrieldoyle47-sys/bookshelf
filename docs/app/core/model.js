@@ -840,25 +840,93 @@ export function whosWho(library, seriesId, upTo = Infinity) {
   return { shown: people.filter((p) => p.from <= upTo), hidden: people.filter((p) => p.from > upTo).length };
 }
 
-/* ----------------------------------------------------------- profile themes */
+/* ----------------------------------------------------------- profile looks */
 
 /**
- * Looks a person can choose for their pages: an accent, a wood for their
- * bookcase, and a wallpaper behind it.
+ * The colour palettes a person can choose for their pages. Two colours each:
+ * the accent that buttons and links take, and a second that partners it in
+ * gradients and glows. Classic is the site's own terracotta, untouched.
  */
 export const PROFILE_THEMES = [
-  { id: 'classic', name: 'Classic', accent: null, accent2: null, wood: 'walnut', wallpaper: 'plain' },
-  { id: 'forest', name: 'Forest', accent: '#2f6b4f', accent2: '#8a9a3a', wood: 'oak', wallpaper: 'leaves' },
-  { id: 'ocean', name: 'Ocean', accent: '#1f6f8b', accent2: '#2a9d8f', wood: 'driftwood', wallpaper: 'waves' },
-  { id: 'rose', name: 'Rose', accent: '#b0476a', accent2: '#d98a6a', wood: 'cherry', wallpaper: 'florals' },
-  { id: 'midnight', name: 'Midnight', accent: '#4b5bb8', accent2: '#8a5cc8', wood: 'ebony', wallpaper: 'stars' },
-  { id: 'sunset', name: 'Sunset', accent: '#c2622d', accent2: '#d9a12f', wood: 'oak', wallpaper: 'stripes' },
+  { id: 'classic', name: 'Classic', accent: null, accent2: null, wallpaper: 'plain' },
+  { id: 'forest', name: 'Forest & olive', accent: '#2f6b4f', accent2: '#8a9a3a', wallpaper: 'leaves' },
+  { id: 'ocean', name: 'Ocean & teal', accent: '#1f6f8b', accent2: '#2a9d8f', wallpaper: 'waves' },
+  { id: 'rose', name: 'Rose & apricot', accent: '#b0476a', accent2: '#d98a6a', wallpaper: 'florals' },
+  { id: 'midnight', name: 'Midnight & violet', accent: '#4b5bb8', accent2: '#8a5cc8', wallpaper: 'stars' },
+  { id: 'sunset', name: 'Sunset & gold', accent: '#c2622d', accent2: '#d9a12f', wallpaper: 'stripes' },
+  { id: 'ink', name: 'Monochrome ink', accent: '#2e2e33', accent2: '#7a7a82', wallpaper: 'plain' },
+  { id: 'lavender', name: 'Lavender & sage', accent: '#7a62a8', accent2: '#7f9a72', wallpaper: 'florals' },
 ];
 
-export function setProfileTheme(doc, id, themeId) {
+/** Heading typefaces, chosen separately from the colours. Body text never changes. */
+export const PROFILE_FONTS = [
+  { id: 'classic', name: 'Classic serif', family: 'Newsreader' },
+  { id: 'elegant', name: 'Elegant', family: 'Playfair Display' },
+  { id: 'storybook', name: 'Storybook', family: 'Fraunces' },
+  { id: 'modern', name: 'Modern', family: 'Outfit' },
+];
+
+export const ROOMS = ['library', 'fire', 'rain', 'cafe'];
+
+/**
+ * What can be changed inside the room. 'room' everywhere means "what this
+ * room has by default", so changing room keeps it looking right.
+ */
+export const ROOM_OPTIONS = {
+  wall: ['room', 'cream', 'sage', 'dusk-blue', 'plum', 'charcoal'],
+  wood: ['room', 'walnut', 'oak', 'cherry', 'ebony', 'driftwood'],
+  rug: ['room', 'crimson', 'navy', 'sage', 'gold', 'none'],
+  lamp: ['room', 'library', 'fire', 'rain', 'cafe'],
+};
+
+const DEFAULT_LOOK = { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false };
+
+/**
+ * A person's whole look, with anything missing or unknown at its default -
+ * including profiles saved before looks existed, whose `theme` becomes the
+ * palette.
+ */
+export function lookOf(profile) {
+  const raw = { ...(profile?.theme ? { palette: profile.theme } : {}), ...(profile?.look ?? {}) };
+  return cleanLook(raw);
+}
+
+function cleanLook(raw) {
+  const pick = (value, allowed, fallback) => (allowed.includes(value) ? value : fallback);
+  return {
+    palette: pick(raw.palette, PROFILE_THEMES.map((t) => t.id), DEFAULT_LOOK.palette),
+    font: pick(raw.font, PROFILE_FONTS.map((f) => f.id), DEFAULT_LOOK.font),
+    room: pick(raw.room, ROOMS, DEFAULT_LOOK.room),
+    wall: pick(raw.wall, ROOM_OPTIONS.wall, 'room'),
+    wood: pick(raw.wood, ROOM_OPTIONS.wood, 'room'),
+    rug: pick(raw.rug, ROOM_OPTIONS.rug, 'room'),
+    lamp: pick(raw.lamp, ROOM_OPTIONS.lamp, 'room'),
+    seasons: raw.seasons === true,
+  };
+}
+
+/** Save a change to someone's look; only known values are kept. */
+export function setProfileLook(doc, id, changes) {
   const p = (doc.profiles ?? []).find((x) => x.id === id);
   if (!p) throw new Error('That profile is not here any more.');
-  if (!PROFILE_THEMES.some((t) => t.id === themeId)) throw new Error('Unknown theme.');
-  p.theme = themeId;
+  p.look = cleanLook({ ...lookOf(p), ...changes });
+  delete p.theme;
   return p;
+}
+
+/** Kept for the profile dialog: a palette by its old name. */
+export function setProfileTheme(doc, id, themeId) {
+  if (!PROFILE_THEMES.some((t) => t.id === themeId)) throw new Error('Unknown theme.');
+  return setProfileLook(doc, id, { palette: themeId });
+}
+
+/** The season for a date, by the northern-hemisphere calendar. */
+export function seasonOf(date = new Date()) {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const md = m * 100 + d;
+  if (md >= 321 && md < 621) return 'spring';
+  if (md >= 621 && md < 923) return 'summer';
+  if (md >= 923 && md < 1221) return 'autumn';
+  return 'winter';
 }

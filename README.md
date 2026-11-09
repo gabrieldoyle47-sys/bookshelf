@@ -139,6 +139,14 @@ You can override any of it with `books watch` / `books unwatch`.
   hours, a heatmap of the days you had a book open and your longest streak, how
   your taste moved month by month, personal records, a passport stamp for each
   country your authors come from, your favourites, and a card to save or copy.
+- **Decorate.** *Decorate* on a shelf (or *Decorate…* on a person's menu) opens a
+  panel to change their look, previewed live: colours for every page of their
+  profile (eight palettes — Classic, Forest & olive, Ocean & teal, Rose & apricot,
+  Midnight & violet, Sunset & gold, Monochrome ink, Lavender & sage), the heading
+  typeface (Classic serif, Elegant, Storybook, Modern), their room and what is in it
+  (walls, bookcase wood, rug, ceiling lamps), and *Follow the seasons*: blossom,
+  summer light, falling leaves or snow at the window, and a slight seasonal tint to
+  the pages. It's saved with the profile, so everyone who visits sees it that way.
 - **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
   sound on or off — a few quiet effects (a page turning, a soft chime) and the room's
   background: a crackling fire, rain with distant thunder, or a café — with a volume

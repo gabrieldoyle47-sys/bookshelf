@@ -20,12 +20,12 @@
 
 import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp, toast } from './dom.js';
 import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable, keyOfShelf } from '../core/arrange.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/model.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf } from '../core/model.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
 import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, lightRoom } from './room.js';
-import { getScene, setScene } from './sound.js';
+import { playRoom } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
 import { THEMES_ON } from './themes.js';
 
@@ -66,10 +66,10 @@ export function libraryView(ctx, profile) {
         stat(n('read'), 'read'), stat(n('reading'), 'reading'), stat(n('tbr'), 'to read'))),
     h('div', { class: 'spacer' }),
     h('div', { class: 'lib-actions' },
-      // Themes are switched off while the room is worked out (themes.js).
-      canWrite && THEMES_ON ? h('button', { class: 'icon-btn lib-theme', type: 'button', title: 'Colour and theme',
-        'aria-label': `${profile.name}’s colour and theme`, onclick: () => ctx.actions.openEditProfile(profile) },
-      h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' })) : null,
+      // Colours, type, the room and the seasons (decorate.js).
+      canWrite && THEMES_ON ? h('button', { class: 'btn secondary lib-decorate', type: 'button',
+        title: `Change ${profile.name}’s colours, type and room`, onclick: () => ctx.actions.openDecorate(profile) },
+      h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' }), 'Decorate') : null,
       booksBtn, addBtn));
 
   if (!all.length) {
@@ -104,8 +104,16 @@ export function libraryView(ctx, profile) {
   let editing = null; // a working copy of the layout while rearranging
   const caseBox = h('div', { class: 'bookcase' });
   const tools = h('div', { class: 'lib-tools' });
-  // The room's scene, chosen above it.
-  const scenes = sceneSwitch(getScene(), (id) => setScene(id));
+  // The owner's room and its options (their look), or a preview of one
+  // being decorated. The switch above it changes the owner's room.
+  activeLook = ctx.state.lookPreview?.[profile.id] ?? lookOf(profile);
+  playRoom(activeLook.room);
+  const scenes = sceneSwitch(activeLook.room, (id) => {
+    activeLook = { ...activeLook, room: id };
+    playRoom(id);
+    redrawRoom();
+    if (canWrite && !ctx.state.lookPreview?.[profile.id]) ctx.actions.saveLook(profile, { room: id }, { quiet: true });
+  });
   const root = h('div', { class: 'library' }, head, scenes, tools, caseBox, legend());
   const relight = lightRoom(root);
 
@@ -368,18 +376,16 @@ export function libraryView(ctx, profile) {
         onclick: () => removeShelf(n) }, '✕'));
   }
 
-  // Picking another scene in the sidebar redraws the room behind the case.
-  const onScene = () => {
-    if (!root.isConnected) return removeEventListener('bookshelf:scene', onScene);
+  // Another room picked: redraw what is around the case, not the case.
+  function redrawRoom() {
     const room = caseBox.querySelector('.room');
     if (!room) return;
-    room.dataset.scene = getScene();
-    room.querySelector('.room-box')?.replaceWith(roomBox(getScene()));
-    room.querySelector('.room-front')?.replaceWith(roomFront(getScene(), relight));
+    roomData(room, activeLook);
+    room.querySelector('.room-box')?.replaceWith(roomBox(activeLook.room, roomOpts(activeLook)));
+    room.querySelector('.room-front')?.replaceWith(roomFront(activeLook.room, relight, roomOpts(activeLook)));
     fitRoom(room);
     relight();
-  };
-  addEventListener('bookshelf:scene', onScene);
+  }
 
   const emptyBlock = () => h('div', { class: 'shelf-block' }, h('p', { class: 'lib-empty', text: 'No books on this part of the shelf.' }));
 
@@ -461,10 +467,10 @@ function ornamentMenu(anchor, current, onPick) {
 function bookcase(blocks, relight, cabinet = null, top = null) {
   const bulbs = Array.from({ length: 14 }, (_, n) => h('span', { class: 'bulb', style: `--n:${n}` }));
   const motes = Array.from({ length: 9 }, (_, n) => h('i', { class: 'mote', style: `--n:${n}` }));
-  const scene = getScene();
-  return h('div', { class: 'room', dataset: { scene } },
-    roomBox(scene),
-    roomFront(scene, relight),
+  const scene = activeLook.room;
+  const room = h('div', { class: 'room' },
+    roomBox(scene, roomOpts(activeLook)),
+    roomFront(scene, relight, roomOpts(activeLook)),
     h('div', { class: 'case-wrap' },
       // The trophies stand on a mantel shelf high on the back wall.
       cabinet ? h('div', { class: 'trophy-mantel' }, cabinet,
@@ -480,7 +486,26 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
         h('div', { class: 'case-beam', 'aria-hidden': 'true' }, motes),
         h('div', { class: 'case-light', 'aria-hidden': 'true' }),
         h('div', { class: 'case-plinth', 'aria-hidden': 'true' }))));
+  roomData(room, activeLook);
+  return room;
 }
+
+/**
+ * The look of the room being drawn: the owner's, or the one being previewed
+ * in the Decorate panel. Set by libraryView before anything is drawn.
+ */
+let activeLook = lookOf({});
+
+/** The room's options as attributes the CSS reads: walls, rug, seasons. */
+function roomData(room, look) {
+  room.dataset.scene = look.room;
+  room.dataset.wall = look.wall;
+  room.dataset.rug = look.rug;
+  if (look.seasons) room.dataset.season = seasonOf(); else delete room.dataset.season;
+}
+
+/** What room.js needs to know beyond which room it is. */
+const roomOpts = (look) => ({ lamp: look.lamp, season: look.seasons ? seasonOf() : null });
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
 function shelfBlock(title, count, items, decoration, kind = '', n = null) {

@@ -15,7 +15,7 @@ import {
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress, activeProfiles, addProfile as addPerson, removeProfile, restoreProfile, PROFILE_COLOURS, emptyLibrary,
-  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, setProfileTheme,
+  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
 } from '../core/model.js';
 import { unseenEvents } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
@@ -26,7 +26,8 @@ import { statsView } from './stats.js';
 import { libraryView } from './library.js';
 import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
-import { applyTheme, themeOf, themePicker, THEMES_ON } from './themes.js';
+import { applyLook, THEMES_ON } from './themes.js';
+import { openDecorate } from './decorate.js';
 import { play, soundControls } from './sound.js';
 import { startTour, toured } from './tour.js';
 import { celebrate, art, shelfPalette } from './art.js';
@@ -304,8 +305,11 @@ function render() {
   // theme of whoever was looking; the shared pages, the site's own.
   const themed = view === 'profile' ? state.profiles.find((p) => p.id === profileId) ?? state.profiles[0]
     : view === 'author' || view === 'series' ? state.profiles.find((p) => p.id === state.viewer) : null;
-  // Switched off for now (themes.js) - every page wears the site's own look.
-  applyTheme(themed && THEMES_ON ? themeOf(themed) : null);
+  // Their look - or the one being tried in the Decorate panel.
+  const look = themed && THEMES_ON ? state.lookPreview?.[themed.id] ?? lookOf(themed) : null;
+  applyLook(look);
+  // Following the seasons nudges the page colours too (style.css, "Seasons").
+  if (look?.seasons) document.documentElement.dataset.season = seasonOf(); else delete document.documentElement.dataset.season;
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
   if (view === 'shared') return void main.append(togetherView(ctx));
@@ -1684,8 +1688,8 @@ ctx.actions.openNewProfile = () => {
     h('div', { class: 'row profile-preview' }, preview,
       h('label', { class: 'field grow' }, h('span', { text: 'Name' }), input)),
     h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
-    THEMES_ON ? h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; }),
-      h('span', { class: 'hint', text: 'Their pages take its colour, the wood of their bookcase and a faint wallpaper. It can be changed later.' })) : null,
+    THEMES_ON ? h('div', { class: 'field' }, h('span', { text: 'Colours for their pages' }), palettePicker(theme, (id) => { theme = id; }),
+      h('span', { class: 'hint', text: 'The rest - type, room, seasons - is in Decorate on their shelf.' })) : null,
     error,
     h('p', { class: 'hint', text: 'Anyone with the link can see and edit every shelf here, including this one.' }),
     h('div', { class: 'row end' }, create));
@@ -1696,45 +1700,43 @@ ctx.actions.openNewProfile = () => {
   input.focus();
 };
 
-/** A person's colour and theme, changed after the fact. Shows each pick as it is chosen. */
-ctx.actions.openEditProfile = (profile) => {
-  const dialog = document.getElementById('profile-dialog');
-  document.getElementById('profile-title').textContent = `${profile.name}’s colour and theme`;
-  const body = clear(document.getElementById('profile-body'));
-  let colour = profile.colour ?? PROFILE_COLOURS[0];
-  let theme = themeOf(profile).id;
-  const preview = h('span', { class: 'avatar-chip xl', 'aria-hidden': 'true', text: profile.name.slice(0, 1).toUpperCase() });
-  const paintPreview = () => { preview.style.background = colour; applyTheme(themeOf({ theme })); };
-  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Colour' },
-    PROFILE_COLOURS.map((c) => h('button', {
-      class: 'swatch', type: 'button', role: 'radio', 'aria-checked': String(c === colour), 'aria-label': `Colour ${c}`, style: `background:${c}`,
+/** Palette cards, for Add a person. */
+function palettePicker(current, onPick) {
+  const group = h('div', { class: 'dec-grid palettes', role: 'radiogroup', 'aria-label': 'Colours' });
+  for (const t of PROFILE_THEMES) {
+    group.append(h('button', {
+      class: 'dec-choice palette', type: 'button', role: 'radio', 'aria-checked': String(t.id === current), title: t.name,
       onclick: (e) => {
-        colour = c;
-        for (const sw of swatches.children) sw.setAttribute('aria-checked', String(sw === e.currentTarget));
-        paintPreview();
+        for (const b of group.children) b.setAttribute('aria-checked', String(b === e.currentTarget));
+        onPick(t.id);
       },
-    })));
-  const save = h('button', { class: 'btn', type: 'submit' }, 'Save');
-  body.append(h('form', { class: 'profile-form', onsubmit: async (e) => {
-    e.preventDefault();
-    save.disabled = true;
-    const doc = await saveProfiles((data) => {
-      setProfileTheme(data, profile.id, theme);
-      const p = data.profiles.find((x) => x.id === profile.id);
-      if (p) p.colour = colour;
-      return data;
-    }, `Change ${profile.name}'s theme`);
-    if (!doc) { save.disabled = false; return; }
-    dialog.close();
-    toast('Theme saved');
-  } },
-    h('div', { class: 'row profile-preview' }, preview, h('div', { class: 'field grow' }, h('span', { text: 'Colour' }), swatches)),
-    h('div', { class: 'field' }, h('span', { text: 'Theme' }), themePicker(theme, (id) => { theme = id; paintPreview(); })),
-    h('div', { class: 'row end' }, h('button', { class: 'btn secondary', type: 'button', onclick: () => dialog.close() }, 'Cancel'), save)));
-  // Cancelling puts back whatever the page was wearing.
-  dialog.addEventListener('close', () => render(), { once: true });
-  paintPreview();
-  dialog.showModal();
+    }, h('span', { class: 'dec-swatch', style: `--c:${t.accent ?? '#a2461f'};--c2:${t.accent2 ?? t.accent ?? '#c98a5a'}` }),
+    h('span', { class: 'dec-label', text: t.name })));
+  }
+  return group;
+}
+
+/** Save part of someone's look: colours, type, room, room options, seasons. */
+ctx.actions.saveLook = async (profile, changes, { quiet = false } = {}) => {
+  const doc = await saveProfiles((data) => { setProfileLook(data, profile.id, changes); return data; },
+    `Decorate ${profile.name}'s shelf`);
+  if (doc && !quiet) toast('Saved — everyone who visits sees it this way.');
+  return Boolean(doc);
+};
+
+/** The Decorate panel on someone's shelf: try a look live, then keep it or not. */
+ctx.actions.openDecorate = (profile) => {
+  if (state.route.view !== 'profile' || state.route.profileId !== profile.id || state.route.tab !== 'library') go(`#/p/${profile.id}`);
+  const clearPreview = () => { if (state.lookPreview) delete state.lookPreview[profile.id]; };
+  openDecorate(profile, {
+    preview: (look) => { state.lookPreview = { ...(state.lookPreview ?? {}), [profile.id]: look }; render(); },
+    save: async (look) => {
+      const ok = await ctx.actions.saveLook(profile, look);
+      if (ok) { clearPreview(); render(); }
+      return ok;
+    },
+    cancel: () => { clearPreview(); render(); },
+  });
 };
 
 /**
@@ -1822,7 +1824,7 @@ function openProfileMenu(profile, x, y, opener) {
   menuEl = h('div', { class: 'ctx-menu', role: 'menu', 'aria-label': `${profile.name} options` },
     h('div', { class: 'ctx-head', text: profile.name }),
     item('Open shelf', () => go(`#/p/${profile.id}`)),
-    state.canWrite && THEMES_ON ? item('Colour and theme…', () => ctx.actions.openEditProfile(profile)) : null,
+    state.canWrite && THEMES_ON ? item('Decorate…', () => ctx.actions.openDecorate(profile)) : null,
     item('Add a person…', () => ctx.actions.openNewProfile()),
     h('div', { class: 'ctx-sep', role: 'separator' }),
     item(`Remove ${profile.name}…`, () => ctx.actions.openRemoveProfile(profile), 'danger'));

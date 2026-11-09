@@ -178,18 +178,22 @@ function drawing(name, cls = '') {
 }
 
 /** A window: sky, sun or moon, stars, clouds, and a storm if it is a stormy night. */
-function roomWindow(stormy) {
+function roomWindow(stormy, season = null) {
   const stars = Array.from({ length: 10 }, (_, n) => h('i', { class: 'win-star', style: `--n:${n}` }));
   return h('div', { class: `wall-window${stormy ? ' rainy' : ''}`, 'aria-hidden': 'true' },
     h('div', { class: 'win-sky' },
       h('i', { class: 'win-sun' }), h('i', { class: 'win-moon' }), stars,
       h('i', { class: 'win-cloud c1' }), h('i', { class: 'win-cloud c2' }),
       stormy ? [h('i', { class: 'rain r1' }), h('i', { class: 'rain r2' }),
-        ...Array.from({ length: 8 }, (_, n) => h('i', { class: 'raindrop', style: `--n:${n}` }))] : null),
+        ...Array.from({ length: 8 }, (_, n) => h('i', { class: 'raindrop', style: `--n:${n}` }))] : null,
+      // The season outside: leaves, snow or blossom drifting past.
+      season && season !== 'summer' ? h('div', { class: `season-fx ${season}` },
+        Array.from({ length: 12 }, (_, n) => h('i', { style: `--n:${n}` }))) : null),
     stormy ? h('i', { class: 'win-flash' }) : null,
     h('div', { class: 'win-frame' }),
     h('i', { class: 'win-cafe' }),
-    h('div', { class: 'win-sill' }, stormy ? h('span', { class: 'sill-candle' }, h('i')) : null),
+    h('div', { class: 'win-sill' }, stormy ? h('span', { class: 'sill-candle' }, h('i')) : null,
+      season === 'winter' ? h('i', { class: 'sill-snow' }) : null, season === 'autumn' ? h('i', { class: 'sill-pumpkin' }) : null),
     h('i', { class: 'win-curtain l' }), h('i', { class: 'win-curtain r' }), h('i', { class: 'win-rod' }));
 }
 
@@ -201,9 +205,9 @@ function roomWindow(stormy) {
  * the walls goes on the walls themselves; the window is on the left wall and
  * throws a patch of light across the floor.
  */
-export function roomBox(scene) {
+export function roomBox(scene, look = {}) {
   // Every room has its window on the left wall.
-  const left = [roomWindow(scene === 'rain')];
+  const left = [roomWindow(scene === 'rain', look.season)];
   const right = [];
   const floor = [h('div', { class: 'rug' })];
   if (scene === 'fire') {
@@ -237,14 +241,14 @@ export function roomBox(scene) {
 }
 
 /** What stands in the room in front, at the corners - it is what makes the room deep. */
-export function roomFront(scene, onLamp = () => {}) {
+export function roomFront(scene, onLamp = () => {}, look = {}) {
   const items = {
     fire: [drawing('armchair', 'front left'), drawing('logs', 'front right')],
     rain: [drawing('bed', 'front left')],
     cafe: [drawing('cafeTable', 'front right'), drawing('counter', 'front left')],
   }[scene] ?? [drawing('globe', 'front left'), drawing('desk', 'front right')];
   return h('div', { class: 'room-front', 'aria-hidden': 'true' },
-    ceilingLamps(scene, onLamp),
+    ceilingLamps(look.lamp && look.lamp !== 'room' ? look.lamp : scene, onLamp),
     scene === 'cafe' ? h('div', { class: 'bokeh' }, Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))) : null,
     items);
 }
