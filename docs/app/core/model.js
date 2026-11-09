@@ -879,7 +879,7 @@ export const ROOM_OPTIONS = {
   lamp: ['room', 'library', 'fire', 'rain', 'cafe'],
 };
 
-const DEFAULT_LOOK = { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false };
+const DEFAULT_LOOK = { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false, stamp: true };
 
 /**
  * A person's whole look, with anything missing or unknown at its default -
@@ -902,6 +902,8 @@ function cleanLook(raw) {
     rug: pick(raw.rug, ROOM_OPTIONS.rug, 'room'),
     lamp: pick(raw.lamp, ROOM_OPTIONS.lamp, 'room'),
     seasons: raw.seasons === true,
+    // The sigil stamped at the foot of every spine: on unless turned off.
+    stamp: raw.stamp !== false,
   };
 }
 
@@ -929,4 +931,30 @@ export function seasonOf(date = new Date()) {
   if (md >= 621 && md < 923) return 'summer';
   if (md >= 923 && md < 1221) return 'autumn';
   return 'winter';
+}
+
+/* ------------------------------------------------------------ favourites */
+
+export const MAX_FAVOURITES = 5;
+
+/** Mark a finished book as an all-time favourite, or unmark it. Five at most. */
+export function toggleFavourite(library, bookId) {
+  const favs = library.favourites ?? [];
+  if (favs.includes(bookId)) {
+    library.favourites = favs.filter((id) => id !== bookId);
+    return library;
+  }
+  if (favs.length >= MAX_FAVOURITES) throw new Error(`You can keep ${MAX_FAVOURITES} favourites — unmark one first.`);
+  if (!(library.books ?? []).some((b) => b.id === bookId)) throw new Error('That book is not on this shelf.');
+  library.favourites = [...favs, bookId];
+  return library;
+}
+
+export const isFavourite = (library, bookId) => (library?.favourites ?? []).includes(bookId);
+
+/** Note that these badges and trophies have been announced, so they are not again. */
+export function markAnnounced(library, { badges = [], trophies = [] }) {
+  library.badgesSeen = [...new Set([...(library.badgesSeen ?? []), ...badges])];
+  library.trophiesSeen = [...new Set([...(library.trophiesSeen ?? []), ...trophies.map(String)])];
+  return library;
 }

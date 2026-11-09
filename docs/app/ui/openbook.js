@@ -12,7 +12,7 @@
  */
 
 import { h, fill, coverEl, authorNames, starsEl, fmtReadOn, fmtRating, buyLinks } from './dom.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary } from '../core/model.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary, isFavourite } from '../core/model.js';
 import { shelfPalette } from './art.js';
 import { previouslyOn, whosWhoBox } from './memory.js';
 import { play } from './sound.js';
@@ -128,6 +128,7 @@ function rightPage(ctx, book, profile, close) {
     book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book)) : null,
     h('div', { class: 'ob-actions' },
       h('button', { class: 'btn secondary ob-close', type: 'button', onclick: () => close() }, 'Close'),
+      (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) && book.status === 'read' ? favButton(ctx, profile, book) : null,
       (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null));
 }
 
@@ -170,4 +171,18 @@ export function reactionBar(ctx, profile, book, on) {
   }
   paint();
   return wrap;
+}
+
+/** Mark a finished book as one of your five favourites (a gold bookmark on its spine, a cover on your card). */
+function favButton(ctx, profile, book) {
+  const on = () => isFavourite(ctx.state.libraries[profile.id], book.id);
+  const btn = h('button', { class: 'btn secondary ob-fav', type: 'button', 'aria-pressed': String(on()),
+    onclick: async () => {
+      btn.disabled = true;
+      await ctx.actions.toggleFavourite(profile, book);
+      btn.disabled = false;
+      btn.setAttribute('aria-pressed', String(on()));
+      btn.lastChild.textContent = on() ? 'Favourite' : 'Make a favourite';
+    } }, h('span', { class: 'fav-heart', 'aria-hidden': 'true', text: '♥' }), h('span', { text: on() ? 'Favourite' : 'Make a favourite' }));
+  return btn;
 }

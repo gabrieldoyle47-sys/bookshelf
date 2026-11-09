@@ -16,10 +16,11 @@ import {
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress,
   addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
+  toggleFavourite, markAnnounced, cleanTags,
 } from '../core/model.js';
 import { unseenEvents, eventStamp } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
-import { togetherView, groupLabel, avatar } from './together.js';
+import { avatar } from './together.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
 import { recsView, newRecCount } from './recs.js';
 import { statsView } from './stats.js';
@@ -28,7 +29,14 @@ import { openBookView } from './openbook.js';
 import { authorView, seriesView } from './pages.js';
 import { applyLook, THEMES_ON } from './themes.js';
 import { openDecorate } from './decorate.js';
-import { signInScreen, forcePasswordChange, accountSection, friendsView, adminView } from './account.js';
+import { signInScreen, forcePasswordChange, accountSection, adminView } from './account.js';
+import { clubsView, withView, clubView } from './clubs.js';
+import { openCard } from './card.js';
+import { sigilEl } from './sigil.js';
+import { announce } from './badges.js';
+import { newBadges, earnedBadges } from '../core/badges.js';
+import { completedSeries } from '../core/watch.js';
+import { trinketFor, shelfPalette as palette } from './art.js';
 import { play, soundControls } from './sound.js';
 import { startTour, toured } from './tour.js';
 import { celebrate, art, shelfPalette, emptyArt } from './art.js';
@@ -90,13 +98,53 @@ async function start({ isNew = false } = {}) {
   } catch (err) {
     return showError(err);
   }
+  // Which books are on the award lists, for the award badges (fetched weekly by the API).
+  state.awards = new Set((await storage.api('/awards').catch(() => ({ ids: [] }))).ids);
   readRoute();
   state.navigated = true;
   render();
   state.navigated = false;
+  checkEarned();
   // A first visit gets the short tour, once the books have landed.
   if ((isNew || !toured()) && state.route.view === 'profile' && state.route.tab === 'library') setTimeout(() => startTour({ name: isNew ? state.me.name : null }), 1600);
 }
+
+/**
+ * Anything newly earned on your own shelf - a badge, or a trophy for a
+ * finished series - is announced, then remembered (library.badgesSeen,
+ * trophiesSeen) so it is announced once. The very first time, everything
+ * already earned is noted quietly rather than announced all at once.
+ */
+let checkingEarned = false;
+async function checkEarned() {
+  if (checkingEarned || !state.me) return;
+  const lib = state.libraries[state.me.id];
+  if (!lib) return;
+  const trophies = completedSeries(state.seriesState ?? {}, lib).filter((s) => !(lib.trophiesSeen ?? []).includes(String(s.id)));
+  const badges = newBadges(lib, state.awards);
+  if (!badges.length && !trophies.length) return;
+  checkingEarned = true;
+  const remember = async () => {
+    await saveLibrary(state.me.id, (l) => markAnnounced(l, { badges: badges.map((b) => b.id), trophies: trophies.map((t) => t.id) }),
+      `Note ${state.me.name}'s new badges`, { quiet: true });
+    checkingEarned = false;
+  };
+  if (!lib.badgesSeen) {
+    await remember();
+    const n = earnedBadges(lib, state.awards).length;
+    if (n) toast(`You have ${n} badge${n === 1 ? '' : 's'} — they’re stamped into your trophy mantel.`);
+    return;
+  }
+  const colourOf = palette(lib.books ?? []);
+  announce([
+    ...trophies.map((t) => {
+      const books = (lib.books ?? []).filter((b) => b.series?.id === t.id);
+      return { kind: 'trophy', name: t.name, trinket: trinketFor(books.flatMap((b) => cleanTags(b.genres, 4))), colour: colourOf(books[0] ?? {}).cloth };
+    }),
+    ...badges.map((badge) => ({ kind: 'badge', badge })),
+  ], remember);
+}
+ctx.actions.checkEarned = checkEarned;
 
 /** Themselves and their friends (profiles.json is made for whoever asks), with shelves. */
 async function loadPeople() {
@@ -108,7 +156,10 @@ async function loadPeople() {
   state.libraries = {};
   profiles.forEach((p, i) => { state.libraries[p.id] = libs[i]; });
   state.visitors = {};
-  storage.api('/friends').then((f) => { state.requests = f.incoming.length; renderSidebar(); }).catch(() => {});
+  // Waiting on you: friend requests and club invitations.
+  Promise.all([storage.api('/friends'), storage.api('/clubs')])
+    .then(([f, clubs]) => { state.requests = f.incoming.length + clubs.filter((c) => c.status === 'invited').length; renderSidebar(); })
+    .catch(() => {});
 }
 
 /** After a friend is added or removed: the sidebar and shared pages change. */
@@ -130,7 +181,31 @@ async function loadVisitor(id) {
   render();
 }
 
+/**
+ * Your sigil, top right on every page: opens your library card, with your
+ * bookshelf, Decorate, account settings and sign out on it.
+ */
+function renderMeButton() {
+  let btn = document.getElementById('me-btn');
+  if (!btn) {
+    btn = h('button', { id: 'me-btn', class: 'me-btn', type: 'button', 'aria-label': 'Your profile', title: 'Your library card',
+      onclick: () => openCard(ctx, state.me.id) });
+    document.body.append(btn);
+  }
+  const me = state.profiles.find((p) => p.id === state.me.id) ?? state.me;
+  fill(btn, sigilEl(me, { size: 'md' }));
+  btn.hidden = false;
+}
+ctx.actions.openSettings = () => openSettings();
+ctx.actions.signOut = async () => {
+  await storage.api('/auth/signout', { method: 'POST' }).catch(() => {});
+  storage.setSession(null);
+  showSignIn();
+};
+
 function showSignIn() {
+  const meBtn = document.getElementById('me-btn');
+  if (meBtn) meBtn.hidden = true;
   state.me = null;
   state.canWrite = false;
   document.body.classList.add('signed-out');
@@ -169,7 +244,7 @@ function wireOnce() {
       render();
       state.navigated = false;
       // A page that is not a tab starts at its top.
-      if (['author', 'series', 'friends', 'admin'].includes(state.route.view)) scrollTo({ top: 0 });
+      if (['author', 'series', 'clubs', 'with', 'club', 'admin'].includes(state.route.view)) scrollTo({ top: 0 });
     };
     if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.startViewTransition(paint);
@@ -316,8 +391,10 @@ function readRoute() {
 
   const me = state.me?.id ?? state.profiles[0]?.id ?? null;
   if (parts[0] === 'upcoming') state.route = { view: 'all-upcoming' };
-  else if (parts[0] === 'shared') state.route = { view: 'shared' };
-  else if (parts[0] === 'friends') state.route = { view: 'friends' };
+  // Both of us and Friends became Book clubs; old links land there.
+  else if (['clubs', 'shared', 'friends'].includes(parts[0])) state.route = { view: 'clubs' };
+  else if (parts[0] === 'with' && parts[1]) state.route = { view: 'with', id: parts[1] };
+  else if (parts[0] === 'club' && parts[1]) state.route = { view: 'club', id: parts[1] };
   else if (parts[0] === 'admin' && state.me?.role === 'admin') state.route = { view: 'admin' };
   else if ((parts[0] === 'author' || parts[0] === 'series') && /^\d+$/.test(parts[1] ?? '')) state.route = { view: parts[0], id: parts[1] };
   else if (parts[0] === 'p' && parts[1]) {
@@ -338,8 +415,9 @@ function readRoute() {
 function pageTitle() {
   const { view, profileId, tab } = state.route;
   if (view === 'all-upcoming') return 'All upcoming';
-  if (view === 'shared') return groupLabel(state.profiles);
-  if (view === 'friends') return 'Friends';
+  if (view === 'clubs') return 'Book clubs';
+  if (view === 'with') return `You & ${state.profiles.find((p) => p.id === state.route.id)?.name ?? 'a friend'}`;
+  if (view === 'club') return 'Book club';
   if (view === 'admin') return 'Admin';
   if (view === 'author') return 'Author';
   if (view === 'series') return 'Series';
@@ -358,6 +436,7 @@ function render() {
   const tabFocused = Boolean(document.activeElement?.closest?.('.tabs'));
   if (!state.me) return;
   renderSidebar();
+  renderMeButton();
   const main = clear(document.getElementById('main'));
   toggleMenu(false);
   const title = pageTitle();
@@ -380,10 +459,11 @@ function render() {
   if (look?.seasons) document.documentElement.dataset.season = seasonOf(); else delete document.documentElement.dataset.season;
 
   if (view === 'all-upcoming') return void main.append(allUpcomingView(ctx));
-  if (view === 'shared') return void main.append(togetherView(ctx));
   if (view === 'author') return void main.append(authorView(ctx, state.route.id));
   if (view === 'series') return void main.append(seriesView(ctx, state.route.id));
-  if (view === 'friends') return void main.append(friendsView(ctx));
+  if (view === 'clubs') return void main.append(clubsView(ctx));
+  if (view === 'with') return void main.append(withView(ctx, state.route.id));
+  if (view === 'club') return void main.append(clubView(ctx, state.route.id));
   if (view === 'admin') return void main.append(adminView(ctx));
 
   // A member who is not a friend: fetched once, then drawn.
@@ -493,9 +573,10 @@ function renderSidebar() {
       'aria-haspopup': 'menu',
       title: 'Right-click for options',
       ...menu.handlers,
-      onclick: () => { if (!menu.consumed()) go(`#/p/${p.id}`); },
+      // A person's name opens their library card; their shelf is a button on it.
+      onclick: () => { if (!menu.consumed()) openCard(ctx, p.id); },
     },
-      h('span', { class: 'dot avatar', 'aria-hidden': 'true', style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase() }),
+      sigilEl(p, { size: 'dot' }),
       p.name,
       n ? h('span', { class: 'badge', text: String(n), 'aria-label': `${n} new` }) : null);
   };
@@ -505,9 +586,8 @@ function renderSidebar() {
   nav.append(h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'You' }), me ? personItem(me) : null));
   nav.append(h('div', { class: 'nav-group' }, h('div', { class: 'nav-label', text: 'Friends' }),
     friends.map(personItem),
-    h('button', { class: 'nav-item nav-add', type: 'button', 'aria-current': view === 'friends' ? 'page' : null, onclick: () => go('#/friends') },
-      h('span', { class: 'avatar-add', 'aria-hidden': 'true', text: '+' }), friends.length ? 'Find people' : 'Find friends',
-      state.requests ? h('span', { class: 'badge', text: String(state.requests), 'aria-label': `${state.requests} friend request${state.requests === 1 ? '' : 's'}` }) : null)));
+    h('button', { class: 'nav-item nav-add', type: 'button', onclick: () => go('#/clubs') },
+      h('span', { class: 'avatar-add', 'aria-hidden': 'true', text: '+' }), friends.length ? 'Find people' : 'Find friends')));
 
   nav.append(h('div', { class: 'nav-group' },
     h('div', { class: 'nav-label', text: 'Together' }),
@@ -516,11 +596,12 @@ function renderSidebar() {
       'aria-current': view === 'all-upcoming' ? 'page' : null,
       onclick: () => go('#/upcoming'),
     }, h('span', { class: 'ico ico-calendar', 'aria-hidden': 'true' }), 'All upcoming'),
-    friends.length ? h('button', {
+    h('button', {
       class: 'nav-item', type: 'button',
-      'aria-current': view === 'shared' ? 'page' : null,
-      onclick: () => go('#/shared'),
-    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), groupLabel(state.profiles)) : null,
+      'aria-current': ['clubs', 'with', 'club'].includes(view) ? 'page' : null,
+      onclick: () => go('#/clubs'),
+    }, h('span', { class: 'ico ico-people', 'aria-hidden': 'true' }), 'Book clubs',
+    state.requests ? h('span', { class: 'badge', text: String(state.requests), 'aria-label': `${state.requests} waiting` }) : null),
     state.me.role === 'admin' ? h('button', {
       class: 'nav-item', type: 'button', 'aria-current': view === 'admin' ? 'page' : null, onclick: () => go('#/admin'),
     }, h('span', { class: 'ico ico-settings', 'aria-hidden': 'true' }), 'Admin') : null));
@@ -563,8 +644,9 @@ function friendlyError(err, { saving = true } = {}) {
  * then a hide, or a double-click - raced each other through the Worker, where
  * the later commit could silently drop the earlier change.
  */
-async function saveLibrary(profileId, mutate, message) {
-  if (!state.canWrite) {
+async function saveLibrary(profileId, mutate, message, { quiet = false } = {}) {
+  // Your own shelf, whichever page you are on; never anyone else's.
+  if (!state.me || profileId !== state.me.id) {
     toast('Only your own shelf can be changed.', true);
     return false;
   }
@@ -587,6 +669,8 @@ async function saveLibrary(profileId, mutate, message) {
   pending--;
   // Redraw either way: on failure that re-enables whatever button started it.
   render();
+  // A save can earn a badge or finish a series.
+  if (ok && !quiet) checkEarned();
   return ok;
 }
 
@@ -1125,6 +1209,10 @@ ctx.actions.react = async (profile, book, on, emoji) => {
     return false;
   }
 };
+
+/** One of your five favourites, or not any more. */
+ctx.actions.toggleFavourite = (profile, book) => saveLibrary(profile.id, (lib) => toggleFavourite(lib, book.id),
+  `Favourite: ${book.title}`, { quiet: true });
 
 /** Whether a shelf is yours to change. */
 ctx.state.canEdit = (ownerId) => Boolean(state.me) && ownerId === state.me.id;

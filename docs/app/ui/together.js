@@ -20,17 +20,18 @@ import {
 } from '../core/together.js';
 import { frag, pageHead, emptyState, plural } from './views.js';
 import { emptyArt } from './art.js';
+import { sigilEl } from './sigil.js';
 import { reactionBar } from './openbook.js';
 
 /** "Both of us" while there are two of you, "Everyone" once there are more. */
 export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : profiles.length > 2 ? 'Everyone' : 'Together');
 
 /** A person's initial on their colour - the same mark as the sidebar. */
+/** A person's avatar: their sigil (sigil.js), in the avatar-chip sizes. */
 export function avatar(p, { size = '' } = {}) {
-  return h('span', {
-    class: `avatar-chip ${size}`, title: p.name, 'aria-hidden': 'true',
-    style: `background:${p.colour ?? 'var(--accent)'}`, text: (p.name ?? '?').slice(0, 1).toUpperCase(),
-  });
+  const el = sigilEl(p, { size });
+  el.classList.add('avatar-chip');
+  return el;
 }
 
 const GROUP_KEY = 'bookshelf.group';

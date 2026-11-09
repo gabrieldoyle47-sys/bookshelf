@@ -22,6 +22,10 @@ import {
   hashPassword, verifyPassword, sha256, newToken, newCode,
   checkUsername, checkDisplayName, checkPassword, checkEmail, shelfIdFor,
 } from './auth.js';
+import {
+  SocialError, privacyOf, shelfFor, awardIds, cardSummary, myClubs, createClub, clubDetail, clubAction,
+  buddyRead, startBuddyRead, endBuddyRead, forgetUser,
+} from './social.js';
 
 const MAX_BYTES = 512 * 1024;
 const PER_MINUTE = 40;         // Hardcover calls one person can make a minute
@@ -101,11 +105,15 @@ function publicProfile(u, extra = {}) {
   try { look = u.look ? JSON.parse(u.look) : null; } catch { /* ignore */ }
   // `lastSeen` is how far through What's new they have read (the name the
   // site has always used); activity is `last_seen`, for the admin page only.
-  return { id: u.id, username: u.username, name: u.display_name, colour: u.colour, look, lastSeen: u.news_seen, ...extra };
+  const parsed = (v) => { try { return v ? JSON.parse(v) : null; } catch { return null; } };
+  return {
+    id: u.id, username: u.username, name: u.display_name, colour: u.colour, look, lastSeen: u.news_seen,
+    bio: u.bio ?? '', sigil: parsed(u.sigil), banner: parsed(u.banner), joined: u.created, ...extra,
+  };
 }
 
 /** What a person knows about themselves. */
-const selfProfile = (u) => publicProfile(u, { email: u.email, role: u.role, mustChangePassword: Boolean(u.must_change_pw) });
+const selfProfile = (u) => publicProfile(u, { email: u.email, role: u.role, mustChangePassword: Boolean(u.must_change_pw), privacy: privacyOf(u) });
 
 const pairKey = (x, y) => (x < y ? [x, y] : [y, x]);
 
@@ -243,8 +251,15 @@ async function readRoute(db, me, path) {
   if (path === 'profiles.json') return { content: `${JSON.stringify(await profilesFor(db, me), null, 2)}\n`, sha: 'live' };
   const lib = path.match(LIBRARY);
   if (lib) {
-    const owner = await one(db, 'SELECT status FROM users WHERE id = ?', lib[1]);
+    const owner = await one(db, 'SELECT * FROM users WHERE id = ?', lib[1]);
     if (!owner || (owner.status !== 'active' && lib[1] !== me.id)) throw new HttpError(404, 'not found');
+    const row = await readFile(db, path);
+    if (!row) throw new HttpError(404, 'not found');
+    if (lib[1] === me.id) return { content: row.content, sha: String(row.version) };
+    // Someone else's shelf, as their privacy settings allow this viewer to see it.
+    const rel = { self: false, friend: await areFriends(db, me.id, lib[1]) };
+    const seen = shelfFor(JSON.parse(row.content), owner, rel);
+    return { content: `${JSON.stringify(seen, null, 2)}\n`, sha: String(row.version) };
   } else if (!STATE_FILES.includes(path)) {
     throw new HttpError(400, 'unknown file');
   }
@@ -366,6 +381,27 @@ async function updateMe(db, me, input) {
     sets.push('colour = ?'); args.push(input.colour);
   }
   if (input.newsSeen) { sets.push('news_seen = ?'); args.push(nowIso()); }
+  if ('bio' in input) {
+    sets.push('bio = ?');
+    args.push(String(input.bio ?? '').replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '').slice(0, 160));
+  }
+  if ('sigil' in input) {
+    const sg = input.sigil ?? {};
+    if (!/^[a-z0-9-]{1,24}$/.test(String(sg.icon ?? '')) || !/^#[0-9a-f]{6}$/i.test(String(sg.bg ?? ''))) throw new HttpError(400, 'That sigil is not valid.');
+    sets.push('sigil = ?'); args.push(JSON.stringify({ icon: sg.icon, bg: sg.bg, ...(sg.letter ? { letter: String(sg.letter).slice(0, 1) } : {}) }));
+  }
+  if ('banner' in input) {
+    const bn = input.banner ?? {};
+    const ok = (bn.kind === 'pattern' && /^[a-z-]{1,20}$/.test(String(bn.pattern ?? ''))) || (bn.kind === 'cover' && typeof bn.cover === 'string' && /^https:\/\//.test(bn.cover) && bn.cover.length < 500);
+    if (!ok) throw new HttpError(400, 'That banner is not valid.');
+    sets.push('banner = ?'); args.push(JSON.stringify(bn.kind === 'pattern' ? { kind: 'pattern', pattern: bn.pattern } : { kind: 'cover', cover: bn.cover }));
+  }
+  if ('privacy' in input) {
+    const pv = input.privacy ?? {};
+    const level = (v) => (['everyone', 'friends', 'me'].includes(v) ? v : 'everyone');
+    sets.push('privacy = ?');
+    args.push(JSON.stringify({ shelf: pv.shelf === 'friends' ? 'friends' : 'members', notes: level(pv.notes), ratings: level(pv.ratings) }));
+  }
   if ('look' in input) {
     const look = JSON.stringify(input.look ?? null);
     if (look.length > 2000) throw new HttpError(400, 'look too large');
@@ -626,8 +662,16 @@ async function route(request, env) {
     const u = await one(db, "SELECT * FROM users WHERE id = ? AND status = 'active'", url.searchParams.get('id') ?? '');
     if (!u) throw new HttpError(404, 'No one by that name.');
     const f = await friendship(db, me.id, u.id);
-    return json(publicProfile(u, { me: u.id === me.id, friend: f?.status === 'accepted',
-      relation: u.id === me.id ? 'me' : !f ? 'none' : f.status === 'accepted' ? 'friend' : f.requested_by === me.id ? 'sent' : 'received' }));
+    const rel = { self: u.id === me.id, friend: f?.status === 'accepted' };
+    const row = await readFile(db, `profiles/${u.id}/library.json`);
+    const library = row ? JSON.parse(row.content) : { books: [] };
+    const state = await readFile(db, 'series-state.json');
+    const summary = cardSummary(library, u, rel, { awards: await awardIds(db, env), seriesState: state ? JSON.parse(state.content) : {} });
+    const pv = privacyOf(u);
+    const friends = (await friendIds(db, u.id)).length;
+    return json(publicProfile(u, { me: rel.self, friend: rel.friend, friends, summary,
+      shelfVisible: rel.self || pv.shelf !== 'friends' || rel.friend,
+      relation: rel.self ? 'me' : !f ? 'none' : f.status === 'accepted' ? 'friend' : f.requested_by === me.id ? 'sent' : 'received' }));
   }
   if (m === 'GET' && p === '/members') return json(await searchMembers(db, me, url.searchParams.get('q')));
   if (m === 'GET' && p === '/friends') return json(await friendsOf(db, me));
@@ -635,6 +679,19 @@ async function route(request, env) {
   if (m === 'POST' && p === '/friends/respond') { const i = await body(request); return json(await respondFriend(db, me, String(i.id ?? ''), Boolean(i.accept))); }
   if (m === 'POST' && p === '/friends/remove') return json(await removeFriend(db, me, String((await body(request)).id ?? '')));
 
+  if (m === 'GET' && p === '/awards') return json({ ids: [...await awardIds(db, env)] });
+  if (m === 'GET' && p === '/clubs') return json(await myClubs(db, me));
+  if (m === 'POST' && p === '/clubs') return json(await createClub(db, me, await body(request)));
+  if (m === 'GET' && p === '/club') return json(await clubDetail(db, me, url.searchParams.get('id') ?? ''));
+  const clubAct = p.match(/^\/club\/(invite|respond|leave|remove|host|update|read|finish|suggest|vote|pick|post|unpost)$/);
+  if (m === 'POST' && clubAct) return json(await clubAction(db, me, clubAct[1], await body(request), (x, y) => areFriends(db, x, y)));
+  if (m === 'GET' && p === '/buddy') return json(await buddyRead(db, me, url.searchParams.get('friend') ?? ''));
+  if (m === 'POST' && p === '/buddy') {
+    const input = await body(request);
+    if (!await areFriends(db, me.id, String(input.friend ?? '')) || input.friend === me.id) throw new HttpError(403, 'Buddy reads are with friends.');
+    return json(await startBuddyRead(db, me, String(input.friend), input.book));
+  }
+  if (m === 'POST' && p === '/buddy/end') return json(await endBuddyRead(db, me, String((await body(request)).friend ?? '')));
   if (m === 'POST' && p === '/react') return json(await react(db, me, await body(request)));
   if (m === 'POST' && p === '/recommend') return json(await recommend(db, me, await body(request)));
   if (m === 'POST' && p === '/check') return json(await checkNow(db, env, me));
@@ -652,6 +709,7 @@ async function purge(db) {
     await run(db, 'DELETE FROM files WHERE path = ?', `profiles/${id}/library.json`);
     await run(db, 'DELETE FROM friendships WHERE a = ? OR b = ?', id, id);
     await run(db, 'DELETE FROM sessions WHERE user_id = ?', id);
+    await forgetUser(db, id);
     await run(db, 'DELETE FROM users WHERE id = ?', id);
   }
   // Per-minute and sign-in counters only matter for minutes; daily totals
@@ -665,7 +723,7 @@ export default {
     try {
       return await route(request, env);
     } catch (err) {
-      if (err instanceof HttpError) return fail(err.status, err.message);
+      if (err instanceof HttpError || err instanceof SocialError) return fail(err.status, err.message);
       return fail(502, err.message ?? 'Something went wrong.');
     }
   },

@@ -20,7 +20,11 @@ CREATE TABLE IF NOT EXISTS users (
   created TEXT NOT NULL,
   deleted_at TEXT,                              -- purged 30 days after
   last_seen TEXT,                               -- last activity (admin page)
-  news_seen TEXT                                -- What's new read up to here
+  news_seen TEXT,                               -- What's new read up to here
+  bio TEXT,
+  sigil TEXT,                                   -- JSON: icon, bg
+  banner TEXT,                                  -- JSON: kind, pattern, cover
+  privacy TEXT                                  -- JSON: shelf, notes, ratings
 );
 
 -- Signed-in devices. Only a hash of each token is kept, so a copy of the
@@ -79,4 +83,62 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS usage (
   bucket TEXT PRIMARY KEY,
   count INTEGER NOT NULL
+);
+
+-- Book clubs: a host, members (invited first, then members), a read of the
+-- moment, past reads, suggestions for the next read with votes, and a
+-- discussion tied to how far each poster had read.
+CREATE TABLE IF NOT EXISTS clubs (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT,
+  colour TEXT,
+  host TEXT NOT NULL,
+  current TEXT,                                 -- JSON: book, target, started
+  created TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS club_members (
+  club_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  status TEXT NOT NULL,                         -- invited | member
+  invited_by TEXT,
+  joined TEXT,
+  PRIMARY KEY (club_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS club_reads (
+  club_id TEXT NOT NULL,
+  book TEXT NOT NULL,                           -- JSON
+  started TEXT,
+  finished TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS club_suggestions (
+  id TEXT PRIMARY KEY,
+  club_id TEXT NOT NULL,
+  book TEXT NOT NULL,
+  by TEXT NOT NULL,
+  created TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS club_votes (
+  suggestion_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  PRIMARY KEY (suggestion_id, user_id)
+);
+CREATE TABLE IF NOT EXISTS club_posts (
+  id TEXT PRIMARY KEY,
+  club_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  book_id TEXT,
+  progress INTEGER,                             -- percent through the book when posted
+  text TEXT NOT NULL,
+  created TEXT NOT NULL
+);
+
+-- Buddy reads: two friends reading one book together.
+CREATE TABLE IF NOT EXISTS buddy_reads (
+  a TEXT NOT NULL,
+  b TEXT NOT NULL,
+  book TEXT NOT NULL,                           -- JSON
+  started TEXT NOT NULL,
+  PRIMARY KEY (a, b)
 );

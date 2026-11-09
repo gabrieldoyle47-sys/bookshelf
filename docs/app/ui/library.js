@@ -20,7 +20,10 @@
 
 import { h, fill, coverEl, authorNames, seriesLabel, starsEl, countUp, toast } from './dom.js';
 import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable, keyOfShelf } from '../core/arrange.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf } from '../core/model.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf, isFavourite } from '../core/model.js';
+import { earnedBadges } from '../core/badges.js';
+import { badgeStamp } from './badges.js';
+import { sigilMark } from './sigil.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
@@ -131,6 +134,7 @@ export function libraryView(ctx, profile) {
   // The owner's room and its options (their look), or a preview of one
   // being decorated. The switch above it changes the owner's room.
   activeLook = ctx.state.lookPreview?.[profile.id] ?? lookOf(profile);
+  activeBadges = earnedBadges(library, ctx.state.awards);
   playRoom(activeLook.room);
   const scenes = sceneSwitch(activeLook.room, (id) => {
     activeLook = { ...activeLook, room: id };
@@ -508,7 +512,8 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
     h('div', { class: 'case-wrap' },
       // The trophies stand on a mantel shelf high on the back wall.
       cabinet ? h('div', { class: 'trophy-mantel' }, cabinet,
-        h('span', { class: 'mantel-board', 'aria-hidden': 'true' }),
+        // Badges are stamps pressed into the front of the board.
+        h('span', { class: 'mantel-board' }, activeBadges.map((b) => badgeStamp(b, { pressed: true }))),
         h('span', { class: 'corbel left', 'aria-hidden': 'true' }), h('span', { class: 'corbel right', 'aria-hidden': 'true' })) : null,
       h('div', { class: 'case' },
         cornerPlant(),
@@ -538,6 +543,9 @@ function roomData(room, look) {
   if (look.seasons) room.dataset.season = seasonOf(); else delete room.dataset.season;
 }
 
+/** The owner's badges, for the mantel. Set by libraryView with the look. */
+let activeBadges = [];
+
 /** What room.js needs to know beyond which room it is. */
 const roomOpts = (look) => ({ lamp: look.lamp, season: look.seasons ? seasonOf() : null });
 
@@ -562,10 +570,12 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
   const pages = Math.min(b.pages ?? 320, 1300);
   const t = Math.max(0, Math.min(1, (pages - 150) / 1000));
   const pos = b.series?.position;
+  const fav = isFavourite(ctx.state.libraries[profile.id], b.id);
+  const stamped = activeLook.stamp;
   const label = `${b.title}${seriesLabel(b) ? `, ${seriesLabel(b)}` : ''}${b.rating ? `, rated ${b.rating}` : ''}`
-    + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '');
+    + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '') + (fav ? ', a favourite' : '');
   const el = h('button', {
-    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}`, type: 'button',
+    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}${stamped ? ' stamped' : ''}${fav ? ' fav' : ''}`, type: 'button',
     style: `--h:${Math.round(86 + t * 30)}px;--w:${Math.round(19 + t * 13)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
     'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
     dataset: { key: `b:${b.id}` },
@@ -574,7 +584,10 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
     h('span', { class: 'lspine-title', text: b.title }),
     isAudiobook(b) ? h('span', { class: 'lspine-audio', 'aria-hidden': 'true', title: 'Audiobook' }) : null,
     pos != null && Number.isInteger(pos) ? h('span', { class: 'lspine-num', text: String(pos) }) : null,
-    b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null);
+    b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null,
+    // A favourite carries a gold bookmark; every book the owner's sigil, stamped at its foot.
+    fav ? h('span', { class: 'lspine-fav', 'aria-hidden': 'true' }) : null,
+    stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilMark(profile)) : null);
   if (order != null) el.classList.add('drop');
   el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !editing) peek(el, b); });
   el.addEventListener('pointerleave', hidePeek);
@@ -626,7 +639,8 @@ function legend() {
     h('span', {}, h('i', { class: 'key gilt' }), 'Gold bands: five stars'),
     h('span', {}, h('i', { class: 'key ribbon' }), 'Ribbon: reading now'),
     h('span', {}, h('i', { class: 'key tbr' }), 'Crisp and new: to read'),
-    h('span', {}, h('i', { class: 'key audio' }), 'Headphones: audiobook'));
+    h('span', {}, h('i', { class: 'key audio' }), 'Headphones: audiobook'),
+    h('span', {}, h('i', { class: 'key fav' }), 'Gold bookmark: a favourite'));
 }
 
 /** Hue of a #rrggbb colour, for the rainbow arrangement. */

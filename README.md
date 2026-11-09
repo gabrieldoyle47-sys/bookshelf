@@ -180,8 +180,9 @@ shelf it actually covers rather than implying it knows the whole picture.
 - **Joining.** Anyone with the link can create an account — a username (for signing in
   and being found; fixed), a display name, an email (only for getting back in; never
   shown) and a password — unless the admin switches joining to invite codes only.
-- **Who sees what.** Every signed-in member can look at every shelf. Only you can change
-  yours. Friends (request, then accept) appear in your sidebar, share the group pages,
+- **Who sees what.** Every signed-in member can look at every shelf unless its owner
+  makes it friends-only; notes and ratings can each be hidden too (Edit card → Privacy).
+  The API enforces this, not just the page. Only you can change your shelf. Friends (request, then accept) appear in your sidebar, share the group pages,
   and can react to each other's ratings and finishes and send each other books.
 - **Account settings** (Settings): display name and colour, password, email, sign out,
   sign out everywhere, and deleting your account.
@@ -192,13 +193,35 @@ shelf it actually covers rather than implying it knows the whole picture.
 - **Passwords** are stored only as a salted PBKDF2 hash; sessions as a hash of a random
   token. Nobody — including the admin — can read a password.
 
+## Profiles, badges and book clubs
+
+- **Sigil.** Everyone picks a mark — a small icon (or their initial) on a colour. It's
+  their avatar everywhere, an optional stamp at the foot of their spines, and the seal
+  on their library card.
+- **Library card.** Clicking anyone (or your own button, top right) opens their card: a
+  banner (a pattern or a wash from a book cover), bio, stats, favourite genre, what
+  they're reading, recent finishes stamped like date-due slips, up to five favourites
+  (gold bookmarks on the spines) and their badges and trophies. From the card: open
+  their bookshelf, or "You & them".
+- **Badges** — 17 in four families (Milestones, Explorer, Devoted reader, Award shelf),
+  worked out from the shelf in `docs/app/core/badges.js`. They're pressed into the wood
+  of the trophy mantel. A new badge or trophy gets a moment in the middle of the screen
+  with a sound.
+- **Book clubs** (the tab): your clubs and your friends side by side. A friend's page
+  ("You & them") shows a taste match and why, where you disagree, what you both loved,
+  what you've both read, and a buddy read with both your progress. A club has a host,
+  a read of the moment with a finish-by date and everyone's progress, a discussion where
+  posts from further into the book stay blurred until you click, a vote on the next
+  read, the club's shelf of finished reads, a group taste match and a feed.
+
 ## Setup
 
 1. **Hardcover token** — sign up, then Settings → API. Put it in `.env` as
    `HARDCOVER_API_TOKEN=…` (gitignored; **this repo is public — never commit a token**).
 2. **GitHub Pages** — Settings → Pages → source `main`, folder `/docs`.
 3. **The API** — in `api/`: `npx wrangler d1 create bookshelf` (put the id in
-   `wrangler.toml`), `npx wrangler d1 execute bookshelf --remote --file=schema.sql`,
+   `wrangler.toml`), `npx wrangler d1 execute bookshelf --remote --file=schema.sql` (an existing database
+   from before profiles also needs `--file=migrate-002-profiles.sql` first),
    `npx wrangler secret put HARDCOVER_TOKEN`, `npx wrangler secret put SERVICE_KEY`,
    then `npx wrangler deploy`, and put its URL in `docs/site.json` as `apiUrl`.
 4. **The nightly check** — repo Settings → Secrets and variables → Actions: secrets
@@ -215,7 +238,7 @@ minute. Each person is also held to 40 lookups a minute while using the site.
 ```
 docs/app/core/    shared by the browser, the API and the watcher — hardcover, model, diff engine
 docs/app/ui/      the website
-api/              the accounts API (Cloudflare Worker + D1): auth, shelves, friends, admin
+api/              the accounts API (Cloudflare Worker + D1): auth, shelves, friends, clubs, admin
 src/              run-check-api.js (the nightly watcher), serve.js (local dev)
 tools/            the shelf migration and the room-art generator
 test/             tests

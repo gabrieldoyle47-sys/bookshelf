@@ -84,6 +84,32 @@ const EFFECTS = {
     });
   },
   // A small wooden tick.
+  // A badge earned: the soft thump of a rubber stamp, then a bright two-note lift.
+  stamp(c, out) {
+    const t = c.currentTime;
+    const o = c.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.12);
+    const g = c.createGain(); g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g).connect(out); o.start(t); o.stop(t + 0.2);
+    [[880, 0.18], [1318, 0.3]].forEach(([f, at]) => {
+      const n = c.createOscillator(); n.type = 'sine'; n.frequency.value = f;
+      const ng = c.createGain(); ng.gain.setValueAtTime(0.0001, t + at); ng.gain.exponentialRampToValueAtTime(0.06, t + at + 0.02);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + at + 0.9);
+      n.connect(ng).connect(out); n.start(t + at); n.stop(t + at + 1);
+    });
+  },
+  // A trophy: a rising three-note arpeggio with a shimmer.
+  trophy(c, out) {
+    const t = c.currentTime;
+    [[784, 0], [988, 0.11], [1318, 0.22], [1568, 0.36]].forEach(([f, at]) => {
+      for (const [mult, lvl] of [[1, 0.06], [2, 0.015]]) {
+        const n = c.createOscillator(); n.type = 'sine'; n.frequency.value = f * mult;
+        const ng = c.createGain(); ng.gain.setValueAtTime(0.0001, t + at); ng.gain.exponentialRampToValueAtTime(lvl, t + at + 0.02);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t + at + 1.4);
+        n.connect(ng).connect(out); n.start(t + at); n.stop(t + at + 1.5);
+      }
+    });
+  },
   tick(c, out) {
     const o = c.createOscillator();
     o.type = 'triangle';
