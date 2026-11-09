@@ -49,7 +49,12 @@ export function libraryView(ctx, profile) {
   const addBtn = canWrite ? h('button', { class: 'btn', type: 'button',
     onclick: () => ctx.actions.openAdd(profile) }, '+ Add a book') : null;
   const booksBtn = h('button', { class: 'btn secondary', type: 'button',
-    onclick: () => { location.hash = `#/p/${profile.id}/shelf`; } }, 'Browse as a list →');
+    title: 'The same books as a list', onclick: () => { location.hash = `#/p/${profile.id}/shelf`; } }, 'List view');
+
+  const rearrangeBtn = h('button', {
+    class: 'btn secondary rearrange-btn', type: 'button', onclick: () => startEditing(),
+    title: 'Move books and ornaments by hand', hidden: !canWrite,
+  }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Rearrange');
 
   const n = (k) => all.filter((b) => b.status === k).length;
   const stat = (value, label) => {
@@ -71,7 +76,7 @@ export function libraryView(ctx, profile) {
       canWrite && THEMES_ON ? h('button', { class: 'btn secondary lib-decorate', type: 'button',
         title: `Change ${profile.name}’s colours, type and room`, onclick: () => ctx.actions.openDecorate(profile) },
       h('span', { class: 'ico ico-palette', 'aria-hidden': 'true' }), 'Decorate') : null,
-      booksBtn, addBtn));
+      rearrangeBtn, booksBtn, addBtn));
 
   if (!all.length) {
     return h('div', { class: 'library' }, head,
@@ -115,7 +120,7 @@ export function libraryView(ctx, profile) {
     redrawRoom();
     if (canWrite && !ctx.state.lookPreview?.[profile.id]) ctx.actions.saveLook(profile, { room: id }, { quiet: true });
   });
-  const root = h('div', { class: 'library' }, head, scenes, tools, caseBox, legend());
+  const root = h('div', { class: 'library' }, head, tools, caseBox, legend());
   const relight = lightRoom(root);
 
   const chips = (items, current, set, label) => h('div', { class: 'seg', role: 'tablist', 'aria-label': label },
@@ -131,6 +136,8 @@ export function libraryView(ctx, profile) {
     }, text)));
 
   function paintTools() {
+    // Rearrange lives in the header, by Decorate; hidden while it is in use.
+    rearrangeBtn.hidden = !canWrite || Boolean(editing);
     if (editing) {
       fill(tools,
         h('p', { class: 'edit-hint' }, h('strong', { text: 'Rearranging. ' }),
@@ -147,17 +154,17 @@ export function libraryView(ctx, profile) {
     }
     fill(tools,
       chips(FILTERS, () => prefs.filter, (v) => { prefs.filter = v; }, 'Which books'),
+      // The room's scene sits in the same row, so the shelf starts higher.
+      scenes,
       h('div', { class: 'spacer' }),
-      chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'),
-      canWrite && prefs.arrange !== 'rainbow' ? h('button', {
-        class: 'btn secondary small rearrange-btn', type: 'button', onclick: startEditing,
-        title: 'Move books and ornaments by hand',
-      }, h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Rearrange') : null);
+      chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them'));
   }
 
   /* ------------------------------------------------------------ rearranging */
 
   function startEditing() {
+    // A rainbow cannot be rearranged; go back to the shelves first.
+    if (prefs.arrange === 'rainbow') { prefs.arrange = 'shelf'; savePrefs(); }
     editing = currentLayout();
     root.classList.add('editing');
     paintTools();
@@ -533,7 +540,7 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
     + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : '');
   const el = h('button', {
     class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}`, type: 'button',
-    style: `--h:${Math.round(118 + t * 40)}px;--w:${Math.round(25 + t * 18)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
+    style: `--h:${Math.round(86 + t * 30)}px;--w:${Math.round(19 + t * 13)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
     'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
     dataset: { key: `b:${b.id}` },
     onclick: () => { if (!editing) ctx.actions.openBook(b, profile); },

@@ -293,7 +293,7 @@ export function sceneSwitch(current, onPick) {
     box.style.setProperty('--at', String(SCENES.findIndex(([x]) => x === id)));
   };
   box.append(...SCENES.map(([id, icon, label]) => h('button', {
-    class: 'scene-opt', type: 'button', role: 'radio', dataset: { id }, 'aria-checked': String(id === current),
+    class: 'scene-opt', type: 'button', role: 'radio', dataset: { id }, 'aria-checked': String(id === current), title: label, 'aria-label': label,
     onclick: () => { paint(id); onPick(id); },
   }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' }), h('span', { class: 'scene-label', text: label }))));
   box.prepend(h('span', { class: 'scene-thumb', 'aria-hidden': 'true' }));

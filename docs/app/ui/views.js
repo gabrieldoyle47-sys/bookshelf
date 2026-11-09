@@ -405,12 +405,14 @@ const EVENT_TEXT = {
 
 const FEED_PAGE = 60;
 
-export function whatsNewView(ctx, profile) {
+export function whatsNewView(ctx, profile, { embedded = false, highlight = null } = {}) {
   const library = ctx.state.libraries[profile.id];
   const mine = visibleEvents(ctx.state.events, profile, library)
     .sort((a, b) => eventStamp(b).localeCompare(eventStamp(a)));
   const unseen = unseenEvents(ctx.state.events, profile, library);
-  const unseenKeys = new Set(unseen.map((e) => e.key ?? eventStamp(e) + e.title));
+  // On the Releases page news is marked read on arrival; what was new then
+  // stays highlighted for the visit (`highlight`).
+  const unseenKeys = highlight ?? new Set(unseen.map((e) => e.key ?? eventStamp(e) + e.title));
 
   const markRead = h('button', {
     class: 'btn secondary', type: 'button',
@@ -454,12 +456,15 @@ export function whatsNewView(ctx, profile) {
   more.addEventListener('click', showMore);
   showMore();
 
+  const fresh = highlight ? highlight.size : unseen.length;
   return frag(
-    pageHead(`What's new · ${profile.name}`,
-      unseen.length ? `${unseen.length} since you last looked` : 'All caught up', markRead),
+    embedded ? h('div', { class: 'rel-col-head' }, h('h2', { text: 'News' }),
+      h('span', { class: 'count', text: fresh ? `${fresh} new since you last looked` : 'All caught up' }))
+      : pageHead(`What's new · ${profile.name}`,
+        unseen.length ? `${unseen.length} since you last looked` : 'All caught up', markRead),
     mine.length
       ? [list, h('div', { class: 'row feed-more' }, more)]
-      : emptyArt('bell', 'No release news yet. The watcher runs daily and anything it finds shows up here.'));
+      : emptyArt('bell', 'No release news yet. The watcher runs daily: new books, dates announced or moved, and releases show up here.'));
 }
 
 export { frag, pageHead, emptyState, bookRow };

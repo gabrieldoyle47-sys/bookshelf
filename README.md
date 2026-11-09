@@ -50,7 +50,7 @@ You can override any of it with `books watch` / `books unwatch`.
   read marked and novellas folded away. On the right, books the other person sent
   you with a note; add one to your pile in a click, or pass. Send one from any
   book on your shelf (*Recommend to …*) or by searching.
-- **Upcoming.** What you're waiting for (your series, plus any book you track) and,
+- **Releases.** One tab, two columns: on the left, what you're waiting for (your series, plus any book you track) and,
   separately, forthcoming books by every author you read, outside the series you
   already follow. Click any of them for everything known so far: description,
   publisher, how many Hardcover readers want it, and every date change the watcher
@@ -149,7 +149,8 @@ You can override any of it with `books watch` / `books unwatch`.
   the pages. It's saved with your account, so everyone who visits sees it that way.
 - **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
   sound on or off — a few quiet effects (a page turning, a soft chime) and the room's
-  background: a crackling fire, rain with distant thunder, or a café — with a volume
+  background: the crackle of a fire, soft rain with distant thunder, or a café's murmur
+  with the odd cup, door bell or espresso machine — with a volume
   slider beside it.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.

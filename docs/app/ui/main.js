@@ -17,7 +17,7 @@ import {
   setProgress, goalProgress,
   addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
 } from '../core/model.js';
-import { unseenEvents } from '../core/watch.js';
+import { unseenEvents, eventStamp } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
 import { togetherView, groupLabel, avatar } from './together.js';
 import { upcomingView, allUpcomingView, openRelease, loadDetails } from './upcoming.js';
@@ -55,7 +55,7 @@ ctx.actions.rerender = () => render();
 
 const PROFILE_TABS = [
   // The bookshelf is where a profile opens; the list view is "Books".
-  ['library', 'Bookshelf'], ['shelf', 'Books'], ['recs', 'Recommendations'], ['upcoming', 'Upcoming'], ['new', "What's new"], ['stats', 'Stats'],
+  ['library', 'Bookshelf'], ['shelf', 'Books'], ['recs', 'Recommendations'], ['releases', 'Releases'], ['stats', 'Stats'],
 ];
 
 /* ------------------------------------------------------------------- boot */
@@ -160,6 +160,8 @@ function wireOnce() {
       if (!d.isDirty?.() || confirm('Discard your unsaved changes?')) d.close();
     }
     readRoute();
+    // News highlighted on the Releases page was for that visit only.
+    state.newsHighlight = null;
     // A soft cross-fade between pages where the browser supports it; saves
     // still redraw instantly, since only navigation comes through here.
     const paint = () => {
@@ -323,7 +325,9 @@ function readRoute() {
     // tabs then highlight what is actually showing.
     // A member who is not a friend is fetched when drawn (loadVisitor).
     const profileId = /^[a-z0-9_-]{1,40}$/.test(parts[1]) ? parts[1] : me;
-    const tab = PROFILE_TABS.some(([id]) => id === parts[2]) ? parts[2] : 'library';
+    // Upcoming and What's new are one tab now; old links still land there.
+    const asked = ['upcoming', 'new'].includes(parts[2]) ? 'releases' : parts[2];
+    const tab = PROFILE_TABS.some(([id]) => id === asked) ? asked : 'library';
     state.route = { view: 'profile', profileId, tab };
   } else {
     state.route = { view: 'profile', profileId: me, tab: 'library' };
@@ -404,9 +408,32 @@ function render() {
   if (tabFocused) selected?.focus();
 
   const views = {
-    library: libraryView, shelf: shelfView, recs: recsView, upcoming: upcomingView, new: whatsNewView, stats: statsView,
+    library: libraryView, shelf: shelfView, recs: recsView, releases: releasesView, stats: statsView,
   };
   main.append((views[tab] ?? shelfView)(ctx, profile));
+}
+
+/**
+ * Releases: what's coming (left) and what changed (right), on one page.
+ * Opening it on your own shelf marks the news read; what was new stays
+ * highlighted until you leave the page.
+ */
+function releasesView(ctx, profile) {
+  let highlight = null;
+  if (profile.id === state.me.id) {
+    const unseen = unseenEvents(state.events, profile, state.libraries[profile.id]);
+    if (unseen.length) {
+      state.newsHighlight = { id: profile.id, keys: new Set(unseen.map((e) => e.key ?? eventStamp(e) + e.title)) };
+      ctx.actions.markSeen(profile);
+    }
+    if (state.newsHighlight?.id === profile.id) highlight = state.newsHighlight.keys;
+  }
+  return h('div', { class: 'releases-page' },
+    h('div', { class: 'page-head' }, h('div', {}, h('h1', { text: `Releases · ${profile.name}` }),
+      h('div', { class: 'sub', text: 'Books on the way, and what changed since you last looked' }))),
+    h('div', { class: 'rel-columns' },
+      h('section', { class: 'rel-col upcoming-col' }, upcomingView(ctx, profile, { embedded: true })),
+      h('section', { class: 'rel-col news-col' }, whatsNewView(ctx, profile, { embedded: true, highlight: highlight ?? new Set() }))));
 }
 
 /**
@@ -414,13 +441,13 @@ function render() {
  * Strava pattern, in thumb reach - instead of a strip at the top that has to
  * be scrolled sideways to find "Stats".
  */
-const TAB_ICONS = { library: 'ico-shelf', shelf: 'ico-books', recs: 'ico-sparkle', upcoming: 'ico-calendar', new: 'ico-bell', stats: 'ico-chart' };
-const SHORT = { library: 'Shelf', shelf: 'Books', recs: 'For you', upcoming: 'Upcoming', new: 'News', stats: 'Stats' };
+const TAB_ICONS = { library: 'ico-shelf', shelf: 'ico-books', recs: 'ico-sparkle', releases: 'ico-calendar', stats: 'ico-chart' };
+const SHORT = { library: 'Shelf', shelf: 'Books', recs: 'For you', releases: 'Releases', stats: 'Stats' };
 
 function bottomNav(profile, current) {
   // Unread news and books sent are the owner's business, not a visitor's.
   const own = profile.id === state.me?.id;
-  const badges = own ? { recs: newRecCount(state.libraries[profile.id]), new: unseenNews(profile) } : {};
+  const badges = own ? { recs: newRecCount(state.libraries[profile.id]), releases: unseenNews(profile) } : {};
   return h('nav', { class: 'bottom-nav', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
       class: 'bn-item', type: 'button', 'aria-current': id === current ? 'page' : null, 'aria-label': label,
@@ -436,7 +463,7 @@ function profileTabs(profile, current) {
   // can be traced to where the news actually is.
   const counts = profile.id === state.me?.id ? {
     recs: newRecCount(state.libraries[profile.id]),
-    new: unseenNews(profile),
+    releases: unseenNews(profile),
   } : {};
   return h('div', { class: 'tabs', role: 'tablist', 'aria-label': `${profile.name}'s pages` }, PROFILE_TABS.map(([id, label]) =>
     h('button', {
@@ -687,7 +714,7 @@ ctx.actions.unhide = async (profile, bookId, title) => {
 
 ctx.actions.track = async (profile, hit) => {
   const ok = await saveLibrary(profile.id, (lib) => trackBook(lib, hit), `Track ${hit.title} for ${profile.name}`);
-  if (ok) toast(`Tracking ${hit.title} — date changes will show in What's new`);
+  if (ok) toast(`Tracking ${hit.title} — date changes will show in Releases`);
 };
 
 ctx.actions.untrack = async (profile, bookId, title) => {
@@ -1649,7 +1676,7 @@ ctx.actions.checkNow = async (button) => {
     const checked = `${result.checkedSeries} series checked`;
     let message;
     if (result.events) {
-      message = `${checked} — ${result.events} update${result.events === 1 ? '' : 's'}, see What's new`;
+      message = `${checked} — ${result.events} update${result.events === 1 ? '' : 's'}, see the News column`;
     } else if (result.newSeries) {
       message = `${checked} — ${result.newSeries} newly tracked, ${result.upcoming} release${result.upcoming === 1 ? '' : 's'} coming`;
     } else {

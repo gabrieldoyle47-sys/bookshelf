@@ -72,7 +72,7 @@ function seriesAuthor(ctx, seriesId) {
 
 /* ------------------------------------------------------------------ view */
 
-export function upcomingView(ctx, profile) {
+export function upcomingView(ctx, profile, { embedded = false } = {}) {
   const library = ctx.state.libraries[profile.id] ?? { books: [] };
   const watched = Object.values(deriveWatchlist(library).series);
   const { waiting, authors, hiddenList } = upcomingFor(ctx, profile);
@@ -94,7 +94,9 @@ export function upcomingView(ctx, profile) {
   const card = (item) => releaseCard(item, ctx, profile);
 
   return frag(
-    pageHead(`Upcoming · ${profile.name}`, sub, refresh),
+    // On the Releases page the page head is the page's own; this is one column.
+    embedded ? h('div', { class: 'rel-col-head' }, h('h2', { text: 'Upcoming' }), h('span', { class: 'count', text: sub }), refresh)
+      : pageHead(`Upcoming · ${profile.name}`, sub, refresh),
     trackSearch(ctx, profile),
     unchecked > 0 ? h('p', { class: 'notice',
       text: `${unchecked} of your series ${unchecked === 1 ? 'has' : 'have'} not been checked yet — press “Check for new releases”.` }) : null,

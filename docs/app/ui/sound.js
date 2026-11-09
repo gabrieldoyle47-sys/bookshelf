@@ -40,7 +40,10 @@ function noise(seconds, colour = 'white') {
   let last = 0;
   for (let i = 0; i < d.length; i++) {
     const w = Math.random() * 2 - 1;
-    if (colour === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; } else d[i] = w;
+    if (colour === 'brown') { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+    // Pink: softer than white, less boomy than brown - nearer real rain and voices.
+    else if (colour === 'pink') { last = 0.97 * last + 0.03 * w; d[i] = (w * 0.5 + last * 4) * 0.5; }
+    else d[i] = w;
   }
   return buf;
 }
@@ -132,85 +135,124 @@ const AMBIENT = {
     return () => { clearInterval(tick); clearTimeout(page); src.stop(); };
   },
   // Rain: a hiss of noise, high and low cut, with drops landing at random.
+  // Rain: a soft patter on a window - gentle, high, no roar - with now and
+  // then a heavier drop, and thunder far off.
   rain(c, out) {
     const src = c.createBufferSource();
-    src.buffer = noise(4);
+    src.buffer = noise(4, 'pink');
     src.loop = true;
-    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 400;
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200;
-    const g = c.createGain(); g.gain.value = 0.16;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5000;
+    const g = c.createGain(); g.gain.value = 0.05;
     src.connect(hp).connect(lp).connect(g).connect(out);
     src.start();
     const drop = () => {
-      const s = c.createBufferSource(); s.buffer = noise(0.05);
-      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800 + Math.random() * 2500; f.Q.value = 6;
-      const dg = c.createGain(); dg.gain.setValueAtTime(0.05 * Math.random(), c.currentTime); dg.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05);
-      s.connect(f).connect(dg).connect(out); s.start();
+      const s = c.createBufferSource(); s.buffer = noise(0.03);
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2500 + Math.random() * 3000; f.Q.value = 8;
+      const dg = c.createGain(); const t = c.currentTime;
+      dg.gain.setValueAtTime(0.015 + Math.random() * 0.02, t); dg.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+      s.connect(f).connect(dg).connect(out); s.start(t);
     };
-    const timer = setInterval(() => { for (let i = 0; i < 3; i++) if (Math.random() < 0.6) setTimeout(drop, Math.random() * 120); }, 120);
-    // Thunder, far off: a slow low roll every half minute or so.
+    const timer = setInterval(() => { if (Math.random() < 0.5) drop(); }, 140);
     let rumble;
     const thunder = () => {
       const s = c.createBufferSource(); s.buffer = noise(5, 'brown');
-      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 160;
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 120;
       const g2 = c.createGain(); const t = c.currentTime;
-      g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.5, t + 0.6);
-      g2.gain.exponentialRampToValueAtTime(0.15, t + 2); g2.gain.exponentialRampToValueAtTime(0.0001, t + 4.8);
+      g2.gain.setValueAtTime(0.0001, t); g2.gain.exponentialRampToValueAtTime(0.18, t + 1);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + 4.8);
       s.connect(f).connect(g2).connect(out); s.start();
-      rumble = setTimeout(thunder, 22000 + Math.random() * 26000);
+      rumble = setTimeout(thunder, 40000 + Math.random() * 40000);
     };
-    rumble = setTimeout(thunder, 9000);
+    rumble = setTimeout(thunder, 15000);
     return () => { clearInterval(timer); clearTimeout(rumble); src.stop(); };
   },
-  // Fire: a low roar, and crackles at uneven intervals.
+  // Fire: the crackle is the fire. Pops and snaps of different sizes, in
+  // clusters, over the faintest low glow - no roar.
   fire(c, out) {
     const src = c.createBufferSource();
     src.buffer = noise(4, 'brown');
     src.loop = true;
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
-    const g = c.createGain(); g.gain.value = 0.35;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 180;
+    const g = c.createGain(); g.gain.value = 0.06;
     src.connect(lp).connect(g).connect(out);
     src.start();
+    const pop = (at, big) => {
+      const s = c.createBufferSource(); s.buffer = noise(big ? 0.05 : 0.015);
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = big ? 1.2 : 2.5;
+      f.frequency.value = big ? 900 + Math.random() * 1200 : 2500 + Math.random() * 4000;
+      const pg = c.createGain();
+      pg.gain.setValueAtTime(big ? 0.35 + Math.random() * 0.2 : 0.08 + Math.random() * 0.12, at);
+      pg.gain.exponentialRampToValueAtTime(0.0001, at + (big ? 0.06 : 0.02));
+      s.connect(f).connect(pg).connect(out); s.start(at);
+    };
     let timer;
     const crackle = () => {
-      const pops = 1 + Math.floor(Math.random() * 3);
-      for (let i = 0; i < pops; i++) {
-        const s = c.createBufferSource(); s.buffer = noise(0.03);
-        const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 1500 + Math.random() * 3000;
-        const cg = c.createGain(); const t = c.currentTime + i * 0.03;
-        cg.gain.setValueAtTime(0.08 + Math.random() * 0.1, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
-        s.connect(f).connect(cg).connect(out); s.start(t);
-      }
-      timer = setTimeout(crackle, 80 + Math.random() * 600);
+      const t = c.currentTime;
+      // A cluster of small ticks, sometimes with one bigger snap.
+      const n = 2 + Math.floor(Math.random() * 6);
+      for (let i = 0; i < n; i++) pop(t + i * (0.01 + Math.random() * 0.05), false);
+      if (Math.random() < 0.18) pop(t + Math.random() * 0.1, true);
+      timer = setTimeout(crackle, 60 + Math.random() * 380);
     };
     crackle();
     return () => { clearTimeout(timer); src.stop(); };
   },
-  // A café: a murmur of voices that rises and falls, and the odd cup.
+  // A café: soft murmuring voices across the room - several quiet "talkers"
+  // whose pitch and loudness drift like speech - and every so often a cup
+  // set down, the bell on the door, or the espresso machine's steam.
   cafe(c, out) {
-    const src = c.createBufferSource();
-    src.buffer = noise(6, 'brown');
-    src.loop = true;
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 520; bp.Q.value = 0.7;
-    const g = c.createGain(); g.gain.value = 0.5;
-    // The rise and fall of conversation.
-    const lfo = c.createOscillator(); lfo.frequency.value = 0.23;
-    const depth = c.createGain(); depth.gain.value = 0.18;
-    lfo.connect(depth).connect(g.gain);
-    const lfo2 = c.createOscillator(); lfo2.frequency.value = 0.71;
-    const depth2 = c.createGain(); depth2.gain.value = 140;
-    lfo2.connect(depth2).connect(bp.frequency);
-    src.connect(bp).connect(g).connect(out);
-    src.start(); lfo.start(); lfo2.start();
-    let timer;
-    const clink = () => {
-      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = 2200 + Math.random() * 1400;
-      const cg = c.createGain(); cg.gain.setValueAtTime(0.012, c.currentTime); cg.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.5);
-      o.connect(cg).connect(out); o.start(); o.stop(c.currentTime + 0.55);
-      timer = setTimeout(clink, 3000 + Math.random() * 9000);
+    const bus = c.createGain(); bus.gain.value = 1;
+    bus.connect(out);
+    const voices = [];
+    for (let v = 0; v < 4; v++) {
+      const src = c.createBufferSource(); src.buffer = noise(5, 'pink'); src.loop = true;
+      // Two formant-ish bands per voice, so it reads as speech, not wind.
+      const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 6; f1.frequency.value = 350 + v * 90;
+      const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 7; f2.frequency.value = 1100 + v * 160;
+      const vg = c.createGain(); vg.gain.value = 0;
+      src.connect(f1).connect(vg); src.connect(f2).connect(vg); vg.connect(bus);
+      src.start();
+      voices.push({ src, f1, f2, vg, base1: f1.frequency.value, base2: f2.frequency.value });
+    }
+    // Syllables: each voice speaks in short bursts with pauses between.
+    const talk = setInterval(() => {
+      const t = c.currentTime;
+      for (const v of voices) {
+        const speaking = Math.random() < 0.6;
+        v.vg.gain.setTargetAtTime(speaking ? 0.02 + Math.random() * 0.025 : 0.002, t, 0.06);
+        v.f1.frequency.setTargetAtTime(v.base1 * (0.85 + Math.random() * 0.3), t, 0.05);
+        v.f2.frequency.setTargetAtTime(v.base2 * (0.85 + Math.random() * 0.3), t, 0.05);
+      }
+    }, 170);
+    const tone = (freq, at, level, length) => {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+      const og = c.createGain(); og.gain.setValueAtTime(level, at); og.gain.exponentialRampToValueAtTime(0.0001, at + length);
+      o.connect(og).connect(out); o.start(at); o.stop(at + length + 0.05);
     };
-    timer = setTimeout(clink, 2000);
-    return () => { clearTimeout(timer); src.stop(); lfo.stop(); lfo2.stop(); };
+    const events = [
+      // A cup on a saucer.
+      () => { const t = c.currentTime; tone(2600 + Math.random() * 600, t, 0.02, 0.35); tone(3900 + Math.random() * 500, t + 0.01, 0.01, 0.25); },
+      // The bell over the door.
+      () => { const t = c.currentTime; tone(1760, t, 0.025, 1.4); tone(2217, t + 0.12, 0.02, 1.2); },
+      // The espresso machine: a few seconds of steam.
+      () => {
+        const s = c.createBufferSource(); s.buffer = noise(3.5);
+        const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4500; f.Q.value = 0.8;
+        const sg = c.createGain(); const t = c.currentTime;
+        sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime(0.03, t + 0.4);
+        sg.gain.setValueAtTime(0.03, t + 2.6); sg.gain.exponentialRampToValueAtTime(0.0001, t + 3.4);
+        s.connect(f).connect(sg).connect(out); s.start(t);
+      },
+    ];
+    let timer;
+    const next = () => {
+      const pick = Math.random();
+      events[pick < 0.55 ? 0 : pick < 0.75 ? 1 : 2]();
+      timer = setTimeout(next, 6000 + Math.random() * 12000);
+    };
+    timer = setTimeout(next, 3000);
+    return () => { clearInterval(talk); clearTimeout(timer); for (const v of voices) v.src.stop(); bus.disconnect(); };
   },
 };
 

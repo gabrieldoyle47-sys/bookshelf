@@ -2176,7 +2176,7 @@ select:disabled { cursor: not-allowed; }
 /* The case: a dark back panel in a wooden frame, with a carved crown and a
    plinth. Shelves wrap; every item is exactly one row tall, so the planks can
    be painted as a repeating background that lines up under each row. */
-.library { --row: 172px; --plank: 18px; --gap: 34px; }
+.library { --row: 126px; --plank: 14px; --gap: 26px; }
 .case {
   position: relative; border-radius: 6px;
   background: linear-gradient(90deg, var(--wood-3), var(--wood-1) 1.5%, var(--wood-2) 3%, var(--wood-2) 97%, var(--wood-1) 98.5%, var(--wood-3));
@@ -2225,7 +2225,7 @@ select:disabled { cursor: not-allowed; }
 
 /* A bookend engraved with the genre. */
 .bookend {
-  position: relative; flex: 0 0 auto; width: 34px; height: calc(var(--row) - 24px); margin-right: 2px;
+  position: relative; flex: 0 0 auto; width: 28px; height: calc(var(--row) - 20px); margin-right: 2px;
   border-radius: 14px 3px 2px 2px;
   background: linear-gradient(90deg, var(--brass-2), var(--brass-1) 45%, var(--brass-2));
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / .25), 3px 0 6px -2px rgb(0 0 0 / .5);
@@ -2279,15 +2279,15 @@ select:disabled { cursor: not-allowed; }
 .lspine:focus-visible { outline: 2px solid var(--brass-1); outline-offset: 2px; }
 .lspine:active { transform: translateY(-6px) scale(.98); }
 .lspine-title {
-  position: absolute; left: 50%; top: 22px; bottom: 26px; transform: translateX(-50%) rotate(180deg);
+  position: absolute; left: 50%; top: 14px; bottom: 21px; transform: translateX(-50%) rotate(180deg);
   writing-mode: vertical-rl; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font: 600 10.5px/1 var(--display); letter-spacing: .02em; color: rgb(255 246 224 / .92);
+  font: 600 9px/1 var(--display); letter-spacing: .02em; color: rgb(255 246 224 / .92);
   text-shadow: 0 1px 1px rgb(0 0 0 / .45);
 }
 .lspine-num {
-  position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%);
-  min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; display: grid; place-items: center;
-  font: 700 9px/1 var(--sans); color: #2c1d08;
+  position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%);
+  min-width: 13px; height: 13px; padding: 0 2px; border-radius: 999px; display: grid; place-items: center;
+  font: 700 8px/1 var(--sans); color: #2c1d08;
   background: linear-gradient(180deg, var(--brass-1), var(--brass-2)); box-shadow: 0 1px 2px rgb(0 0 0 / .4);
 }
 /* No decoration on a spine except for a reason: two gold bands, top and
@@ -2297,8 +2297,8 @@ select:disabled { cursor: not-allowed; }
   border-top: 1.5px solid #f3cf6a; border-bottom: 1.5px solid #f3cf6a;
   filter: drop-shadow(0 0 3px rgb(243 207 106 / .6));
 }
-.lspine.gilt::before { top: 8px; }
-.lspine.gilt::after { bottom: 27px; }
+.lspine.gilt::before { top: 5px; }
+.lspine.gilt::after { bottom: 21px; }
 
 /* Reading now: pulled forward a little, with a ribbon bookmark. */
 .lspine.reading { transform: translateY(-4px); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .25), 0 8px 10px -6px rgb(0 0 0 / .55); }
@@ -2357,7 +2357,7 @@ select:disabled { cursor: not-allowed; }
 .lib-empty { color: rgb(255 240 215 / .75); padding: 2rem 0 3rem; text-align: center; }
 
 @media (max-width: 560px) {
-  .library { --row: 140px; --gap: 30px; }
+  .library { --row: 112px; --gap: 24px; }
   .case { padding: 0 8px; }
   .case-crown { margin: 0 -12px; height: 22px; }
   .case-plinth { margin: 0 -10px; }
@@ -2365,7 +2365,7 @@ select:disabled { cursor: not-allowed; }
   .shelf-block { gap: var(--gap) 8px; margin: 0 -10px; padding-inline: 10px; }
   .bookend { width: 28px; }
   .lspine { width: calc(var(--w) * .85); flex-basis: calc(var(--w) * .85); height: calc(var(--h) * .86); }
-  .lspine-title { font-size: 9.5px; }
+  .lspine-title { font-size: 8.5px; }
   .lib-head { gap: .8rem; }
   .lib-head .avatar-chip.xl { width: 48px; height: 48px; font-size: 1.2rem; }
   .lib-head .spacer { display: none; }
@@ -2454,7 +2454,7 @@ select:disabled { cursor: not-allowed; }
   --panel: #d9c9ad; --rug: #7a2f2f; --rug-2: #c9a26a;
   --dim: 0%; --tod-a: 0;
   position: relative; isolation: isolate; overflow: hidden;
-  margin: 0 calc(-1 * var(--gutter)); padding: 70px calc(var(--side) + var(--inset)) 170px;
+  margin: 0 calc(-1 * var(--gutter)); padding: 46px calc(var(--side) + var(--inset)) 130px;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .room { --dim: 50%; } }
 :root[data-theme="dark"] .room { --dim: 50%; }
@@ -2979,7 +2979,7 @@ select:disabled { cursor: not-allowed; }
 /* ======================================================= trophy mantel
    A wooden mantel shelf high on the back wall, above the case, on two carved
    corbels; the trophies stand on it in a row. */
-.trophy-mantel { position: relative; width: min(66%, 600px); margin: 0 auto 118px; padding-bottom: 16px; z-index: 2; }
+.trophy-mantel { position: relative; width: min(66%, 600px); margin: 0 auto 78px; padding-bottom: 14px; z-index: 2; }
 .mantel-board { position: absolute; left: -14px; right: -14px; bottom: 0; height: 16px; border-radius: 3px;
   background: linear-gradient(180deg, var(--plank-top), var(--wood-2) 60%, var(--wood-3));
   box-shadow: 0 1px 0 rgb(255 255 255 / .15) inset, 0 12px 16px -6px rgb(0 0 0 / .45); }
@@ -3014,16 +3014,16 @@ select:disabled { cursor: not-allowed; }
 .library.editing .trophy-mantel .shelf-block.cabinet { outline: 1.5px dashed rgb(255 230 190 / .45); outline-offset: 4px; border-radius: 8px; }
 @media (prefers-reduced-motion: reduce) { .trophy .trinket-flame { animation: none; } }
 @media (max-width: 560px) {
-  .trophy-mantel { width: 86%; margin-bottom: 96px; }
+  .trophy-mantel { width: 86%; margin-bottom: 70px; }
   .trophy { width: 50px; }
   .trophy svg { height: 36px; }
 }
 
 /* =================================================== audiobooks on spines */
-.lspine.audio .lspine-title { bottom: 42px; }
-.lspine.audio.gilt::after { bottom: 43px; }
+.lspine.audio .lspine-title { bottom: 34px; }
+.lspine.audio.gilt::after { bottom: 34px; }
 .lspine-audio {
-  position: absolute; left: 50%; bottom: 25px; width: 11px; height: 11px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: 20px; width: 10px; height: 10px; transform: translateX(-50%);
   background: var(--brass-1);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M4 15v-3a8 8 0 0 1 16 0v3'/%3E%3Crect x='3' y='14' width='5' height='7' rx='2' fill='black'/%3E%3Crect x='16' y='14' width='5' height='7' rx='2' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round'%3E%3Cpath d='M4 15v-3a8 8 0 0 1 16 0v3'/%3E%3Crect x='3' y='14' width='5' height='7' rx='2' fill='black'/%3E%3Crect x='16' y='14' width='5' height='7' rx='2' fill='black'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -3791,3 +3791,45 @@ a.person-main:hover strong { text-decoration: underline; }
 .dec-grid.swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .dec-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); width: auto; }
 .dec-tabs .seg-btn { min-width: 0; padding-inline: .3rem; overflow: hidden; text-overflow: ellipsis; }
+
+/* ================================================== Releases (main.js) */
+.rel-columns { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.6rem; align-items: start; }
+.rel-col { min-width: 0; }
+.rel-col-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: .4rem .8rem; margin-bottom: .8rem; }
+.rel-col-head h2 { margin: 0; }
+.rel-col-head .btn { margin-left: auto; }
+/* Upcoming's own two lists stack inside its column. */
+.upcoming-col .up-columns { grid-template-columns: 1fr; }
+.news-col { position: sticky; top: 4.2rem; max-height: calc(100dvh - 5rem); overflow-y: auto; padding-right: .3rem; }
+@media (max-width: 900px) {
+  .rel-columns { grid-template-columns: 1fr; }
+  /* On a phone, news first: it is the short, time-sensitive part. */
+  .news-col { order: -1; position: static; max-height: none; overflow: visible; }
+}
+
+/* A compact head and controls, so more of the shelf fits on one screen. */
+.library .lib-head { margin-bottom: .7rem; }
+.library .lib-head .avatar-chip.xl { width: 50px; height: 50px; font-size: 1.25rem; }
+.library .lib-title h1 { font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.3rem); }
+.library .lib-tools { margin-bottom: .4rem; gap: .5rem .8rem; }
+.library .lib-tools .scene-switch { width: auto; margin: 0; flex: 0 1 auto; }
+.library .lib-tools .scene-opt { min-height: 32px; padding: .25rem .7rem; font-size: .82rem; }
+.library .lib-tools .scene-opt .ico { width: 15px; height: 15px; }
+/* In the controls row the room switch is icons, with names only where there is room. */
+.library .lib-tools .scene-opt .scene-label { display: none; }
+.library .lib-tools .scene-opt { padding: .25rem .85rem; }
+@media (min-width: 1500px) { .library .lib-tools .scene-opt .scene-label { display: inline; } }
+@media (max-width: 1100px) { .library .lib-tools .scene-switch { order: 5; } }
+@media (max-width: 760px) {
+  .library .lib-tools .scene-switch { flex-basis: 100%; }
+  .library .lib-tools .scene-opt .scene-label { display: inline; }
+}
+.library .room { padding-top: 30px; }
+.library .trophy-mantel { margin-bottom: 40px; }
+.lib-actions .btn[hidden] { display: none; }
+
+/* The header's actions stay on the title's line: small and close together. */
+.library .lib-actions { gap: .35rem; flex-wrap: nowrap; }
+.library .lib-actions .btn { min-height: 36px; padding-inline: .85rem; font-size: .88rem; }
+.library .lib-actions .btn.secondary .ico { width: 15px; height: 15px; }
+@media (max-width: 760px) { .library .lib-actions { flex-wrap: wrap; } }
