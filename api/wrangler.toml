@@ -1,0 +1,16 @@
+name = "bookshelf-api"
+main = "index.js"
+compatibility_date = "2026-01-01"
+
+# Deleted accounts are purged 30 days on; this runs that once a day.
+[triggers]
+crons = ["17 4 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bookshelf"
+database_id = "local-only"
+
+# Secrets live with Cloudflare, never in this repo:
+#   npx wrangler secret put HARDCOVER_TOKEN
+#   npx wrangler secret put SERVICE_KEY

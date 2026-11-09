@@ -235,3 +235,23 @@ test('seasons by date', () => {
   assert.equal(seasonOf(new Date(2026, 9, 10)), 'autumn');
   assert.equal(seasonOf(new Date(2026, 11, 25)), 'winter');
 });
+
+test('the nightly check by turns: each person in turn, a shared series fetched once', async () => {
+  const { runReleaseCheck } = await import('../docs/app/core/check.js');
+  const reading = (seriesId, authorId) => ({
+    id: `hc:${seriesId}`, hardcoverId: String(seriesId), title: 'B', status: 'read', rating: 5,
+    authors: [{ id: authorId, name: authorId }], series: { id: String(seriesId), name: `S${seriesId}`, position: 1 },
+  });
+  const libraries = { ann: { books: [reading(1, 'x'), reading(2, 'y')] }, bo: { books: [reading(2, 'y'), reading(3, 'z')] } };
+  const fetched = [];
+  // Every Hardcover call is recorded; returning nothing is fine for counting.
+  const gql = async (query, vars) => { fetched.push(JSON.stringify(vars)); return {}; };
+  const done = { series: new Set(), authors: new Set(), tracked: new Set() };
+  const state = { seriesState: {}, authorState: {}, bookState: {}, seen: new Set() };
+  const paced = (fn) => fn();
+  const ann = await runReleaseCheck({ gql, libraries, ...state, paced, only: new Set(['ann']), done });
+  const bo = await runReleaseCheck({ gql, libraries, ...state, paced, only: new Set(['bo']), done });
+  assert.equal(ann.checkedSeries, 2, 'ann: her two series');
+  assert.equal(bo.checkedSeries, 1, 'bo: only series 3 - series 2 was done on ann’s turn');
+  assert.deepEqual([...done.series].sort(), ['1', '2', '3']);
+});

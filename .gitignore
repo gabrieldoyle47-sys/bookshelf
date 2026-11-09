@@ -16,3 +16,5 @@ worker/.wrangler/
 tools/room-art/*.json
 !tools/room-art/notes.json
 tools/room-art/tile.txt
+api/.dev.vars
+api/.wrangler/

@@ -45,12 +45,30 @@ export function makePacer({ burst = 6, gap = 900, backoff = 2000 } = {}) {
  * @param {Set}    args.seen         event keys already logged (mutated)
  * @param {Function} [args.paced]    wraps each API call, for rate limiting
  * @param {Function} [args.log]      progress output
+ * @param {Set}    [args.only]       check only what these profiles watch (one
+ *                                   person's turn in the nightly run); news still
+ *                                   goes to everyone who watches it
+ * @param {object} [args.done]       { series, authors, tracked } Sets of ids
+ *                                   already checked this run (mutated), skipped
  */
 export async function runReleaseCheck({
   gql, libraries, seriesState, authorState, bookState, seen,
-  now = today(), paced = makePacer(), log = () => {},
+  now = today(), paced = makePacer(), log = () => {}, only = null, done = null,
 }) {
-  const { series, authors, readAuthors, tracked } = unionWatchlists(libraries);
+  const all = unionWatchlists(libraries);
+  // On someone's turn: their series, authors and tracked books, minus any
+  // already fetched for someone else tonight.
+  const mine = (watch, kind) => (!only || watch.watchers.some((w) => only.has(w)))
+    && !(done?.[kind]?.has(String(watch.id)));
+  const series = all.series.filter((w) => mine(w, 'series'));
+  const readAuthors = all.readAuthors.filter((w) => mine(w, 'authors'));
+  const tracked = all.tracked.filter((w) => mine(w, 'tracked'));
+  const { authors } = all;
+  if (done) {
+    for (const w of series) done.series.add(String(w.id));
+    for (const w of readAuthors) done.authors.add(String(w.id));
+    for (const w of tracked) done.tracked.add(String(w.id));
+  }
   const events = [];
   const failures = [];
   let newSeries = 0;
