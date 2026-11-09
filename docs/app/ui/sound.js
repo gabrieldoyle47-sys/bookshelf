@@ -113,28 +113,29 @@ const AMBIENT = {
   // A library: the hush of a big room, a clock ticking slowly, now and then a
   // page turning somewhere.
   library(c, out) {
-    const src = c.createBufferSource();
-    src.buffer = noise(5, 'brown');
-    src.loop = true;
-    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
-    const g = c.createGain(); g.gain.value = 0.12;
-    src.connect(lp).connect(g).connect(out);
-    src.start();
+    // Near silence: only a clock ticking slowly, and once in a long while a
+    // page turned very softly somewhere across the room.
     let beat = 0;
     const tick = setInterval(() => {
       const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = beat++ % 2 ? 1650 : 1400;
       const tg = c.createGain(); tg.gain.setValueAtTime(0.012, c.currentTime); tg.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.05);
       o.connect(tg).connect(out); o.start(); o.stop(c.currentTime + 0.06);
     }, 1000);
-    let page;
-    const turn = () => {
-      try { EFFECTS.flip(c, out); } catch { /* ignore */ }
-      page = setTimeout(turn, 14000 + Math.random() * 22000);
+    const softPage = () => {
+      const s2 = c.createBufferSource(); s2.buffer = noise(0.45);
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.7;
+      const t = c.currentTime;
+      bp.frequency.setValueAtTime(2200, t); bp.frequency.exponentialRampToValueAtTime(800, t + 0.4);
+      const pg = c.createGain();
+      pg.gain.setValueAtTime(0.0001, t); pg.gain.exponentialRampToValueAtTime(0.012, t + 0.08);
+      pg.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+      s2.connect(bp).connect(pg).connect(out); s2.start(t);
     };
-    page = setTimeout(turn, 6000);
-    return () => { clearInterval(tick); clearTimeout(page); src.stop(); };
+    let page;
+    const turn = () => { softPage(); page = setTimeout(turn, 30000 + Math.random() * 45000); };
+    page = setTimeout(turn, 12000);
+    return () => { clearInterval(tick); clearTimeout(page); };
   },
-  // Rain: a hiss of noise, high and low cut, with drops landing at random.
   // Rain: a soft patter on a window - gentle, high, no roar - with now and
   // then a heavier drop, and thunder far off.
   rain(c, out) {
@@ -198,61 +199,53 @@ const AMBIENT = {
     crackle();
     return () => { clearTimeout(timer); src.stop(); };
   },
-  // A café: soft murmuring voices across the room - several quiet "talkers"
-  // whose pitch and loudness drift like speech - and every so often a cup
-  // set down, the bell on the door, or the espresso machine's steam.
+  // A café: a soft, distant murmur of conversation - warm noise that swells
+  // and settles slowly, never shaped into "voices" - with, now and then, the
+  // espresso machine's steam or the bell on the counter. Quiet overall.
   cafe(c, out) {
-    const bus = c.createGain(); bus.gain.value = 1;
+    const bus = c.createGain(); bus.gain.value = 0.7;
     bus.connect(out);
-    const voices = [];
-    for (let v = 0; v < 4; v++) {
-      const src = c.createBufferSource(); src.buffer = noise(5, 'pink'); src.loop = true;
-      // Two formant-ish bands per voice, so it reads as speech, not wind.
-      const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 6; f1.frequency.value = 350 + v * 90;
-      const f2 = c.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 7; f2.frequency.value = 1100 + v * 160;
-      const vg = c.createGain(); vg.gain.value = 0;
-      src.connect(f1).connect(vg); src.connect(f2).connect(vg); vg.connect(bus);
-      src.start();
-      voices.push({ src, f1, f2, vg, base1: f1.frequency.value, base2: f2.frequency.value });
+    const layers = [];
+    for (let v = 0; v < 3; v++) {
+      const src = c.createBufferSource(); src.buffer = noise(6, 'pink'); src.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900 + v * 200;
+      const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180;
+      const lg = c.createGain(); lg.gain.value = 0.012;
+      src.connect(hp).connect(lp).connect(lg).connect(bus);
+      src.start(c.currentTime + v * 0.7);
+      layers.push({ src, lg });
     }
-    // Syllables: each voice speaks in short bursts with pauses between.
-    const talk = setInterval(() => {
+    // The room's hum rises and falls gently, over seconds, not syllables.
+    const swell = setInterval(() => {
       const t = c.currentTime;
-      for (const v of voices) {
-        const speaking = Math.random() < 0.6;
-        v.vg.gain.setTargetAtTime(speaking ? 0.02 + Math.random() * 0.025 : 0.002, t, 0.06);
-        v.f1.frequency.setTargetAtTime(v.base1 * (0.85 + Math.random() * 0.3), t, 0.05);
-        v.f2.frequency.setTargetAtTime(v.base2 * (0.85 + Math.random() * 0.3), t, 0.05);
-      }
-    }, 170);
-    const tone = (freq, at, level, length) => {
-      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
-      const og = c.createGain(); og.gain.setValueAtTime(level, at); og.gain.exponentialRampToValueAtTime(0.0001, at + length);
-      o.connect(og).connect(out); o.start(at); o.stop(at + length + 0.05);
+      for (const l of layers) l.lg.gain.setTargetAtTime(0.008 + Math.random() * 0.01, t, 1.5);
+    }, 2500);
+    const steam = () => {
+      const s2 = c.createBufferSource(); s2.buffer = noise(3.5);
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4500; f.Q.value = 0.8;
+      const sg = c.createGain(); const t = c.currentTime;
+      sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime(0.012, t + 0.5);
+      sg.gain.setValueAtTime(0.012, t + 2.4); sg.gain.exponentialRampToValueAtTime(0.0001, t + 3.3);
+      s2.connect(f).connect(sg).connect(bus); s2.start(t);
     };
-    const events = [
-      // A cup on a saucer.
-      () => { const t = c.currentTime; tone(2600 + Math.random() * 600, t, 0.02, 0.35); tone(3900 + Math.random() * 500, t + 0.01, 0.01, 0.25); },
-      // The bell over the door.
-      () => { const t = c.currentTime; tone(1760, t, 0.025, 1.4); tone(2217, t + 0.12, 0.02, 1.2); },
-      // The espresso machine: a few seconds of steam.
-      () => {
-        const s = c.createBufferSource(); s.buffer = noise(3.5);
-        const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 4500; f.Q.value = 0.8;
-        const sg = c.createGain(); const t = c.currentTime;
-        sg.gain.setValueAtTime(0.0001, t); sg.gain.exponentialRampToValueAtTime(0.03, t + 0.4);
-        sg.gain.setValueAtTime(0.03, t + 2.6); sg.gain.exponentialRampToValueAtTime(0.0001, t + 3.4);
-        s.connect(f).connect(sg).connect(out); s.start(t);
-      },
-    ];
+    // A service bell on the counter: one bright strike that rings out.
+    const bell = () => {
+      const t = c.currentTime;
+      for (const [freq, level, length] of [[2093, 0.02, 1.6], [5230, 0.006, 0.7], [3380, 0.005, 1.0]]) {
+        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = freq;
+        const og = c.createGain();
+        og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(level, t + 0.004);
+        og.gain.exponentialRampToValueAtTime(0.0001, t + length);
+        o.connect(og).connect(bus); o.start(t); o.stop(t + length + 0.05);
+      }
+    };
     let timer;
     const next = () => {
-      const pick = Math.random();
-      events[pick < 0.55 ? 0 : pick < 0.75 ? 1 : 2]();
-      timer = setTimeout(next, 6000 + Math.random() * 12000);
+      (Math.random() < 0.55 ? steam : bell)();
+      timer = setTimeout(next, 15000 + Math.random() * 25000);
     };
-    timer = setTimeout(next, 3000);
-    return () => { clearInterval(talk); clearTimeout(timer); for (const v of voices) v.src.stop(); bus.disconnect(); };
+    timer = setTimeout(next, 6000);
+    return () => { clearInterval(swell); clearTimeout(timer); for (const l of layers) l.src.stop(); bus.disconnect(); };
   },
 };
 
