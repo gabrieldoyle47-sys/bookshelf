@@ -80,13 +80,15 @@ You can override any of it with `books watch` / `books unwatch`.
 - **The trophy cabinet.** A small glass-fronted cabinet hanging under the case holds
   a trophy for every series you have finished completely: a trinket for its genre,
   in the series' own spine colour, with its name on a brass plaque.
-- **The room.** The bookshelf stands in a small illustrated room, on a floor with a
-  rug, under a basket of trailing ivy, beside a brass floor lamp that comes on after
-  dark. The three scene icons in the sidebar change the room — a fireplace with a fire
-  going and a wingback chair, a dark bedroom on a stormy night with rain and lightning
-  in the window, or a café with a chalkboard, counter, pendant lights and tiles — and
-  play its sound when sound is on. With none chosen it's a reading room with a window
-  whose sky follows the time of day and lets a faint stream of light across the shelves.
+- **The room.** The bookshelf stands against the back wall of a small room drawn in
+  perspective — side walls, floor and ceiling receding in 3D — with a tall fig in one
+  corner, a brass floor lamp in the other (on after dark), a basket of ivy hung from
+  the ceiling, and a rug. The switch above it picks the room: *Home* (a window on the
+  side wall whose sky follows the time of day, sun across the floor), *Fireplace*
+  (a fire going on the side wall, a wingback chair), *Rainy* (a dark bedroom with a
+  storm in the window and the bed in the corner) or *Café* (tiles, a chalkboard,
+  pendant lights, a counter and a table, a checked floor). With sound on, the room's
+  sound plays too.
 - **Opening a book.** Click a book anywhere and it opens: the cover swings back and
   the details are on the pages — rating, note, start and finish dates, days taken,
   pace, listening hours and narrator — with *Edit* leading to the usual panel.
@@ -137,9 +139,9 @@ You can override any of it with `books watch` / `books unwatch`.
   your taste moved month by month, personal records, a passport stamp for each
   country your authors come from, your favourites, and a card to save or copy.
 - **Sound, if you want it.** Off by default. The speaker in the sidebar turns all
-  sound on or off: a few quiet effects (a page turning, a soft chime) and the chosen
-  scene's background — a crackling fire, rain with distant thunder, or a café — with
-  a volume slider.
+  sound on or off — a few quiet effects (a page turning, a soft chime) and the room's
+  background: a crackling fire, rain with distant thunder, or a café — with a volume
+  slider beside it.
 - **A short tour** on a first visit and for each new person; Settings can show it
   again.
 - **Undo.** Removing a book, hiding a release and passing on a recommendation

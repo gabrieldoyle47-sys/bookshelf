@@ -24,8 +24,8 @@ import { readOnOf, cleanTags, isAudiobook, audioHours, today } from '../core/mod
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { avatar } from './together.js';
-import { roomBack, hangingBasket, floorLamp, lightRoom } from './room.js';
-import { getScene } from './sound.js';
+import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, floorLamp, lightRoom } from './room.js';
+import { getScene, setScene } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
 import { THEMES_ON } from './themes.js';
 
@@ -104,7 +104,9 @@ export function libraryView(ctx, profile) {
   let editing = null; // a working copy of the layout while rearranging
   const caseBox = h('div', { class: 'bookcase' });
   const tools = h('div', { class: 'lib-tools' });
-  const root = h('div', { class: 'library' }, head, tools, caseBox, legend());
+  // The room's scene, chosen above it.
+  const scenes = sceneSwitch(getScene() ?? 'reading', (id) => setScene(id));
+  const root = h('div', { class: 'library' }, head, scenes, tools, caseBox, legend());
   const relight = lightRoom(root);
 
   const chips = (items, current, set, label) => h('div', { class: 'seg', role: 'tablist', 'aria-label': label },
@@ -261,11 +263,12 @@ export function libraryView(ctx, profile) {
 
     if (prefs.arrange === 'rainbow' && !editing) {
       const books = all.filter(visible);
-      if (!books.length) { fill(caseBox, bookcase([emptyBlock()], relight)); return relight(); }
+      if (!books.length) { fill(caseBox, bookcase([emptyBlock()], relight)); requestAnimationFrame(() => fitRoom(caseBox.querySelector('.room'))); return relight(); }
       // Sorted by spine colour: a shelf you'd photograph.
       const sorted = [...books].sort((a, b) => hue(colourOf(a).cloth) - hue(colourOf(b).cloth));
       fill(caseBox, bookcase([shelfBlock('Rainbow', sorted.length,
         [h('div', { class: 'shelf-group' }, sorted.map(spine))], [ornament('plant')])], relight));
+      requestAnimationFrame(() => fitRoom(caseBox.querySelector('.room')));
       return relight();
     }
 
@@ -322,7 +325,7 @@ export function libraryView(ctx, profile) {
       (layout.top ?? []).map((k) => ornamentEl(k.slice(2))));
     fill(caseBox, bookcase(shelves.length ? shelves : [emptyBlock()], relight, cabinet, top));
     relight();
-    requestAnimationFrame(() => tidyLines(caseBox, Boolean(editing)));
+    requestAnimationFrame(() => { tidyLines(caseBox, Boolean(editing)); fitRoom(caseBox.querySelector('.room')); });
     if (editing) {
       const wrap = caseBox.querySelector('.case-wrap');
       enableDrag(wrap, { onDrop: () => { editing = { ...editing, shelves: readShelves(wrap, editing.shelves), top: readTop(wrap) }; } });
@@ -372,7 +375,9 @@ export function libraryView(ctx, profile) {
     const room = caseBox.querySelector('.room');
     if (!room) return;
     room.dataset.scene = getScene() ?? 'reading';
-    room.querySelector('.room-back')?.replaceWith(roomBack(getScene()));
+    room.querySelector('.room-box')?.replaceWith(roomBox(getScene()));
+    room.querySelector('.room-front')?.replaceWith(roomFront(getScene()));
+    fitRoom(room);
     relight();
   };
   addEventListener('bookshelf:scene', onScene);
@@ -381,7 +386,11 @@ export function libraryView(ctx, profile) {
 
   paintTools();
   paint(animate);
-  const onResize = () => (root.isConnected ? tidyLines(caseBox, Boolean(editing)) : removeEventListener('resize', onResize));
+  const onResize = () => {
+    if (!root.isConnected) return removeEventListener('resize', onResize);
+    tidyLines(caseBox, Boolean(editing));
+    fitRoom(caseBox.querySelector('.room'));
+  };
   addEventListener('resize', onResize);
   return root;
 }
@@ -455,9 +464,11 @@ function bookcase(blocks, relight, cabinet = null, top = null) {
   const motes = Array.from({ length: 9 }, (_, n) => h('i', { class: 'mote', style: `--n:${n}` }));
   const scene = getScene();
   return h('div', { class: 'room', dataset: { scene: scene ?? 'reading' } },
+    roomBox(scene),
+    roomFront(scene),
     h('div', { class: 'case-wrap' },
       h('div', { class: 'case' },
-        roomBack(scene),
+        cornerPlant(),
         h('div', { class: 'case-crown', 'aria-hidden': 'true' }, h('div', { class: 'fairy-lights' }, bulbs)),
         top,
         hangingBasket(),

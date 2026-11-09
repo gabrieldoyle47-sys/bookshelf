@@ -1,22 +1,22 @@
 /**
  * The room the bookshelf stands in.
  *
- * The case stands against the back wall of a small illustrated room: a floor
- * it stands on, and whatever the chosen scene puts around it -
+ * The case stands against the back wall of a small room drawn in perspective
+ * - back wall, side walls, floor and ceiling - and the chosen scene furnishes
+ * it:
  *
- *   reading  (no scene chosen) a window on the back wall, a framed print, a
- *            side table with books, a rug
- *   fire     a fireplace with a fire going, a wingback chair, firelight on
- *            the shelves
+ *   reading  "Home": a window on the left wall, a print on the right, a fig
+ *            in the corner, a side table, a rug
+ *   fire     a fireplace on the left wall with a fire going, a wingback
+ *            chair, firelight on the floor and the shelves
  *   rain     a dark bedroom on a stormy night: rain and lightning in the
  *            window, a bed with a quilt, the lamp on
- *   cafe     a chalkboard menu, a counter with an espresso machine, pendant
- *            lights, a café table, tiles
+ *   cafe     a chalkboard menu, a counter, a café table, pendant lights,
+ *            tiles and a checked floor
  *
- * The scene is picked with the sound icons in the sidebar (sound.js), which
- * play its sound too. Everything behind the case is drawn behind it, a little
- * dimmer and softer, so the page has depth. The window's sky and the light in
- * the room follow the time of day.
+ * The scene is picked with the switch above the room (sceneSwitch), and with
+ * sound on its sound plays (sound.js). The window's sky and the light in the
+ * room follow the time of day.
  *
  * Sunrise and sunset are worked out from the date for a mid-northern latitude
  * (about Montreal's), since the site never asks where anyone is.
@@ -71,6 +71,16 @@ const ART = {
     <path d="M10 106h168M10 120h168M50 92v44M90 88v48M130 88v48" stroke="#2f4a60" stroke-width="2"/>
     <path d="M30 98h14v10H30zM104 112h18v10h-18zM64 124h14v8H64z" fill="#b8865a" opacity=".8"/>
     <path d="M60 86l22-8 22 8-22 4z" fill="#f4ead6"/><path d="M82 78v12" stroke="#c9b48a" stroke-width="1.4"/></svg>`,
+  // A fiddle-leaf fig in a tall pot.
+  fig: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 260">
+    <ellipse cx="60" cy="254" rx="40" ry="6" fill="#000" opacity=".28"/>
+    <path d="M32 190h56l-6 62H38z" fill="#c9b8a0"/><path d="M28 182h64v12H28z" fill="#ddd0bc"/><path d="M36 200h48" stroke="#b5a48c" stroke-width="2"/>
+    <path d="M60 184V60M60 120c-8-10-20-14-30-12M60 96c10-8 22-10 30-6M60 150c-10-6-20-6-28 0" stroke="#5a4028" stroke-width="3" fill="none"/>
+    <g fill="#3f7d4c"><path d="M30 108c-22-4-30 12-26 24 14 4 26-6 26-24z"/><path d="M90 90c20-6 30 8 26 20-14 4-26-4-26-20z"/>
+    <path d="M32 150c-20 0-26 16-20 26 14 0 22-10 20-26z"/><path d="M60 60c-14-16-6-34 6-40 10 14 6 30-6 40z"/></g>
+    <g fill="#4f9a5c"><path d="M60 80c-18-6-28 6-26 18 12 4 24-2 26-18z"/><path d="M62 70c14-12 30-6 32 6-10 8-24 8-32-6z"/>
+    <path d="M60 130c16-8 30 0 30 12-12 6-26 2-30-12z"/><path d="M58 40c-10-14-2-28 8-30 6 12 2 24-8 30z"/></g>
+    <g fill="#5fae6b"><path d="M60 116c-14 2-20 14-16 22 10 0 18-8 16-22z"/><path d="M64 50c12-10 24-4 24 6-8 6-18 6-24-6z"/></g></svg>`,
   // A small framed landscape.
   print: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80">
     <rect x="2" y="2" width="96" height="76" rx="2" fill="#7a5530"/><rect x="9" y="9" width="82" height="62" fill="#f3ead8"/>
@@ -165,49 +175,108 @@ function drawing(name, cls = '') {
   return h('span', { class: `room-item ${name} ${cls}`.trim(), 'aria-hidden': 'true' }, svg);
 }
 
-/** A window set into the back wall: sky, sun or moon, stars, clouds, and rain if it is raining. */
-function wallWindow(rainy) {
+/** A window: sky, sun or moon, stars, clouds, and a storm if it is a stormy night. */
+function roomWindow(stormy) {
   const stars = Array.from({ length: 10 }, (_, n) => h('i', { class: 'win-star', style: `--n:${n}` }));
-  return h('div', { class: `wall-window${rainy ? ' rainy' : ''}`, 'aria-hidden': 'true' },
+  return h('div', { class: `wall-window${stormy ? ' rainy' : ''}`, 'aria-hidden': 'true' },
     h('div', { class: 'win-sky' },
       h('i', { class: 'win-sun' }), h('i', { class: 'win-moon' }), stars,
       h('i', { class: 'win-cloud c1' }), h('i', { class: 'win-cloud c2' }),
-      rainy ? [h('i', { class: 'rain r1' }), h('i', { class: 'rain r2' }),
+      stormy ? [h('i', { class: 'rain r1' }), h('i', { class: 'rain r2' }),
         ...Array.from({ length: 8 }, (_, n) => h('i', { class: 'raindrop', style: `--n:${n}` }))] : null),
-    rainy ? h('i', { class: 'win-flash' }) : null,
+    stormy ? h('i', { class: 'win-flash' }) : null,
     h('div', { class: 'win-frame' }),
-    h('div', { class: 'win-sill' }, rainy ? h('span', { class: 'sill-candle' }, h('i')) : null));
+    h('div', { class: 'win-sill' }, stormy ? h('span', { class: 'sill-candle' }, h('i')) : null));
 }
 
 /**
- * Everything behind and around the case for a scene. It sits inside the
- * case's box, behind it, so things can tuck behind the case's edges.
+ * The room itself, in perspective: a back wall the case stands against, two
+ * side walls, a floor and a ceiling, hinged off the back wall's edges and
+ * turned towards the viewer (CSS 3D), so the floorboards, the rug, the
+ * skirting and anything on the side walls all recede properly. What hangs on
+ * the walls goes on the walls themselves; the window is on the left wall and
+ * throws a patch of light across the floor.
  */
-export function roomBack(scene) {
-  const floorItems = [];
-  const wallItems = [];
+export function roomBox(scene) {
+  const left = [];
+  const right = [];
+  const floor = [h('div', { class: 'rug' })];
   if (scene === 'fire') {
-    wallItems.push(drawing('print', 'right'));
-    floorItems.push(drawing('fireplace', 'left'), drawing('armchair', 'right'));
+    left.push(drawing('fireplace', 'on-wall'));
+    right.push(drawing('print', 'on-wall'));
+    floor.push(h('div', { class: 'fire-pool' }));
   } else if (scene === 'cafe') {
-    wallItems.push(drawing('chalkboard', 'left'), h('div', { class: 'bokeh', 'aria-hidden': 'true' },
-      Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))),
-    drawing('pendant', 'p1'), drawing('pendant', 'p2'));
-    floorItems.push(drawing('counter', 'left'), drawing('cafeTable', 'right'));
-  } else if (scene === 'rain') {
-    // A stormy night in a dark bedroom: the rain stays out in the window.
-    wallItems.push(wallWindow(true), drawing('print', 'right high'), h('div', { class: 'lightning', 'aria-hidden': 'true' }));
-    floorItems.push(drawing('bed', 'right'));
+    left.push(drawing('chalkboard', 'on-wall'));
+    right.push(roomWindow(false));
+    floor.push(h('div', { class: 'light-patch from-right' }));
   } else {
-    wallItems.push(wallWindow(false), drawing('print', 'right'));
-    floorItems.push(drawing('sideTable', 'right'));
+    left.push(roomWindow(scene === 'rain'));
+    right.push(drawing('print', 'on-wall'));
+    if (scene !== 'rain') floor.push(h('div', { class: 'light-patch' }));
   }
-  return h('div', { class: 'room-back', 'aria-hidden': 'true' },
-    h('div', { class: 'room-wall-shade' }),
-    wallItems,
-    h('div', { class: 'room-floor' }, h('div', { class: 'rug' })),
-    floorItems,
-    scene === 'fire' ? h('div', { class: 'firelight' }) : null);
+  return h('div', { class: 'room-box', 'aria-hidden': 'true' },
+    h('div', { class: 'wall back' }),
+    h('div', { class: 'wall side left' }, left),
+    h('div', { class: 'wall side right' }, right),
+    h('div', { class: 'floor' }, floor),
+    h('div', { class: 'ceiling' }));
+}
+
+/** What stands in the room in front, at the corners - it is what makes the room deep. */
+export function roomFront(scene) {
+  const items = {
+    fire: [drawing('armchair', 'front right')],
+    rain: [drawing('bed', 'front right')],
+    cafe: [drawing('cafeTable', 'front right'), drawing('counter', 'front left')],
+  }[scene] ?? [drawing('sideTable', 'front right')];
+  return h('div', { class: 'room-front', 'aria-hidden': 'true' },
+    scene === 'cafe' ? [drawing('pendant', 'p1'), drawing('pendant', 'p2')] : null,
+    scene === 'cafe' ? h('div', { class: 'bokeh' }, Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))) : null,
+    scene === 'rain' ? h('div', { class: 'lightning' }) : null,
+    h('div', { class: 'room-shade' }),
+    items);
+}
+
+/** A tall plant in a pot, in the back corner beside the case. */
+export const cornerPlant = () => drawing('fig', 'corner-plant');
+
+/**
+ * Fit the room to the case: the back wall ends where the case stands, and
+ * the eye looks at the middle of it. Measured, because the case's height is
+ * whatever its books make it.
+ */
+export function fitRoom(room) {
+  const box = room?.querySelector('.room-box');
+  const kase = room?.querySelector('.case');
+  if (!box || !kase) return;
+  const r = room.getBoundingClientRect();
+  const c = kase.getBoundingClientRect();
+  const bottom = Math.max(0, r.bottom - c.bottom);
+  box.style.bottom = `${bottom}px`;
+  const top = parseFloat(getComputedStyle(box).top) || 0;
+  room.style.perspectiveOrigin = `50% ${Math.round(top + (r.height - top - bottom) * 0.42)}px`;
+}
+
+/** The four scenes, for the switch on the bookshelf page. */
+export const SCENES = [['reading', 'ico-home', 'Home'], ['fire', 'ico-fire', 'Fireplace'], ['rain', 'ico-rain', 'Rainy'], ['cafe', 'ico-cup', 'Café']];
+
+/**
+ * The long switch above the room: Home, Fireplace, Rainy night, Café. It
+ * changes the room and, with sound on, what plays (sound.js).
+ */
+export function sceneSwitch(current, onPick) {
+  const box = h('div', { class: 'scene-switch', role: 'radiogroup', 'aria-label': 'Room' });
+  const paint = (id) => {
+    for (const b of box.children) b.setAttribute('aria-checked', String(b.dataset.id === id));
+    box.style.setProperty('--at', String(SCENES.findIndex(([x]) => x === id)));
+  };
+  box.append(...SCENES.map(([id, icon, label]) => h('button', {
+    class: 'scene-opt', type: 'button', role: 'radio', dataset: { id }, 'aria-checked': String(id === current),
+    onclick: () => { paint(id); onPick(id); },
+  }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' }), h('span', { class: 'scene-label', text: label }))));
+  box.prepend(h('span', { class: 'scene-thumb', 'aria-hidden': 'true' }));
+  paint(current);
+  return box;
 }
 
 /** The basket on its cord, top left, its vine trailing down the side of the case. */

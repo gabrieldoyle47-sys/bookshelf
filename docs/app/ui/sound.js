@@ -8,9 +8,9 @@
  *   when one is finished or picked from the jar, a quiet tick when something
  *   is set down on the shelf.
  *
- *   Background - a crackling fire, rain, or a café's murmur, which goes with
- *   the scene chosen for the bookshelf's room (room.js) by the three icons
- *   beside the speaker. A volume slider appears while one is playing.
+ *   Background - a crackling fire, rain and thunder, or a café's murmur,
+ *   which goes with the scene chosen for the bookshelf's room by the switch
+ *   above it (room.js). The slider beside the speaker sets its volume.
  *
  * Everything is made on the spot with Web Audio - filtered noise and a few
  * sine tones - so there are no files to download, and nothing plays until
@@ -18,7 +18,7 @@
  * device.
  */
 
-import { h, toast } from './dom.js';
+import { h } from './dom.js';
 
 const KEY = 'bookshelf.sound';
 const prefs = { effects: false, ambient: null, volume: 0.5 };
@@ -216,9 +216,7 @@ function stopAmbient() {
 
 /* ---------------------------------------------------------------- controls */
 
-const SCENES = [['fire', 'ico-fire', 'Fireplace'], ['rain', 'ico-rain', 'Stormy night'], ['cafe', 'ico-cup', 'Coffee shop']];
-
-/** The scene the bookshelf's room shows: 'fire', 'rain', 'cafe', or null for the reading room. */
+/** The scene the bookshelf's room shows: 'fire', 'rain', 'cafe', or null for home. */
 export const getScene = () => prefs.ambient ?? null;
 
 /** Play the scene's background, if sound is on; otherwise make sure it is quiet. */
@@ -227,10 +225,19 @@ function syncAmbient() {
 }
 
 /**
- * The sidebar controls. The speaker turns all sound on or off. The three
- * icons choose the scene in the bookshelf's room - a fireplace, a rainy day,
- * a coffee shop - and with sound on, its sound; picking the chosen one again
- * goes back to the plain reading room.
+ * Choose the room's scene (from the switch on the bookshelf page). Its sound
+ * plays if sound is on; home is quiet.
+ */
+export function setScene(id) {
+  prefs.ambient = id && id !== 'reading' ? id : null;
+  save();
+  syncAmbient();
+  dispatchEvent(new CustomEvent('bookshelf:scene', { detail: getScene() }));
+}
+
+/**
+ * The sidebar controls: the speaker turns all sound on or off, and the
+ * slider sets how loud the room's background is.
  */
 export function soundControls() {
   const box = h('div', { class: 'sound-controls' });
@@ -238,32 +245,18 @@ export function soundControls() {
     box.replaceChildren(h('div', { class: 'sound-pill' },
       h('button', {
         class: 'sound-opt speaker', type: 'button', 'aria-pressed': String(prefs.effects),
-        title: prefs.effects ? 'Sound on' : 'Sound off', 'aria-label': 'Sound',
+        title: prefs.effects ? 'Sound on — click to mute' : 'Sound off — click to turn on', 'aria-label': 'Sound',
         onclick: () => { prefs.effects = !prefs.effects; save(); syncAmbient(); paint(); play('tick'); },
       }, h('span', { class: `ico ${prefs.effects ? 'ico-sound' : 'ico-mute'}`, 'aria-hidden': 'true' })),
-      h('span', { class: 'sound-sep', 'aria-hidden': 'true' }),
-      ...SCENES.map(([id, icon, label]) => h('button', {
-        class: 'sound-opt', type: 'button', 'aria-pressed': String(prefs.ambient === id), title: label, 'aria-label': label,
-        onclick: () => {
-          prefs.ambient = prefs.ambient === id ? null : id;
-          save();
-          syncAmbient();
-          paint();
-          dispatchEvent(new CustomEvent('bookshelf:scene', { detail: getScene() }));
-          if (prefs.ambient && !prefs.effects && !hinted) {
-            hinted = true;
-            toast('Sound is off — the speaker turns it on.');
-          }
-        },
-      }, h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' })))),
-      prefs.ambient && prefs.effects ? h('input', {
-        class: 'sound-volume', type: 'range', min: '0.05', max: '1', step: '0.05', value: String(prefs.volume), 'aria-label': 'Background volume',
+      h('input', {
+        class: 'sound-volume', type: 'range', min: '0.05', max: '1', step: '0.05', value: String(prefs.volume),
+        'aria-label': 'Volume', disabled: !prefs.effects,
         oninput: (e) => {
           prefs.volume = Number(e.target.value);
           save();
           if (bed) bed.gain.gain.setTargetAtTime(prefs.volume, audio().currentTime, 0.1);
         },
-      }) : '');
+      })));
   };
   paint();
   // A scene's sound left on last visit resumes on the first click anywhere -
@@ -273,5 +266,3 @@ export function soundControls() {
   }
   return box;
 }
-
-let hinted = false;
