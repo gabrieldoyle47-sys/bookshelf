@@ -7,18 +7,20 @@ on:
     - cron: '7 13 * * *'
   workflow_dispatch:
 
-# Needed to push the refreshed data back to the branch.
+# Nothing is committed any more: the shelves and the watcher's state live in
+# the accounts database, read and written through the API's service key.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  # Never let two runs write the data files at once.
   group: release-check
   cancel-in-progress: false
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    # One shelf a minute: twenty people is about twenty minutes.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -31,22 +33,9 @@ jobs:
       - name: Run tests
         run: node --test test/watch.test.js
 
-      - name: Check watched series
+      - name: Check each shelf in turn
         env:
           HARDCOVER_API_TOKEN: ${{ secrets.HARDCOVER_API_TOKEN }}
-        run: node src/run-check.js
-
-      - name: Commit any changes
-        run: |
-          if [ -z "$(git status --porcelain docs/data)" ]; then
-            echo "No changes — nothing new today."
-            exit 0
-          fi
-          git config user.name  "bookshelf-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/data
-          git commit -m "Release check $(date -u +%Y-%m-%d)"
-          # Someone may have added a book from the website mid-run; rebase
-          # rather than clobber their commit.
-          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          BOOKSHELF_API: ${{ vars.BOOKSHELF_API }}
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+        run: node src/run-check-api.js

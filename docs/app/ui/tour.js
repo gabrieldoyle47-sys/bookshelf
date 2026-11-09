@@ -18,10 +18,11 @@ const markToured = () => { try { localStorage.setItem(KEY, '1'); } catch { /* pr
 const STEPS = [
   { target: '.case .lspine', title: 'Your bookshelf', text: 'Every book stands here, a series together in its own colour. Click one to open it.' },
   { target: '.rearrange-btn', title: 'Make it yours', text: 'Rearrange the books and ornaments by hand. Double-click an ornament to swap it for another.' },
-  { target: '.shelf-block.cabinet', title: 'The trophy cabinet', text: 'Finish every book in a series and its trophy goes here.' },
+  { target: '.shelf-block.cabinet', title: 'Trophies', text: 'Finish every book in a series and its trophy stands on the mantel above your shelf.' },
   { target: '.tabs, .bottom-nav', title: 'Everything else', text: 'Your books as a list, recommendations, upcoming releases, news and stats.' },
-  { target: '#nav .nav-group', title: 'Everyone’s shelves', text: 'Each person has their own. Right-click a name for their colour and theme.' },
-  { target: '#sound-slot', title: 'Something to read by', text: 'Little sounds, or a crackling fire, rain or a café in the background. All off until you choose.' },
+  { target: '#nav .nav-add', title: 'Friends', text: 'Find people by name, send a request, and once they accept, their shelves appear here.' },
+  { target: '.scene-switch', title: 'Your room', text: 'Pick the room your shelf stands in. Decorate changes your colours, type and what is in the room.' },
+  { target: '#sound-slot', title: 'Something to read by', text: 'Turn sound on to hear your room — a fire, the rain, a café. Off until you choose.' },
 ];
 
 const visible = (el) => {
