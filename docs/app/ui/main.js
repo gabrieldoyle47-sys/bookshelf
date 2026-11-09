@@ -62,6 +62,7 @@ const ctx = { state, actions: {} };
 // Views call this when a display-only preference changes (grouping, say) and
 // the data itself is untouched.
 ctx.actions.rerender = () => render();
+ctx.actions.openCard = (id) => openCard(ctx, id);
 
 const PROFILE_TABS = [
   // The bookshelf is where a profile opens; the list view is "Books".
@@ -576,8 +577,9 @@ function renderSidebar() {
       'aria-haspopup': 'menu',
       title: 'Right-click for options',
       ...menu.handlers,
-      // A person's name opens their library card; their shelf is a button on it.
-      onclick: () => { if (!menu.consumed()) openCard(ctx, p.id); },
+      // A person's name opens their bookshelf; their library card is behind
+      // the sigil at the top of it.
+      onclick: () => { if (!menu.consumed()) go(`#/p/${p.id}`); },
     },
       sigilEl(p, { size: 'dot' }),
       p.name,

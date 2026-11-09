@@ -59,24 +59,62 @@ export function sigilOf(p) {
   return { icon: 'letter', bg: p?.colour ?? '#a2461f', letter: (p?.name ?? '?').slice(0, 1).toUpperCase() };
 }
 
-const svgIcon = (path, cls = '') => {
+/**
+ * Where each icon's ink really sits, measured (rendered and weighed, half
+ * bounding box and half centre of mass - the point the eye takes as the
+ * middle), and how much to scale it so they all look about the same size:
+ * [centre x, centre y, scale]. Without this a mountain sat three units low in
+ * its circle and the sun nearly touched the edge.
+ * Re-measure if a path changes (see tools/ in the README).
+ */
+export const ICON_FIT = {
+  book: [12, 12.07, 0.98], quill: [12.16, 12, 1.01], inkwell: [12.07, 12.25, 0.95], glasses: [12, 12.39, 0.9],
+  bookmark: [12, 11.95, 0.9], lantern: [12, 12.41, 0.95], key: [12.5, 10.39, 0.94], crown: [12, 13.71, 0.9],
+  candle: [12, 12.41, 0.9], teacup: [11.32, 12.85, 0.9], compass: [12, 12, 0.9], sword: [12.29, 11.71, 1.01],
+  moon: [11.35, 12.65, 1.04], star: [12, 11.75, 0.94], sun: [12, 12, 0.85], leaf: [12.25, 11.75, 1.07],
+  rose: [12, 12.52, 1.01], mushroom: [11.99, 11.51, 1.01], feather: [12, 11.91, 1.01], mountain: [11.84, 15.4, 0.9],
+  wave: [12, 11.86, 0.9], flame: [12.08, 13.23, 1.01], cat: [12, 12.21, 1.01], owl: [12, 11.49, 0.95],
+  fox: [12, 11.93, 0.95], raven: [11.87, 12.12, 0.9], dragon: [12.09, 11.71, 1.01], tree: [12, 10.69, 0.86],
+  ten: [11.82, 11.91, 1.15], stack: [12, 14.76, 1.01], shelf: [11.46, 12.13, 0.9], laurel: [12, 12.28, 0.95],
+  pages: [12.45, 12.21, 0.9], door: [12.29, 12.19, 0.9], map: [12, 12, 0.9], headphones: [12, 12.39, 1.01],
+  heart: [12, 12.49, 1.13], quills: [12.13, 11.81, 0.95], medal: [12, 12.85, 0.9], medals: [12, 9.61, 1.01],
+};
+
+/**
+ * An icon as an SVG group, moved to sit in the optical middle of a box
+ * centred on `at`. Stroke width comes from CSS (--sw) and is divided by the
+ * scale, so every icon's lines stay the same weight.
+ */
+export function iconGroup(name, d, { at = 12, k = 1 } = {}) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const [ox, oy, s] = ICON_FIT[name] ?? [12, 12, 1];
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', `translate(${at} ${at}) scale(${+(s * k).toFixed(3)}) translate(${-ox} ${-oy})`);
+  const el = document.createElementNS(NS, 'path');
+  el.setAttribute('d', d);
+  el.setAttribute('style', `stroke-width:calc(var(--sw, 1.9px) / ${s})`);
+  g.append(el);
+  return g;
+}
+
+/** A named sigil icon in a 24-unit SVG, centred by eye. */
+export function iconSvg(name, cls = '') {
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('aria-hidden', 'true');
   if (cls) svg.setAttribute('class', cls);
-  const el = document.createElementNS(NS, 'path');
-  el.setAttribute('d', path);
-  svg.append(el);
+  svg.append(iconGroup(name, SIGILS[name] ?? SIGILS.book));
   return svg;
-};
+}
+const svgIcon = iconSvg;
 
 /** The mark itself: icon (or letter) on its colour, sized by CSS. */
 export function sigilEl(p, { size = '', title = p?.name } = {}) {
   const s = sigilOf(p);
   const el = h('span', { class: `sigil ${size}`, style: `--sg:${/^#[0-9a-f]{6}$/i.test(s.bg) ? s.bg : '#a2461f'}`, title, 'aria-hidden': 'true' });
   if (s.icon === 'letter') el.append(h('span', { class: 'sigil-letter', text: (s.letter || p?.name?.[0] || '?').toUpperCase() }));
-  else el.append(svgIcon(SIGILS[s.icon]));
+  else el.append(svgIcon(s.icon));
   return el;
 }
 
@@ -84,7 +122,7 @@ export function sigilEl(p, { size = '', title = p?.name } = {}) {
 export function sigilMark(p) {
   const s = sigilOf(p);
   if (s.icon === 'letter') return h('span', { class: 'sigil-mark letter', text: (s.letter || '?').toUpperCase() });
-  return h('span', { class: 'sigil-mark' }, svgIcon(SIGILS[s.icon]));
+  return h('span', { class: 'sigil-mark' }, svgIcon(s.icon));
 }
 
 /** Choosing a sigil: an icon (or your initial) and a colour, previewed as you go. */
@@ -103,7 +141,7 @@ export function sigilPicker(profile, current, onChange) {
     onclick: () => { pick = { ...pick, icon: 'letter' }; paint(); } }, h('span', { class: 'sigil-letter', text: (profile.name ?? '?')[0].toUpperCase() })));
   for (const [id, name] of Object.entries(SIGIL_NAMES)) {
     icons.append(h('button', { class: 'sp-icon', type: 'button', role: 'radio', dataset: { icon: id }, title: name, 'aria-label': name,
-      onclick: () => { pick = { ...pick, icon: id }; paint(); } }, svgIcon(SIGILS[id])));
+      onclick: () => { pick = { ...pick, icon: id }; paint(); } }, svgIcon(id)));
   }
   for (const c of SIGIL_COLOURS) {
     colours.append(h('button', { class: 'swatch', type: 'button', role: 'radio', dataset: { c }, style: `background:${c}`, 'aria-label': `Colour ${c}`,

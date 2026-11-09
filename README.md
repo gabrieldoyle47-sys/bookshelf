@@ -198,14 +198,15 @@ shelf it actually covers rather than implying it knows the whole picture.
 - **Sigil.** Everyone picks a mark — a small icon (or their initial) on a colour. It's
   their avatar everywhere, an optional stamp at the foot of their spines, and the seal
   on their library card.
-- **Library card.** Clicking anyone (or your own button, top right) opens their card: a
-  banner (a pattern or a wash from a book cover), bio, stats, favourite genre, what
+- **Library card.** Clicking a person opens their bookshelf; the sigil at the top of it
+  (or your own button, top right) opens their card: a banner (one of nine flowing
+  designs in their colour, or a wash from a book cover), bio, stats, favourite genre, what
   they're reading, recent finishes stamped like date-due slips, up to five favourites
   (gold bookmarks on the spines) and their badges and trophies. From the card: open
   their bookshelf, or "You & them".
 - **Badges** — 17 in four families (Milestones, Explorer, Devoted reader, Award shelf),
   worked out from the shelf in `docs/app/core/badges.js`. They're pressed into the wood
-  of the trophy mantel. A new badge or trophy gets a moment in the middle of the screen
+  of the trophy mantel; hover or tap one to see what it's for. A new badge or trophy gets a moment in the middle of the screen
   with a sound.
 - **Book clubs** (the tab): your clubs and your friends side by side. A friend's page
   ("You & them") shows a taste match and why, where you disagree, what you both loved,

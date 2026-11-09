@@ -11,7 +11,7 @@
 import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
 import { readOnOf, readYearOf, readingEstimate, today } from '../core/model.js';
 import { bookshelf, shelfPalette } from './art.js';
-import { avatar } from './together.js';
+import { avatar, cardButton } from './together.js';
 import { carousel } from './carousel.js';
 import { plural } from './views.js';
 
@@ -43,7 +43,7 @@ export function profileHero(ctx, profile, library, { tally, actions }) {
 
   return h('header', { class: 'profile-hero', style: `--who:${profile.colour ?? 'var(--accent)'}` },
     h('div', { class: 'ph-top' },
-      avatar(profile, { size: 'xl' }),
+      cardButton(ctx, profile),
       h('div', { class: 'ph-name' },
         h('h1', { text: profile.name }),
         h('div', { class: 'ph-stats' },

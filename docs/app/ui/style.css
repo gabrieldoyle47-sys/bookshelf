@@ -2290,20 +2290,19 @@ select:disabled { cursor: not-allowed; }
   font: 700 8px/1 var(--sans); color: #2c1d08;
   background: linear-gradient(180deg, var(--brass-1), var(--brass-2)); box-shadow: 0 1px 2px rgb(0 0 0 / .4);
 }
-/* No decoration on a spine except for a reason: two gold bands, top and
-   bottom, mean five stars. */
-.lspine.gilt::before, .lspine.gilt::after {
+/* No decoration on a spine except for a reason: a double gold band at the
+   head of the spine means five stars. */
+.lspine.gilt::before {
   content: ''; position: absolute; left: 3px; right: 3px; height: 4px; pointer-events: none;
   border-top: 1.5px solid #f3cf6a; border-bottom: 1.5px solid #f3cf6a;
   filter: drop-shadow(0 0 3px rgb(243 207 106 / .6));
 }
 .lspine.gilt::before { top: 5px; }
-.lspine.gilt::after { bottom: 21px; }
 
 /* Reading now: pulled forward a little, with a ribbon bookmark. */
 .lspine.reading { transform: translateY(-4px); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .25), 0 8px 10px -6px rgb(0 0 0 / .55); }
 .lspine-ribbon {
-  position: absolute; top: -10px; left: 50%; width: 7px; height: 26px; transform: translateX(-50%);
+  position: absolute; top: -5px; left: 50%; width: 7px; height: 24px; transform: translateX(-50%);
   background: linear-gradient(180deg, #d1304a, #a51d33); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
   box-shadow: 0 2px 3px rgb(0 0 0 / .4);
 }
@@ -3023,7 +3022,6 @@ select:disabled { cursor: not-allowed; }
 
 /* =================================================== audiobooks on spines */
 .lspine.audio .lspine-title { bottom: 34px; }
-.lspine.audio.gilt::after { bottom: 34px; }
 .lspine-audio {
   position: absolute; left: 50%; bottom: 20px; width: 10px; height: 10px; transform: translateX(-50%);
   background: var(--brass-1);
@@ -3868,15 +3866,15 @@ a.person-main:hover strong { text-decoration: underline; }
 /* ============================================================= sigils (sigil.js) */
 .sigil { --s: 28px; display: inline-grid; place-items: center; flex: 0 0 auto; width: var(--s); height: var(--s); border-radius: 50%;
   background: var(--sg); color: #fff; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .12); }
-.sigil svg { width: 58%; height: 58%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.sigil-letter { font: 700 calc(var(--s) * .46)/1 var(--display); }
+.sigil svg { width: 58%; height: 58%; fill: none; stroke: currentColor; stroke-width: 1.9; --sw: 1.9px; stroke-linecap: round; stroke-linejoin: round; }
+.sigil-letter { font: 700 calc(var(--s) * .46)/1 var(--display); text-box: trim-both cap alphabetic; }
 .sigil.dot { --s: 22px; } .sigil.sm { --s: 22px; } .sigil.md { --s: 34px; } .sigil.lg { --s: 44px; }
 .sigil.xl { --s: 56px; } .sigil.xxl { --s: 84px; }
 .avatar-chip.sigil { color: #fff; }
 .avatar-chip.sigil.xl { --s: 60px; }
 .nav-item .sigil.dot { margin-right: .1rem; }
 .sigil-mark { display: inline-grid; place-items: center; }
-.sigil-mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.sigil-mark svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2.2; --sw: 2.2px; stroke-linecap: round; stroke-linejoin: round; }
 .sigil-mark.letter { font: 700 1em/1 var(--display); }
 /* Choosing one. */
 .sigil-picker { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start; }
@@ -3884,7 +3882,7 @@ a.person-main:hover strong { text-decoration: underline; }
 .sp-choices { display: grid; gap: .7rem; }
 .sp-icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: .3rem; }
 .sp-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); cursor: pointer; padding: 0; }
-.sp-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sp-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; --sw: 1.8px; stroke-linecap: round; stroke-linejoin: round; }
 .sp-icon .sigil-letter { --s: 30px; color: var(--text-dim); }
 .sp-icon[aria-checked="true"] { border-color: var(--text); color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
 .sp-icon .club-badge.sm { --s: 26px; }
@@ -3923,9 +3921,10 @@ a.person-main:hover strong { text-decoration: underline; }
   radial-gradient(circle at 50% 100%, transparent 10px, color-mix(in srgb, var(--sg) 70%, #fff) 11px 13px, transparent 14px) 0 0 / 28px 16px,
   var(--sg) !important; }
 .pattern-plain { background: var(--sg) !important; }
-.lc-head { display: flex; align-items: flex-end; gap: .9rem; padding: 0 1.3rem; margin-top: -42px; position: relative; z-index: 2; }
+.lc-head { display: flex; align-items: flex-start; gap: .9rem; padding: 0 1.3rem; margin-top: -42px; position: relative; z-index: 2; }
 .lc-head .sigil.xxl { box-shadow: 0 0 0 4px var(--surface), var(--shadow); }
-.lc-name { padding-bottom: .2rem; min-width: 0; }
+/* The name starts below the banner's edge (the sigil overlaps it by 42px). */
+.lc-name { margin-top: 50px; min-width: 0; }
 .lc-name h2 { margin: 0; font-size: 1.6rem; }
 .lc-handle { font-size: .82rem; color: var(--text-dim); }
 .lc-bio { margin: .7rem 1.3rem 0; font-size: .95rem; line-height: 1.5; }
@@ -3975,7 +3974,7 @@ a.person-main:hover strong { text-decoration: underline; }
 
 /* ======================================================= badges (badges.js) */
 .badge-stamp { --b: 30px; display: inline-grid; width: var(--b); height: var(--b); color: var(--ink); }
-.badge-stamp svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.badge-stamp svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.7; --sw: 1.7px; stroke-linecap: round; stroke-linejoin: round; }
 .badge-stamp.huge { --b: 140px; animation: stamp-down .5s cubic-bezier(.3, 1.6, .5, 1) both .15s; }
 @keyframes stamp-down { from { transform: scale(2.2) rotate(-20deg); opacity: 0; } 60% { opacity: 1; } }
 /* Pressed into wood: ink sunk in and worn, catching the light at the edges. */
@@ -3995,14 +3994,17 @@ a.person-main:hover strong { text-decoration: underline; }
 .earned-desc { margin: 0; color: var(--text-dim); }
 
 /* ===================================================== spines: stamp and favourite */
-.lspine.stamped .lspine-num { bottom: 15px; }
-.lspine.stamped .lspine-title { bottom: 31px; }
-.lspine.stamped.audio .lspine-title { bottom: 44px; }
-.lspine.stamped .lspine-audio { bottom: 30px; }
-.lspine.stamped.gilt::after { bottom: 31px; }
-.lspine-stamp { position: absolute; left: 50%; bottom: 3px; width: 10px; height: 10px; transform: translateX(-50%); color: rgb(255 240 210 / .75); font-size: 9px; }
-.lspine-stamp .sigil-mark { width: 100%; height: 100%; }
-.lspine-fav { position: absolute; top: -9px; right: 3px; width: 5px; height: 26px;
+.lspine.stamped .lspine-num { bottom: 19px; }
+.lspine.stamped .lspine-title { bottom: 35px; }
+.lspine.stamped.audio .lspine-title { bottom: 48px; }
+.lspine.stamped .lspine-audio { bottom: 34px; }
+/* The owner's sigil as a round stamp: their colour, a pale inner ring like
+   the edge of a rubber stamp, pressed in at the foot of the spine. */
+.lspine-stamp { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); display: grid; }
+.lspine-stamp .sigil { --s: 14px; box-shadow: inset 0 0 0 1px rgb(255 248 232 / .55), 0 0 0 1px rgb(0 0 0 / .35), 0 1px 2px rgb(0 0 0 / .4); }
+.lspine-stamp .sigil svg { width: 64%; height: 64%; --sw: 2.4px; }
+.lspine-stamp .sigil-letter { font-size: 8.5px; }
+.lspine-fav { position: absolute; top: -5px; right: 3px; width: 5px; height: 24px;
   background: linear-gradient(180deg, #f7dc8a, #c9962e); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); box-shadow: 0 2px 3px rgb(0 0 0 / .4); }
 .lspine.reading.fav .lspine-fav { right: 2px; }
 .lib-legend .key.fav { width: 6px; background: linear-gradient(180deg, #f7dc8a, #c9962e); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); }
@@ -4021,7 +4023,7 @@ a.person-main:hover strong { text-decoration: underline; }
 .club-card:hover, .friend-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
 .club-card strong, .friend-card strong { font: 600 1.02rem var(--display); }
 .club-badge { --s: 40px; display: inline-grid; place-items: center; flex: 0 0 auto; width: var(--s); height: var(--s); border-radius: 12px; background: var(--club); color: #fff; }
-.club-badge svg { width: 58%; height: 58%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.club-badge svg { width: 58%; height: 58%; fill: none; stroke: currentColor; stroke-width: 1.9; --sw: 1.9px; stroke-linecap: round; stroke-linejoin: round; }
 .club-badge.xl { --s: 72px; border-radius: 18px; }
 .club-badge.sm { --s: 26px; border-radius: 7px; }
 .club-invite { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; padding: .6rem .8rem; border-radius: var(--radius); background: var(--accent-tint); border: 1px solid var(--accent-soft); }
@@ -4129,3 +4131,29 @@ a.person-main:hover strong { text-decoration: underline; }
 .ob-claim { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .9rem; }
 .wish-part { margin-top: 1.4rem; }
 .wish-part .book-row, .wish-part .row-book { opacity: .85; }
+
+/* The sigil at the top of someone's pages opens their library card. */
+.card-btn { position: relative; flex: 0 0 auto; padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; transition: transform var(--fast) var(--ease); }
+.card-btn:hover { transform: scale(1.05); }
+.card-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.card-btn-tag { position: absolute; bottom: -5px; left: 50%; translate: -50% 0; padding: 1px 7px; border-radius: 999px;
+  font: 700 .56rem/1.5 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim);
+  background: var(--surface); box-shadow: 0 0 0 1px var(--border-strong), 0 2px 5px rgb(0 0 0 / .12); }
+.card-btn:hover .card-btn-tag { color: var(--text); }
+
+/* What a badge is for: on hover, focus or a tap. */
+.badge-stamp[data-badge] { cursor: help; border-radius: 50%; transition: transform var(--fast) var(--ease); }
+.badge-stamp[data-badge]:hover { transform: scale(1.12); }
+.badge-stamp[data-badge]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mantel-board .badge-stamp[data-badge]:hover { opacity: 1; }
+.badge-tip { position: fixed; z-index: 120; max-width: 220px; padding: .55rem .7rem; border-radius: 10px; pointer-events: none;
+  background: var(--surface); color: var(--text); box-shadow: 0 10px 30px rgb(0 0 0 / .22), 0 0 0 1px var(--border); }
+.badge-tip[hidden] { display: none; }
+.bt-family { font: 700 .6rem/1.2 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.bt-name { font: 600 .98rem/1.25 var(--display); margin-top: .15rem; }
+.bt-desc { font-size: .82rem; color: var(--text-dim); margin-top: .15rem; line-height: 1.35; }
+
+/* Banners (banners.js): an SVG filling the strip. */
+.lc-banner.art, .banner-choice.art { position: relative; overflow: hidden; }
+.banner-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.banner-choice.art span { position: relative; z-index: 1; }

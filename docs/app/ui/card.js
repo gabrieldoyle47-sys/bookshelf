@@ -17,8 +17,7 @@ import { badgeById, badgeStamp } from './badges.js';
 import { cssArt } from './shelfhero.js';
 import { lookOf } from '../core/model.js';
 
-export const BANNERS = [['marbled', 'Marbled paper'], ['florals', 'Endpaper florals'], ['starry', 'Starry night'],
-  ['stripes', 'Bookcloth stripes'], ['waves', 'Waves'], ['plain', 'Plain']];
+import { BANNERS, bannerArt, bannerId } from './banners.js';
 
 let layer = null;
 const close = () => { layer?.remove(); layer = null; document.removeEventListener('keydown', onKey); };
@@ -43,12 +42,12 @@ export async function openCard(ctx, id) {
 }
 
 function bannerEl(m) {
-  const b = m.banner ?? { kind: 'pattern', pattern: 'marbled' };
+  const b = m.banner ?? { kind: 'pattern', pattern: 'flow' };
   const colour = m.sigil?.bg ?? m.colour ?? '#a2461f';
   if (b.kind === 'cover' && b.cover) {
     return h('div', { class: 'lc-banner cover', style: `${cssArt(b.cover)};--sg:${colour}` }, h('div', { class: 'hero-wash' }));
   }
-  return h('div', { class: `lc-banner pattern-${b.pattern ?? 'marbled'}`, style: `--sg:${colour}` });
+  return h('div', { class: 'lc-banner art', style: `--sg:${colour}` }, bannerArt(b.pattern, colour));
 }
 
 function cardContent(ctx, m) {
@@ -122,7 +121,8 @@ function editCard(ctx, m) {
   close();
   const me = ctx.state.profiles.find((p) => p.id === m.id) ?? m;
   let sigil = m.sigil;
-  let banner = m.banner ?? { kind: 'pattern', pattern: 'marbled' };
+  let banner = m.banner ?? { kind: 'pattern', pattern: 'flow' };
+  if (banner.kind === 'pattern') banner = { kind: 'pattern', pattern: bannerId(banner.pattern) };
   const privacy = { ...(ctx.state.me.privacy ?? { shelf: 'members', notes: 'everyone', ratings: 'everyone' }) };
   let stamp = lookOf(me).stamp;
   const bio = h('textarea', { maxlength: '160', rows: '3', placeholder: 'A line or two about you as a reader' }, m.bio ?? '');
@@ -136,9 +136,9 @@ function editCard(ctx, m) {
     const favCovers = (m.summary?.favourites ?? []).filter((b) => b.cover);
     fill(bannerChoices,
       BANNERS.map(([id, name]) => h('button', {
-        class: `banner-choice pattern-${id}`, type: 'button', role: 'radio', title: name, style: `--sg:${sigil?.bg ?? m.colour ?? '#a2461f'}`,
+        class: 'banner-choice art', type: 'button', role: 'radio', title: name,
         'aria-checked': String(banner.kind === 'pattern' && banner.pattern === id), onclick: () => { banner = { kind: 'pattern', pattern: id }; paintBanners(); },
-      }, h('span', { text: name }))),
+      }, bannerArt(id, sigil?.bg ?? m.colour ?? '#a2461f'), h('span', { text: name }))),
       favCovers.map((b) => h('button', {
         class: 'banner-choice cover', type: 'button', role: 'radio', title: `Cover of ${b.title}`, style: cssArt(b.cover),
         'aria-checked': String(banner.kind === 'cover' && banner.cover === b.cover), onclick: () => { banner = { kind: 'cover', cover: b.cover }; paintBanners(); },

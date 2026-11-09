@@ -6,14 +6,14 @@
  * and confetti.
  */
 
-import { h } from './dom.js';
+import { h, fill } from './dom.js';
 import { BADGES } from '../core/badges.js';
-import { SIGILS } from './sigil.js';
+import { SIGILS, iconGroup } from './sigil.js';
 import { celebrate, trinketArt } from './art.js';
 import { play } from './sound.js';
 
 // Motifs not among the sigils.
-const EXTRA = {
+export const EXTRA = {
   ten: 'M7 8v8M5 9.5L7 8M12 12a3 4 0 1 0 6 0 3 4 0 1 0-6 0',
   stack: 'M4 17h16v3H4zM5 13h14v4H5zM6 9h12v4H6z',
   shelf: 'M3 20h18M3 11h18M5 4h3v7H5zM9 5h3v6H9zM13.5 5.5l2.8-.8 1.5 5.4-2.8.8zM6 13h3v7H6zM10 14h3v6h-3z',
@@ -44,16 +44,60 @@ export function badgeStamp(badge, { size = '', pressed = false } = {}) {
     return c;
   };
   svg.append(ring(18, 2), ring(15, .8));
-  const g = document.createElementNS(NS, 'g');
-  g.setAttribute('transform', 'translate(10 10) scale(.8333)');
-  const path = document.createElementNS(NS, 'path');
-  path.setAttribute('d', EXTRA[badge.icon] ?? SIGILS[badge.icon] ?? SIGILS.star);
-  g.append(path);
-  svg.append(g);
+  const icon = EXTRA[badge.icon] || SIGILS[badge.icon] ? badge.icon : 'star';
+  svg.append(iconGroup(icon, EXTRA[icon] ?? SIGILS[icon], { at: 20, k: 0.8333 }));
+  // The big one in the "earned" moment has its words beside it; the small
+  // ones explain themselves on hover, focus or a tap (see badgeTip below).
+  const small = size !== 'huge';
+  if (small) installTip();
   return h('span', {
     class: `badge-stamp ${size}${pressed ? ' pressed' : ''}`, style: `--ink:${FAMILY_INK[badge.family] ?? '#8a2d2d'}`,
-    title: `${badge.name} — ${badge.desc}`, role: 'img', 'aria-label': `${badge.name}: ${badge.desc}`,
+    role: small ? 'button' : 'img', tabindex: small ? '0' : null, dataset: small ? { badge: badge.id } : null,
+    'aria-label': `${badge.name}: ${badge.desc}`,
   }, svg);
+}
+
+/* ------------------------------------------------------------ the tip */
+
+let tip = null;
+let pinned = null;
+
+/** One small card, shared by every badge: what it is and how it was earned. */
+function installTip() {
+  if (tip) return;
+  tip = h('div', { class: 'badge-tip', role: 'tooltip', hidden: true });
+  document.body.append(tip);
+  const stampOf = (e) => e.target.closest?.('.badge-stamp[data-badge]');
+  const show = (el) => {
+    const b = badgeById(el.dataset.badge);
+    if (!b) return;
+    fill(tip,
+      h('div', { class: 'bt-family', style: `color:${FAMILY_INK[b.family]}`, text: b.family }),
+      h('div', { class: 'bt-name', text: b.name }),
+      h('div', { class: 'bt-desc', text: b.desc }));
+    tip.hidden = false;
+    const r = el.getBoundingClientRect();
+    const w = tip.offsetWidth;
+    const above = r.top - tip.offsetHeight - 10;
+    tip.style.left = `${Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2))}px`;
+    tip.style.top = `${above > 8 ? above : r.bottom + 10}px`;
+  };
+  const hide = () => { tip.hidden = true; pinned = null; };
+  document.addEventListener('pointerover', (e) => { const el = stampOf(e); if (el && e.pointerType === 'mouse' && !pinned) show(el); });
+  document.addEventListener('pointerout', (e) => { if (stampOf(e) && !pinned) tip.hidden = true; });
+  document.addEventListener('focusin', (e) => { const el = stampOf(e); if (el) show(el); });
+  document.addEventListener('focusout', (e) => { if (stampOf(e) && !pinned) tip.hidden = true; });
+  // A tap (or click) keeps it open until the next tap anywhere.
+  document.addEventListener('click', (e) => {
+    const el = stampOf(e);
+    if (el && pinned !== el) { e.stopPropagation(); pinned = el; show(el); } else if (pinned) hide();
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    const el = stampOf(e);
+    if (e.key === 'Escape') hide();
+    else if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); pinned = el; show(el); }
+  });
+  addEventListener('scroll', () => { if (!tip.hidden) hide(); }, { passive: true, capture: true });
 }
 
 /* ---------------------------------------------------------- the moment */

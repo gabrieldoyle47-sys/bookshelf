@@ -26,7 +26,7 @@ import { badgeStamp } from './badges.js';
 import { sigilMark, sigilEl } from './sigil.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
-import { avatar } from './together.js';
+import { avatar, cardButton } from './together.js';
 import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, lightRoom } from './room.js';
 import { playRoom } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
@@ -88,7 +88,7 @@ export function libraryView(ctx, profile) {
     // The wishlist isn't owned books, so it isn't counted in "books".
   const owned = all.filter((b) => b.status !== 'wish').length;
   const head = h('header', { class: 'lib-head', style: `--who:${profile.colour ?? 'var(--accent)'}` },
-    avatar(profile, { size: 'xl' }),
+    cardButton(ctx, profile),
     h('div', { class: 'lib-title' },
       h('div', { class: 'eyebrow', text: 'The bookshelf' }),
       h('h1', { text: `${profile.name}’s shelf` }),
@@ -601,7 +601,7 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
     b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null,
     // A favourite carries a gold bookmark; every book the owner's sigil, stamped at its foot.
     fav ? h('span', { class: 'lspine-fav', 'aria-hidden': 'true' }) : null,
-    stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilMark(profile)) : null,
+    stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilEl(profile, { title: '' })) : null,
     due ? h('span', { class: 'lspine-due', 'aria-hidden': 'true', text: shortDay(due) }) : null,
     reserved ? h('span', { class: 'lspine-claim', 'aria-hidden': 'true', title: `${reserved.by.name} is getting this` }, sigilEl(reserved.by, { size: 'dot', title: '' })) : null);
   if (order != null) el.classList.add('drop');

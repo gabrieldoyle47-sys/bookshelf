@@ -14,7 +14,7 @@
 
 import { h, fill, toast, coverEl, fmtAgo, fmtDate, starsEl, authorNames } from './dom.js';
 import * as storage from './storage.js';
-import { sigilEl, SIGILS, SIGIL_NAMES, SIGIL_COLOURS } from './sigil.js';
+import { sigilEl, iconSvg, SIGILS, SIGIL_NAMES, SIGIL_COLOURS } from './sigil.js';
 import { tasteMatch, readTogether, matchPairs, activity } from '../core/together.js';
 import { readingEstimate, today } from '../core/model.js';
 import { openCard } from './card.js';
@@ -113,7 +113,7 @@ export function clubsView(ctx) {
       }, 250);
     });
     const personRow = (p, actions) => h('div', { class: 'person-row' },
-      h('button', { class: 'person-main', type: 'button', onclick: () => openCard(ctx, p.id) }, sigilEl(p), h('span', {}, h('strong', { text: p.name }), h('span', { class: 'count', text: ` @${p.username}` }))),
+      h('button', { class: 'person-main', type: 'button', onclick: () => { location.hash = `#/p/${p.id}`; } }, sigilEl(p), h('span', {}, h('strong', { text: p.name }), h('span', { class: 'count', text: ` @${p.username}` }))),
       h('div', { class: 'row person-actions' }, actions));
     fill(right,
       h('div', { class: 'section-head' }, h('h2', { text: `Friends${f.friends.length ? ` · ${f.friends.length}` : ''}` })),
@@ -138,12 +138,7 @@ export function clubsView(ctx) {
 }
 
 function clubBadge(c, size = '') {
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  const p = document.createElementNS(NS, 'path');
-  p.setAttribute('d', SIGILS[c.icon] ?? SIGILS.book);
-  svg.append(p);
+  const svg = iconSvg(SIGILS[c.icon] ? c.icon : 'book');
   return h('span', { class: `club-badge ${size}`, style: `--club:${c.colour ?? '#a2461f'}`, 'aria-hidden': 'true' }, svg);
 }
 
@@ -363,7 +358,7 @@ export function clubView(ctx, clubId) {
       groupMatch != null ? h('div', { class: 'match-big small' }, h('div', { class: 'mb-score' }, h('strong', { text: `${groupMatch}%` }), h('span', { text: 'group taste match' }))) : null,
       h('div', { class: 'k', text: `Members · ${members.length}` }),
       members.map((x) => h('div', { class: 'cl-member' },
-        h('button', { class: 'person-main', type: 'button', onclick: () => openCard(ctx, x.id) }, sigilEl(x, { size: 'sm' }), h('span', { text: x.name })),
+        h('button', { class: 'person-main', type: 'button', onclick: () => { location.hash = `#/p/${x.id}`; } }, sigilEl(x, { size: 'sm' }), h('span', { text: x.name })),
         x.id === club.host ? h('span', { class: 'pill', text: 'host' }) : null,
         isHost && x.id !== meId ? h('span', { class: 'row' },
           h('button', { class: 'link-btn', type: 'button', onclick: async () => { if (confirm(`Make ${x.name} the host?`) && await call('/club/host', { id: club.id, user: x.id })) load(); } }, 'Make host'),

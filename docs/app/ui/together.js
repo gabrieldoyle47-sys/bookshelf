@@ -28,6 +28,15 @@ export const groupLabel = (profiles) => (profiles.length === 2 ? 'Both of us' : 
 
 /** A person's initial on their colour - the same mark as the sidebar. */
 /** A person's avatar: their sigil (sigil.js), in the avatar-chip sizes. */
+/**
+ * The big sigil at the top of someone's pages: it opens their library card.
+ */
+export function cardButton(ctx, profile) {
+  return h('button', { class: 'card-btn', type: 'button', title: `${profile.name}’s library card`,
+    'aria-label': `Open ${profile.name}’s library card`, onclick: () => ctx.actions.openCard?.(profile.id) },
+  avatar(profile, { size: 'xl' }), h('span', { class: 'card-btn-tag', 'aria-hidden': 'true', text: 'Card' }));
+}
+
 export function avatar(p, { size = '' } = {}) {
   const el = sigilEl(p, { size });
   el.classList.add('avatar-chip');
