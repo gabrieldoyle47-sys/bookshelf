@@ -80,6 +80,18 @@ export const STORES = [
   { id: 'indie', name: 'Indie stores', url: (q) => `https://www.indiebookstores.ca/books?term=${q}` },
 ];
 
+/**
+ * Borrowing it instead: a search of the reader's own Libby library. Libby
+ * says whether it's there, and how long the wait is; nothing about it can be
+ * checked from here.
+ */
+export function libbyUrl(book, library) {
+  if (!library) return null;
+  const author = (book.authorName ?? authorNames(book)).split(',')[0].trim();
+  const q = encodeURIComponent([book.title, author].filter(Boolean).join(' '));
+  return `https://libbyapp.com/search/${encodeURIComponent(library)}/search/query-${q}/page-1`;
+}
+
 export function storeUrls(book) {
   const author = (book.authorName ?? authorNames(book)).split(',')[0].trim();
   const q = encodeURIComponent([book.title, author].filter(Boolean).join(' '));
@@ -193,14 +205,58 @@ export function fmtDays(days) {
 export const authorNames = (book) =>
   (book.authors ?? []).map((a) => (typeof a === 'string' ? a : a.name)).filter(Boolean).join(', ');
 
-export function coverEl(book) {
-  if (book.cover) {
-    return h('img', {
-      class: 'cover', src: book.cover, alt: '', loading: 'lazy', decoding: 'async',
-      onerror: (e) => e.target.replaceWith(h('div', { class: 'cover placeholder', text: '📕' })),
-    });
-  }
-  return h('div', { class: 'cover placeholder', text: '📕' });
+/**
+ * A cover at the size it is shown, not the size Hardcover stores it.
+ *
+ * Hardcover's covers are full-size JPEGs (often 200-300 KB each) and a shelf
+ * page shows dozens. wsrv.nl is a free, open image proxy that resizes them to
+ * WebP on the fly (a 230 KB cover comes back at about 12 KB) and allows them
+ * to be drawn on a canvas, which the year poster and Wrapped need. Only the
+ * cover's public URL is sent. If it ever fails, the original is used.
+ */
+export function coverSrc(url, width = 160) {
+  if (!url || !/^https:\/\/[^/]*hardcover\.app\//.test(url)) return url;
+  const w = Math.round(width * Math.min(2, globalThis.devicePixelRatio || 1));
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${w}&output=webp&q=78`;
+}
+
+/** An <img> for a cover, falling back to the full-size original, then to a made cover. */
+export function coverImg(book, { cls = 'cover', width = 160, fallback } = {}) {
+  let tried = false;
+  return h('img', {
+    class: cls, src: coverSrc(book.cover, width), alt: '', loading: 'lazy', decoding: 'async',
+    onerror: (e) => {
+      if (!tried && e.target.src !== book.cover) { tried = true; e.target.src = book.cover; return; }
+      e.target.replaceWith(fallback ? fallback() : madeCover(book));
+    },
+  });
+}
+
+// Cloth colours for made covers, picked by the series (or title) so every book
+// in a series gets the same one.
+const MADE = ['#7b2d26', '#2f4858', '#5b3a6b', '#2d5a3d', '#8a5a1c', '#344e7a', '#6b2f4a', '#3f5f5a'];
+const hashOf = (s) => [...String(s)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+/**
+ * A cover for a book that has none yet - most unreleased books. Typeset like
+ * a plain cloth edition: the title, a rule, the author, on the series colour.
+ * Its text scales with the cover (container units), so it works from a
+ * 36-pixel thumbnail to the big "Next up" card.
+ */
+export function madeCover(book, cls = 'cover') {
+  const author = (book.authorName ?? book.author ?? authorNames(book) ?? '').split(',')[0].trim();
+  const cloth = MADE[hashOf(book.series?.name ?? book.seriesName ?? book.title ?? '') % MADE.length];
+  // The words sit in an inner box: container units only measure against an ancestor.
+  return h('div', { class: `${cls} made`, style: `--cloth:${cloth}`, role: 'img', 'aria-label': `${book.title ?? 'Book'} (no cover yet)` },
+    h('span', { class: 'made-in' },
+      h('span', { class: 'made-title', text: book.title ?? '' }),
+      h('span', { class: 'made-rule', 'aria-hidden': 'true' }),
+      author ? h('span', { class: 'made-author', text: author }) : null));
+}
+
+export function coverEl(book, { width = 160 } = {}) {
+  if (book.cover) return coverImg(book, { width });
+  return madeCover(book);
 }
 
 /** Series line such as "The Broken Earth #2", or null for a standalone. */

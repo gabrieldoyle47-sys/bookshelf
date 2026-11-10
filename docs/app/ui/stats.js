@@ -12,7 +12,8 @@
  */
 
 import { h, fmtRating } from './dom.js';
-import { deriveWatchlist, readOnOf, readYearOf, tagCounts } from '../core/model.js';
+import { deriveWatchlist, readOnOf, readYearOf, tagCounts, today } from '../core/model.js';
+import { completedSeries } from '../core/watch.js';
 import { frag, pageHead, emptyState, plural } from './views.js';
 import { goalSection, yearSection } from './recap.js';
 import { seriesSection } from './progress.js';
@@ -30,21 +31,24 @@ export function statsView(ctx, profile) {
 
   const pagesKnown = read.filter((b) => b.pages);
   const pages = pagesKnown.reduce((sum, b) => sum + b.pages, 0);
-  const avg = rated.length ? rated.reduce((s, b) => s + b.rating, 0) / rated.length : null;
 
   if (!books.length) {
     return frag(pageHead(`Stats · ${profile.name}`), emptyState('Nothing to count yet.'));
   }
 
+  const years = read.map((b) => readYearOf(b)).filter(Boolean);
+  const firstYear = years.length ? Math.min(...years) : null;
   return frag(
     pageHead(`Stats · ${profile.name}`),
 
+    // All time, and only what the year below doesn't already show: pages and
+    // the average rating are the year's (they were the same numbers twice).
+    h('div', { class: 'stat-head' }, h('h2', { text: 'All time' }),
+      firstYear ? h('span', { class: 'count', text: `since ${firstYear}` }) : null),
     h('div', { class: 'stat-row' },
-      tile(read.length, 'books finished'),
-      tile(pages ? pages.toLocaleString() : '—', 'pages',
-        pagesKnown.length < read.length ? `${pagesKnown.length} of ${read.length} have a page count` : null),
-      tile(avg ? avg.toFixed(1) : '—', 'average rating',
-        rated.length ? `${rated.length} rated` : 'nothing rated yet'),
+      tile(read.length, 'books finished', pages ? `${pages.toLocaleString()} pages` : null),
+      tile(completedSeries(ctx.state.seriesState ?? {}, library, today()).length, 'series completed'),
+      tile(new Set(read.map((b) => b.authors?.[0]?.name).filter(Boolean)).size, 'authors read'),
       tile(Object.keys(watch.series).length, 'series watched'),
       tile(books.filter((b) => b.status === 'tbr').length, 'on the to-read pile')),
 

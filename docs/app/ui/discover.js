@@ -12,6 +12,7 @@
  * does not throw them away.
  */
 
+import { emptyNote } from './art.js';
 import { h, coverEl } from './dom.js';
 import { cleanTags, onShelfIds } from '../core/model.js';
 import { becauseYouLoved, vibeMatches } from '../core/suggest.js';
@@ -34,7 +35,7 @@ function resultRow(ctx, profile, r, card, emptyText) {
   if (r.status === 'error') return h('p', { class: 'hint error', text: r.error });
   const have = onShelfIds(ctx.state.libraries[profile.id]);
   const items = r.items.filter((s) => !have.has(String(s.book.id)));
-  if (!items.length) return h('p', { class: 'col-empty', text: emptyText });
+  if (!items.length) return emptyNote(emptyText, 'compass');
   return h('div', {}, r.note ? h('p', { class: 'hint find-note', text: r.note }) : null,
     carousel(items.map((s) => card(ctx, profile, s)), { className: 'suggest-row' }));
 }

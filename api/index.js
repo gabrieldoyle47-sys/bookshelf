@@ -16,7 +16,7 @@ import {
   createClient, booksByIds, booksByTag, authorPage, seriesPage, listBooks, AWARD_LISTS,
 } from '../docs/app/core/hardcover.js';
 import { today, addReaction, addRecommendation, REACTIONS } from '../docs/app/core/model.js';
-import { releaseInvite } from '../docs/app/core/calendar.js';
+import { releaseInvite, meetingInvite } from '../docs/app/core/calendar.js';
 import { runReleaseCheck } from '../docs/app/core/check.js';
 import {
   hashPassword, verifyPassword, sha256, newToken, newCode,
@@ -25,6 +25,7 @@ import {
 import {
   SocialError, privacyOf, shelfFor, awardIds, cardSummary, myClubs, createClub, clubDetail, clubAction,
   buddyRead, startBuddyRead, endBuddyRead, forgetUser, reservationsFor, reserve, unreserve, tidyReservations,
+  notifications, recordError, recentErrors, clearErrors,
 } from './social.js';
 
 const MAX_BYTES = 512 * 1024;
@@ -465,12 +466,20 @@ async function adminRoute(db, me, request, url) {
     }
     return { ok: true };
   }
-  if (request.method === 'GET' && path === '/settings') return { signupMode: await setting(db, 'signup_mode', 'open') };
+  if (request.method === 'GET' && path === '/settings') return { signupMode: await setting(db, 'signup_mode', 'open'), wrapped: await setting(db, 'wrapped', 'always') };
   if (request.method === 'POST' && path === '/settings') {
     const input = await body(request);
-    if (!['open', 'invite'].includes(input.signupMode)) throw new HttpError(400, 'open or invite');
-    await run(db, 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', 'signup_mode', input.signupMode);
-    return { signupMode: input.signupMode };
+    const put = (key, value) => run(db, 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', key, value);
+    if ('signupMode' in input) {
+      if (!['open', 'invite'].includes(input.signupMode)) throw new HttpError(400, 'open or invite');
+      await put('signup_mode', input.signupMode);
+    }
+    // When this year's Wrapped opens: any time, or from 1 December.
+    if ('wrapped' in input) {
+      if (!['always', 'december'].includes(input.wrapped)) throw new HttpError(400, 'always or december');
+      await put('wrapped', input.wrapped);
+    }
+    return { signupMode: await setting(db, 'signup_mode', 'open'), wrapped: await setting(db, 'wrapped', 'always') };
   }
   if (request.method === 'GET' && path === '/invites') return all(db, 'SELECT * FROM invites ORDER BY created DESC LIMIT 50');
   if (request.method === 'POST' && path === '/invites') {
@@ -509,6 +518,20 @@ async function importFromCheck(db, input) {
     if (value && typeof value === 'object') await writeFile(db, file, `${JSON.stringify(value, null, 2)}\n`);
   }
   if (Array.isArray(input.events) && input.events.length) await appendEvents(db, input.events);
+  // Fresh release dates and covers for wishlist books (only on books still wished for).
+  const wishes = Array.isArray(input.wishes) ? input.wishes.slice(0, 200) : [];
+  for (const owner of new Set(wishes.map((w) => String(w.profile)))) {
+    if (!/^[a-z0-9_-]{1,40}$/.test(owner)) continue;
+    await mutateLibrary(db, owner, (lib) => {
+      for (const w of wishes.filter((x) => String(x.profile) === owner)) {
+        const b = (lib.books ?? []).find((x) => x.id === w.bookId && x.status === 'wish');
+        if (!b) continue;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(w.released ?? '')) b.released = w.released;
+        if (Number.isInteger(w.releaseYear)) b.releaseYear = w.releaseYear;
+        if (typeof w.cover === 'string' && /^https:\/\/[^/]*hardcover\.app\//.test(w.cover)) b.cover = w.cover;
+      }
+    }).catch(() => {});
+  }
   if (input.summary) {
     await run(db, 'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
       'last_check', JSON.stringify({ ...input.summary, at: nowIso() }));
@@ -597,6 +620,13 @@ const hardcoverCost = (url) => (url.pathname === '/discover'
 function icsRoute(url) {
   const q = (k, max) => (url.searchParams.get(k) ?? '').slice(0, max);
   const link = q('link', 300);
+  if (q('kind', 10) === 'meeting') {
+    const place = q('place', 200);
+    const text = meetingInvite({ id: q('id', 20), club: q('club', 60), start: q('start', 16), book: q('book', 200), place });
+    return new Response(text, { headers: {
+      'Content-Type': 'text/calendar; charset=utf-8', 'Content-Disposition': 'inline; filename="book-club.ics"', 'Cache-Control': 'no-store', ...CORS,
+    } });
+  }
   const text = releaseInvite({
     id: q('id', 20), title: q('title', 200), date: q('date', 10), by: q('by', 200), series: q('series', 200),
     link: /^https:\/\/(hardcover\.app|www\.indigo\.ca)\//.test(link) ? link : '',
@@ -631,7 +661,7 @@ async function route(request, env) {
 
   if (m === 'POST' && p === '/auth/signup') return json(await signUp(db, await body(request)));
   if (m === 'POST' && p === '/auth/signin') return json(await signIn(db, await body(request)));
-  if (m === 'GET' && p === '/auth/mode') return json({ signupMode: await setting(db, 'signup_mode', 'open') });
+  if (m === 'GET' && p === '/auth/mode') return json({ signupMode: await setting(db, 'signup_mode', 'open'), wrapped: await setting(db, 'wrapped', 'always') });
 
   // Everything below needs someone signed in.
   const me = await sessionUser(request, db);
@@ -684,11 +714,15 @@ async function route(request, env) {
   if (m === 'POST' && p === '/friends/respond') { const i = await body(request); return json(await respondFriend(db, me, String(i.id ?? ''), Boolean(i.accept))); }
   if (m === 'POST' && p === '/friends/remove') return json(await removeFriend(db, me, String((await body(request)).id ?? '')));
 
+  if (m === 'GET' && p === '/notifications') return json(await notifications(db, me, url.searchParams.get('since')));
+  if (m === 'POST' && p === '/errors') return json(await recordError(db, me, await body(request), request.headers.get('User-Agent')));
+  if (m === 'GET' && p === '/admin/errors') { if (me.role !== 'admin') throw new HttpError(403, 'Admins only.'); return json(await recentErrors(db)); }
+  if (m === 'POST' && p === '/admin/errors/clear') { if (me.role !== 'admin') throw new HttpError(403, 'Admins only.'); await clearErrors(db); return json({ ok: true }); }
   if (m === 'GET' && p === '/awards') return json({ ids: [...await awardIds(db, env)] });
   if (m === 'GET' && p === '/clubs') return json(await myClubs(db, me));
   if (m === 'POST' && p === '/clubs') return json(await createClub(db, me, await body(request)));
   if (m === 'GET' && p === '/club') return json(await clubDetail(db, me, url.searchParams.get('id') ?? ''));
-  const clubAct = p.match(/^\/club\/(invite|respond|leave|remove|host|update|read|finish|suggest|vote|pick|post|unpost)$/);
+  const clubAct = p.match(/^\/club\/(invite|respond|leave|remove|host|update|read|finish|suggest|vote|pick|post|unpost|schedule|checkin|meet|meetvote|meetpick|meetcancel)$/);
   if (m === 'POST' && clubAct) return json(await clubAction(db, me, clubAct[1], await body(request), (x, y) => areFriends(db, x, y)));
   if (m === 'GET' && p === '/buddy') return json(await buddyRead(db, me, url.searchParams.get('friend') ?? ''));
   if (m === 'POST' && p === '/buddy') {

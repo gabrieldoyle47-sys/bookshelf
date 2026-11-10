@@ -96,3 +96,41 @@ export function releaseInvite({ id, title, date, by, series, link }, now = new D
 
   return `${lines.map(fold).join('\r\n')}\r\n`;
 }
+
+const LOCAL_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+
+/**
+ * A club meeting as a calendar invite. The time is the club's local time as
+ * chosen ("floating", no time zone), which is how people agree a meeting.
+ *
+ * @param {object} m
+ * @param {string} m.id       the meeting's id, so re-adding updates it
+ * @param {string} m.club     the club's name
+ * @param {string} m.start    YYYY-MM-DDTHH:MM
+ * @param {string} [m.place]  an address or a video link
+ * @param {string} [m.book]   what the club is reading
+ */
+export function meetingInvite({ id, club, start, place, book }, now = new Date()) {
+  if (!LOCAL_TIME.test(start ?? '')) throw new Error('A meeting needs a date and time.');
+  if (!club) throw new Error('A meeting needs a club.');
+  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const at = (iso) => `${iso.replace(/[-:]/g, '')}00`;
+  const end = new Date(`${start}:00Z`);
+  end.setUTCMinutes(end.getUTCMinutes() + 90);
+  const isLink = /^https:\/\//.test(place ?? '');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Bookshelf//Club meetings//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:meeting-${String(id ?? start).replace(/[^\w-]/g, '')}@bookshelf`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${at(start)}`,
+    `DTEND:${at(end.toISOString().slice(0, 16))}`,
+    `SUMMARY:${escapeText(`📚 ${club}${book ? ` — ${book}` : ''}`)}`,
+    `DESCRIPTION:${escapeText(`Book club meeting${book ? ` about ${book}` : ''}. Added from Bookshelf.`)}`,
+    place && !isLink ? `LOCATION:${escapeText(place)}` : null,
+    place && isLink ? `URL:${place}` : null,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escapeText(`${club} meets in an hour`)}`, 'TRIGGER:-PT1H', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].filter(Boolean);
+  return `${lines.map(fold).join('\r\n')}\r\n`;
+}

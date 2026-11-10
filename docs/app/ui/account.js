@@ -6,6 +6,7 @@
  * may do, so these screens only ever offer what it would allow.
  */
 
+import { emptyNote } from './art.js';
 import { h, fill, toast } from './dom.js';
 import * as storage from './storage.js';
 import { avatar } from './together.js';
@@ -131,6 +132,7 @@ export function accountSection(ctx, me, { onChanged, onSignedOut }) {
   const msg = (el, text, bad = false) => { el.textContent = text; el.classList.toggle('error', bad); };
 
   const nameInput = h('input', { type: 'text', value: me.name, maxlength: '30' });
+  const libbyInput = h('input', { type: 'text', value: me.look?.libby ?? '', placeholder: 'e.g. banq', autocapitalize: 'none', spellcheck: 'false' });
 
   const profileMsg = h('span', { class: 'hint' });
 
@@ -153,10 +155,15 @@ export function accountSection(ctx, me, { onChanged, onSignedOut }) {
       h('h3', { text: 'You' }),
       h('p', { class: 'hint', text: `Signed in as @${me.username}${me.role === 'admin' ? ' · admin' : ''}` }),
       h('label', { class: 'field' }, h('span', { text: 'Display name' }), nameInput),
+      // Where you borrow from: Libby, searched from any book's page.
+      h('label', { class: 'field' }, h('span', { text: 'Your library on Libby (optional)' }), libbyInput,
+        h('span', { class: 'hint', text: 'The short name in your library’s Libby address — libbyapp.com/library/banq is “banq”. Books then get a “Borrow on Libby” link.' })),
       // Your colour is your sigil's, chosen on your library card.
       h('p', { class: 'hint', text: 'Your colour, sigil, banner and bio are on your library card — the round button at the top right, then Edit card.' }),
       h('div', { class: 'row' }, h('button', { class: 'btn small', type: 'button', onclick: (e) => run(e.currentTarget, profileMsg, async () => {
         await storage.api('/me', { method: 'PATCH', body: { displayName: nameInput.value } });
+        const libby = libbyInput.value.trim().toLowerCase().replace(/^.*libbyapp\.com\/library\//, '').replace(/[/?#].*$/, '');
+        if (libby !== (me.look?.libby ?? '')) await ctx.actions.saveLook(me, { libby }, { quiet: true });
         onChanged();
       }, 'Saved') }, 'Save'), profileMsg)),
     h('section', { class: 'acct-section' },
@@ -260,7 +267,7 @@ export function friendsView(ctx) {
               await ctx.actions.reloadFriends();
               refresh();
             } }, 'Remove')]))
-            : h('p', { class: 'hint', text: 'No friends yet — search for someone above.' })),
+            : emptyNote('No friends yet — search for someone above.', 'owl')),
         f.outgoing.length ? h('section', { class: 'section' }, h('h2', { text: 'Waiting for an answer' }),
           f.outgoing.map((p) => personRow(p, h('span', { class: 'pill', text: 'Request sent' })))) : null);
     } catch (err) { fill(lists, h('p', { class: 'hint error', text: err.message })); }
@@ -283,6 +290,7 @@ export function adminView(ctx) {
   const users = h('div', { class: 'people-list' });
   const settings = h('div');
   const usage = h('div');
+  const errors = h('div');
 
   const call = async (path, body) => {
     try { return await storage.api(path, { method: 'POST', body }); } catch (err) { toast(err.message, true); return null; }
@@ -322,11 +330,26 @@ export function adminView(ctx) {
         if (r) { prompt('Invite code — send it to them:', r.code); load(); }
       } }, 'New invite code')),
       invites.length ? h('ul', { class: 'invite-list' }, invites.slice(0, 10).map((i) => h('li', {},
-        h('code', { text: i.code }), h('span', { class: 'count', text: i.used_by ? ` used by ${i.used_by}` : ' unused' })))) : null);
+        h('code', { text: i.code }), h('span', { class: 'count', text: i.used_by ? ` used by ${i.used_by}` : ' unused' })))) : null,
+      h('h3', { class: 'admin-sub', text: 'Wrapped' }),
+      h('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'When Wrapped opens' }, [['always', 'Any time'], ['december', 'From 1 December']].map(([id, label]) => h('button', {
+        class: 'seg-btn', type: 'button', role: 'radio', 'aria-selected': String((mode.wrapped ?? 'always') === id),
+        onclick: async () => { if (await call('/admin/settings', { wrapped: id })) load(); },
+      }, label))),
+      h('p', { class: 'hint', text: 'This year’s “Play your year” and poster. Past years are always open.' }));
+
+    const errs = await storage.api('/admin/errors').catch(() => []);
+    fill(errors, errs.length ? [
+      h('ul', { class: 'error-list' }, errs.map((e) => h('li', {},
+        h('div', { class: 'row' }, h('strong', { text: e.message }), h('span', { class: 'pill', text: `${e.count}×` })),
+        h('div', { class: 'count', text: `${e.page || 'somewhere'} · last ${e.last.slice(0, 16).replace('T', ' ')} UTC${e.user_id ? ` · ${e.user_id}` : ''}` }),
+        e.detail ? h('details', {}, h('summary', { text: 'Details' }), h('pre', { text: e.detail })) : null))),
+      h('button', { class: 'btn secondary small', type: 'button', onclick: async () => { if (await call('/admin/errors/clear')) load(); } }, 'Clear the list')]
+      : emptyNote('No errors reported. Anything that breaks in someone’s browser shows up here.', 'moon'));
 
     fill(usage,
       use.lastCheck ? h('p', { text: `Last nightly check: ${use.lastCheck.at.slice(0, 16).replace('T', ' ')} UTC — ${use.lastCheck.people} shelves, ${use.lastCheck.series} series, ${use.lastCheck.authors} authors, ${use.lastCheck.calls} calls, ${use.lastCheck.events} new, ${use.lastCheck.failures} problems.` })
-        : h('p', { class: 'hint', text: 'No nightly check recorded yet.' }),
+        : emptyNote('No nightly check recorded yet.', 'moon'),
       h('table', { class: 'usage-table' }, h('tr', {}, h('th', { text: 'Day' }), h('th', { text: 'Hardcover calls' })),
         use.days.map((d) => h('tr', {}, h('td', { text: d.day }), h('td', { text: String(d.calls) })))),
       h('p', { class: 'hint', text: 'Hardcover allows 60 calls a minute. Each person is held to 40 a minute, and the nightly check gives each shelf a minute of its own.' }));
@@ -336,7 +359,8 @@ export function adminView(ctx) {
     h('div', { class: 'page-head' }, h('div', {}, h('h1', { text: 'Admin' }), h('div', { class: 'sub', text: 'Members, joining, and how much of Hardcover the site is using.' }))),
     h('section', { class: 'section' }, h('h2', { text: 'Members' }), users),
     h('section', { class: 'section' }, h('h2', { text: 'Joining' }), settings),
-    h('section', { class: 'section' }, h('h2', { text: 'Usage' }), usage));
+    h('section', { class: 'section' }, h('h2', { text: 'Usage' }), usage),
+    h('section', { class: 'section' }, h('h2', { text: 'Errors' }), errors));
   load();
   return root;
 }

@@ -70,7 +70,7 @@ async function main() {
     console.log(`  ${person}: ${result.checkedSeries} series, ${result.checkedAuthors} authors, ${result.checkedTracked} tracked — ${calls - before} calls, ${events.length} new`);
     if (!DRY_RUN) {
       await api('/service/import', { method: 'POST', body: JSON.stringify({
-        seriesState, authorState, bookState, events, calls: calls - before,
+        seriesState, authorState, bookState, events, calls: calls - before, wishes: result.wishUpdates,
         summary: n === people.length - 1 ? { people: people.length, ...totals, failures: totals.failures.length, calls } : undefined,
       }) });
     }

@@ -41,3 +41,24 @@ test('wishes don’t count as reading, owning a series slot, or badges', () => {
   assert.equal(earnedBadges({ books: [b(1, { status: 'wish' })] }).length, 0);
   assert.deepEqual(Object.keys(deriveWatchlist({ books: [b(1, { status: 'wish' })] }).series), []);
 });
+
+test('did-not-finish reasons are cleaned, and "might come back" keeps the series', async () => {
+  const { cleanDnf, pausedBook, timesRead } = await import('../docs/app/core/model.js');
+  assert.deepEqual(cleanDnf({ reasons: ['slow', 'slow', 'evil'], note: '  meh ', page: '120.4' }), { reasons: ['slow'], note: 'meh', page: 120 });
+  assert.equal(cleanDnf({ reasons: [], note: '' }), null);
+  const paused = b(1, { status: 'abandoned', dnf: { reasons: ['later'] } });
+  assert.ok(pausedBook(paused));
+  assert.ok(deriveWatchlist({ books: [paused, b(2)] }).series.s1, 'a pause does not veto the series');
+  assert.equal(deriveWatchlist({ books: [b(1, { status: 'abandoned' }), b(2)] }).series.s1, undefined);
+  assert.equal(timesRead(b(1)), 1);
+  assert.equal(timesRead(b(1, { rereads: 2 })), 3);
+});
+
+test('a meeting invite is a floating local time with a 90-minute slot', async () => {
+  const { meetingInvite } = await import('../docs/app/core/calendar.js');
+  const ics = meetingInvite({ id: 'm1', club: 'Fantasy Fridays', start: '2026-11-21T14:30', place: 'Café', book: 'Piranesi' });
+  assert.match(ics, /DTSTART:20261121T143000\r\n/);
+  assert.match(ics, /DTEND:20261121T160000\r\n/);
+  assert.match(ics, /LOCATION:Café/);
+  assert.throws(() => meetingInvite({ club: 'x', start: 'tomorrow' }));
+});

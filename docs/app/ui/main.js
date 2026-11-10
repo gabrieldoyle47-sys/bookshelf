@@ -15,7 +15,8 @@ import {
   normaliseRating, hideBook, unhideBook, trackBook, untrackBook, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
   setProgress, goalProgress, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, lookOf, setProfileLook, seasonOf,
-  toggleFavourite, markAnnounced, cleanTags, bookFromShelf, setStatus,} from '../core/model.js';
+  toggleFavourite, markAnnounced, cleanTags, bookFromShelf, setStatus, DNF_REASONS, cleanDnf,
+} from '../core/model.js';
 import { unseenEvents, eventStamp } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
 import { avatar } from './together.js';
@@ -30,6 +31,28 @@ import { openDecorate } from './decorate.js';
 import { signInScreen, forcePasswordChange, accountSection, adminView } from './account.js';
 import { clubsView, withView, clubView } from './clubs.js';
 import { openCard } from './card.js';
+import { refreshNotifications, paintBell } from './notify.js';
+
+let notifTimer = null;
+
+/*
+ * Errors in people's browsers reach the admin page (POST /errors): the
+ * message, where in the code, and which page - never what was on it. At
+ * most five a visit, and each message once.
+ */
+const reported = new Set();
+function reportError(message, detail) {
+  if (!state.me || reported.size >= 5 || reported.has(message)) return;
+  reported.add(message);
+  storage.api('/errors', { method: 'POST', body: { message: String(message).slice(0, 300), detail: String(detail ?? '').slice(0, 2000), page: location.hash.replace(/\/p\/[^/]+/, '/p/…').slice(0, 120) } }).catch(() => {});
+}
+addEventListener('error', (e) => { if (e.message) reportError(e.message, e.error?.stack ?? `${e.filename}:${e.lineno}:${e.colno}`); });
+addEventListener('unhandledrejection', (e) => {
+  const err = e.reason;
+  // Network trouble is the network, not a bug.
+  if (/Failed to fetch|NetworkError|Load failed/i.test(err?.message ?? '')) return;
+  reportError(err?.message ?? String(err), err?.stack);
+});
 import { sigilEl } from './sigil.js';
 import { announce } from './badges.js';
 import { newBadges, earnedBadges } from '../core/badges.js';
@@ -53,6 +76,7 @@ const state = {
   visitors: {},
   // Wishlist reservations by shelf owner: [{ bookId, by, at }].
   reservations: {},
+  justFinished: new Set(),
 };
 
 const ctx = { state, actions: {} };
@@ -61,6 +85,13 @@ const ctx = { state, actions: {} };
 // the data itself is untouched.
 ctx.actions.rerender = () => render();
 ctx.actions.openCard = (id) => openCard(ctx, id);
+ctx.actions.unseenReleases = () => (state.me ? unseenNews(state.profiles.find((p) => p.id === state.me.id) ?? state.me) : 0);
+/** The bell was opened: everything up to now is seen, and these waiting ones too. */
+ctx.actions.markNotificationsSeen = (at, keys) => saveLibrary(state.me.id, (lib) => {
+  lib.notifSeen = at;
+  lib.notifKeys = [...new Set([...(lib.notifKeys ?? []), ...keys])].slice(-100);
+  return lib;
+}, 'Read notifications', { quiet: true });
 
 const PROFILE_TABS = [
   // The bookshelf is where a profile opens; the list view is "Books".
@@ -101,11 +132,19 @@ async function start({ isNew = false } = {}) {
   }
   // Which books are on the award lists, for the award badges (fetched weekly by the API).
   state.awards = new Set((await storage.api('/awards').catch(() => ({ ids: [] }))).ids);
+  // Whether this year's Wrapped is open yet (Admin can hold it until 1 December).
+  state.wrapped = (await storage.api('/auth/mode').catch(() => ({}))).wrapped ?? 'always';
   readRoute();
   state.navigated = true;
   render();
   state.navigated = false;
   checkEarned();
+  // The bell: now, every few minutes, and on coming back to the tab.
+  refreshNotifications(ctx, { force: true });
+  if (!notifTimer) {
+    notifTimer = setInterval(() => refreshNotifications(ctx, { force: true }), 5 * 60e3);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshNotifications(ctx); });
+  }
   // A first visit gets the short tour, once the books have landed.
   if ((isNew || !toured()) && state.route.view === 'profile' && state.route.tab === 'library') setTimeout(() => startTour({ name: isNew ? state.me.name : null }), 1600);
 }
@@ -235,7 +274,13 @@ function wireOnce() {
       if (d.classList.contains('decorate')) continue;
       if (!d.isDirty?.() || confirm('Discard your unsaved changes?')) d.close();
     }
+    const from = state.route;
     readRoute();
+    // Which way the page slides: along the tabs, left or right; anything else just rises in.
+    const tabAt = (r) => (r?.view === 'profile' ? PROFILE_TABS.findIndex(([id]) => id === r.tab) : -1);
+    const a = tabAt(from); const b = tabAt(state.route);
+    document.documentElement.dataset.nav = a >= 0 && b >= 0 && from.profileId === state.route.profileId && a !== b
+      ? (b > a ? 'forward' : 'back') : 'rise';
     // News highlighted on the Releases page was for that visit only.
     state.newsHighlight = null;
     // A soft cross-fade between pages where the browser supports it; saves
@@ -438,6 +483,7 @@ function render() {
   if (!state.me) return;
   renderSidebar();
   renderMeButton();
+  paintBell(ctx);
   const main = clear(document.getElementById('main'));
   toggleMenu(false);
   const title = pageTitle();
@@ -658,9 +704,15 @@ async function saveLibrary(profileId, mutate, message, { quiet = false } = {}) {
   paintSync();
   const run = queue.then(async () => {
     try {
+      const before = new Map((state.libraries[profileId]?.books ?? []).map((b) => [b.id, b.status]));
       const next = await storage.mutateJSON(
         path, { books: [], watch: { series: {}, authors: {} } }, mutate, message);
       state.libraries[profileId] = next;
+      // Books just finished get their sigil stamped on, with a thunk, the
+      // next time the bookshelf is drawn (library.js).
+      for (const b of next.books ?? []) {
+        if (b.status === 'read' && before.has(b.id) && before.get(b.id) !== 'read') state.justFinished.add(b.id);
+      }
       return true;
     } catch (err) {
       toast(friendlyError(err), true);
@@ -998,7 +1050,7 @@ ctx.actions.openRecommend = (from, book = null) => {
                 class: 'result', type: 'button',
                 onclick: () => compose(bookFromHardcover(hit, { status: 'tbr' })),
               },
-                coverEl({ cover: hit.image }),
+                coverEl({ ...hit, cover: hit.image }),
                 h('div', { class: 'book-main' },
                   h('div', { class: 'book-title', text: hit.title }),
                   h('div', { class: 'book-meta', text: [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean).join(' · ') }))));
@@ -1126,7 +1178,7 @@ function showHits(hits) {
         ctx.actions.editBook(have, addProfile);
       },
     },
-      coverEl({ cover: hit.image }),
+      coverEl({ ...hit, cover: hit.image }),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-title', text: hit.title }),
         h('div', { class: 'book-meta', text: bits.join(' · ') })),
@@ -1222,7 +1274,7 @@ function chooseStatus(hit, hits) {
     },
   },
     h('div', { class: 'result picked' },
-      coverEl({ cover: hit.image }),
+      coverEl({ ...hit, cover: hit.image }),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-title', text: hit.title }),
         h('div', { class: 'book-meta', text: [authorNames(hit), seriesLabel(hit), hit.releaseYear].filter(Boolean).join(' · ') }))),
@@ -1266,6 +1318,14 @@ ctx.actions.react = async (profile, book, on, emoji) => {
 };
 
 /** One of your five favourites, or not any more. */
+/** Re-reads: how many more times than once a finished book has been read. */
+ctx.actions.setRereads = (profile, book, n) => saveLibrary(profile.id, (lib) => {
+  const b = lib.books.find((x) => x.id === book.id);
+  if (!b) throw new Error('That book is no longer on this shelf.');
+  if (n > 0) b.rereads = Math.min(99, n); else delete b.rereads;
+  return lib;
+}, `Re-reads: ${book.title}`, { quiet: true });
+
 ctx.actions.toggleFavourite = (profile, book) => saveLibrary(profile.id, (lib) => toggleFavourite(lib, book.id),
   `Favourite: ${book.title}`, { quiet: true });
 
@@ -1297,6 +1357,22 @@ ctx.actions.editBook = (book, owner) => {
     page: book.progress?.page ?? '',
     audiobook: isAudiobook(book), hours: audioHours(book) || '', narrators: (book.audio?.narrators ?? []).join(', '),
   };
+  // Giving up on it: why, and how far you got (shown only for "Gave up on").
+  draft.dnf = { reasons: [...(book.dnf?.reasons ?? [])], note: book.dnf?.note ?? '', page: book.dnf?.page ?? '' };
+  const dnfBox = h('div', { class: 'field dnf-box', hidden: book.status !== 'abandoned' },
+    h('span', { text: 'Why did you put it down? (optional)' }),
+    h('div', { class: 'dnf-reasons' }, DNF_REASONS.map(([id, label]) => h('button', {
+      class: 'chip-toggle', type: 'button', 'aria-pressed': String(draft.dnf.reasons.includes(id)),
+      onclick: (e) => {
+        draft.dnf.reasons = draft.dnf.reasons.includes(id) ? draft.dnf.reasons.filter((r) => r !== id) : [...draft.dnf.reasons, id];
+        e.currentTarget.setAttribute('aria-pressed', String(draft.dnf.reasons.includes(id)));
+      } }, label))),
+    h('div', { class: 'row' },
+      h('input', { type: 'number', min: '0', inputmode: 'numeric', class: 'page-input', placeholder: 'Page', value: draft.dnf.page,
+        'aria-label': 'Page you got to', oninput: (e) => { draft.dnf.page = e.target.value; } }),
+      h('span', { class: 'count', text: book.pages ? `of ${book.pages} — how far you got` : 'how far you got' })),
+    h('textarea', { rows: '2', placeholder: 'Anything else about why (optional)', oninput: (e) => { draft.dnf.note = e.target.value; } }, draft.dnf.note),
+    h('p', { class: 'hint', text: '“Might come back later” keeps the series on your watchlist.' }));
   // Closing with edits unsaved asks first (see wireDialogs).
   const initial = JSON.stringify(draft);
   dialog.isDirty = () => JSON.stringify(draft) !== initial;
@@ -1315,8 +1391,9 @@ ctx.actions.editBook = (book, owner) => {
     // Named, because from Both of us or a recap this may be the other
     // person's copy of the book.
     h('label', { class: 'field' }, h('span', { text: `${profile.name}'s shelf` }),
-      h('select', { onchange: (e) => { draft.status = e.target.value; } },
+      h('select', { onchange: (e) => { draft.status = e.target.value; dnfBox.hidden = draft.status !== 'abandoned'; } },
         STATUSES.map((s) => h('option', { value: s, selected: s === book.status }, SHELF_LABEL[s] ?? s)))),
+    dnfBox,
 
     h('div', { class: 'field' }, h('span', { text: 'Rating' }), ratingPicker(draft)),
 
@@ -1552,6 +1629,8 @@ async function applyEdit(profile, book, draft) {
     // Fill in whatever the status change implies, without touching anything
     // the reader set by hand in the dates panel.
     applyStatusDates(target, previous);
+    const dnf = draft.status === 'abandoned' ? cleanDnf(draft.dnf) : null;
+    if (dnf) target.dnf = dnf; else delete target.dnf;
     return lib;
   }, `Update ${book.title}`);
 

@@ -214,7 +214,7 @@ test('a renamed shelf still collects its genre, and the top of the case keeps tw
 });
 
 test('a look: defaults, the old theme carried over, and only known values kept', () => {
-  assert.deepEqual(lookOf({}), { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false, stamp: true });
+  assert.deepEqual(lookOf({}), { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', pet: 'none', seasons: false, stamp: true, libby: '' });
   assert.equal(lookOf({ theme: 'rose' }).palette, 'rose', 'a profile saved before looks keeps its colours');
   const doc = { profiles: [{ id: 'a', name: 'A', theme: 'ocean' }] };
   setProfileLook(doc, 'a', { room: 'cafe', wood: 'cherry', font: 'comic-sans', seasons: true, evil: '<x>' });

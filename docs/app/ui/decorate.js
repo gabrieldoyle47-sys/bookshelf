@@ -16,6 +16,7 @@ const LABEL = {
   wall: { room: 'As the room', cream: 'Cream', sage: 'Sage', 'dusk-blue': 'Dusk blue', plum: 'Plum', charcoal: 'Charcoal' },
   wood: { room: 'As the room', walnut: 'Walnut', oak: 'Oak', cherry: 'Cherry', ebony: 'Ebony', driftwood: 'Driftwood' },
   rug: { room: 'As the room', crimson: 'Crimson', navy: 'Navy', sage: 'Sage', gold: 'Gold', none: 'No rug' },
+  pet: { none: 'No pet', cat: 'Black cat', dog: 'Cavalier' },
   lamp: { room: 'As the room', library: 'Green glass', fire: 'Iron lantern', rain: 'Linen drum', cafe: 'Enamel' },
 };
 // Colours for the little swatches in the room options. Fixed values only.
@@ -23,6 +24,7 @@ const SWATCH = {
   wall: { room: null, cream: '#ece2cf', sage: '#b9c4a8', 'dusk-blue': '#5d6f8a', plum: '#6e4258', charcoal: '#3b3c40' },
   wood: { room: null, walnut: '#5a3d26', oak: '#c9a06a', cherry: '#b5694a', ebony: '#3a312d', driftwood: '#b5aa98' },
   rug: { room: null, crimson: '#7a2f2f', navy: '#26324f', sage: '#6f8462', gold: '#b8862f', none: null },
+  pet: { none: null, cat: '#1c1a20', dog: '#a9572a' },
   lamp: { room: null, library: '#2f6b4f', fire: '#2a2420', rain: '#e8dcc6', cafe: '#3f6f5f' },
 };
 const SEASON = { spring: 'spring blossom drifts past', summer: 'long summer light', autumn: 'leaves fall past, a pumpkin on the sill', winter: 'snow falls, and settles on the sill' };
@@ -114,8 +116,8 @@ export function openDecorate(profile, { preview, save, cancel }) {
         section('Room', 'The room the bookshelf stands in. With sound on, its sound plays.',
           h('div', { class: 'dec-grid rooms', role: 'radiogroup', 'aria-label': 'Room' }, SCENES.map(([id, icon, label]) =>
             choice('room', id, draft.room, label, (room) => set({ room }), h('span', { class: `ico ${icon}`, 'aria-hidden': 'true' }))))),
-        ...['wall', 'wood', 'rug', 'lamp'].map((key) => section(
-          { wall: 'Walls', wood: 'Bookcase wood', rug: 'Rug', lamp: 'Ceiling lamps' }[key], null,
+        ...['wall', 'wood', 'rug', 'lamp', 'pet'].map((key) => section(
+          { wall: 'Walls', wood: 'Bookcase wood', rug: 'Rug', lamp: 'Ceiling lamps', pet: 'Pet on the rug' }[key], null,
           h('div', { class: 'dec-grid swatches', role: 'radiogroup', 'aria-label': key }, ROOM_OPTIONS[key].map((v) =>
             choice(key, v, draft[key], LABEL[key][v], (value) => set({ [key]: value }),
               h('span', { class: `dec-dot${SWATCH[key][v] ? '' : ' plain'}`, style: SWATCH[key][v] ? `--c:${SWATCH[key][v]}` : null })))))));

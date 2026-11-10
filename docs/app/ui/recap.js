@@ -6,6 +6,7 @@
  */
 
 import { playStory } from './story.js';
+import { openPoster } from './wrapped.js';
 import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, fmtRating, toast } from './dom.js';
 import { goalProgress, today } from '../core/model.js';
 import { recapYears, yearInBooks } from '../core/recap.js';
@@ -109,11 +110,20 @@ export function yearSection(ctx, profile) {
   paint();
 
   // The year as a full-screen story (story.js), for whichever year is chosen.
-  const play = h('button', { class: 'btn play-year', type: 'button', onclick: () => playStory(ctx, profile, current) },
-    h('span', { class: 'play-tri', 'aria-hidden': 'true' }), 'Play your year');
+  // This year's Wrapped can be held back until 1 December (Admin); past years are always open.
+  const thisYear = Number(today().slice(0, 4));
+  const held = () => ctx.state.wrapped === 'december' && Number(current) === thisYear && Number(today().slice(5, 7)) < 12;
+  const play = h('button', { class: 'btn play-year', type: 'button', onclick: () => {
+    if (held()) return toast(`Your ${thisYear} Wrapped opens on 1 December.`);
+    playStory(ctx, profile, current);
+  } }, h('span', { class: 'play-tri', 'aria-hidden': 'true' }), 'Play your year');
+  const poster = h('button', { class: 'btn secondary', type: 'button', title: 'Your year as a poster — to print or share', onclick: () => {
+    if (held()) return toast(`Your ${thisYear} poster is ready on 1 December.`);
+    openPoster(ctx, profile, current);
+  } }, 'Poster');
 
   section.append(
-    h('div', { class: 'section-head' }, h('h2', { text: 'Year in books' }), h('div', { class: 'spacer' }), picker, play),
+    h('div', { class: 'section-head' }, h('h2', { text: 'Year in books' }), h('div', { class: 'spacer' }), picker, poster, play),
     body);
   return section;
 }

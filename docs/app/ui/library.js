@@ -28,14 +28,17 @@ import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
 import { cardButton } from './together.js';
 import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, lightRoom } from './room.js';
-import { playRoom } from './sound.js';
+import { playRoom, play } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';
 import { THEMES_ON } from './themes.js';
 
 const FILTERS = [['all', 'Everything'], ['read', 'Read'], ['reading', 'Reading'], ['tbr', 'To read'], ['wish', 'Wishlist']];
 const GHOSTS = [['on', 'Shown'], ['off', 'Hidden']];
 const ARRANGE = [['shelf', 'By genre'], ['author', 'By author'], ['rainbow', 'Rainbow']];
-const prefs = { filter: 'all', arrange: 'shelf', ghosts: 'on' };
+const prefs = { filter: 'all', arrange: 'shelf', ghosts: 'on', phone: 'swipe' };
+const PHONE = [['swipe', 'Swipe'], ['tall', 'Whole case']];
+/** On a phone, one shelf at a time, swiped through - unless the whole tall case was asked for. */
+const swiping = () => innerWidth <= 560 && prefs.phone !== 'tall';
 try { Object.assign(prefs, JSON.parse(sessionStorage.getItem('bookshelf.library') ?? '{}')); } catch { /* private mode */ }
 const savePrefs = () => { try { sessionStorage.setItem('bookshelf.library', JSON.stringify(prefs)); } catch { /* ignore */ } };
 
@@ -169,6 +172,7 @@ export function libraryView(ctx, profile) {
       section('Wishlist', chips(GHOSTS, () => prefs.ghosts, (v) => { prefs.ghosts = v; }, 'Wishlist books on the shelf')),
       section('Arrange by', chips(ARRANGE, () => prefs.arrange, (v) => { prefs.arrange = v; }, 'How to arrange them')),
       section('Room', scenes),
+      innerWidth <= 560 ? section('On a phone', chips(PHONE, () => prefs.phone, (v) => { prefs.phone = v; }, 'How the case shows on a phone')) : null,
       canWrite ? h('button', { class: 'btn small am-move', type: 'button', onclick: () => { toggleMenu(false); startEditing(); } },
         h('span', { class: 'ico ico-move', 'aria-hidden': 'true' }), 'Move books by hand') : null);
   }
@@ -340,8 +344,10 @@ export function libraryView(ctx, profile) {
         const first = g.books[0];
         items.push(h('div', { class: 'shelf-group', title: first.series?.name ?? `${authorNames(first)} — standalones` },
           g.books.map(spine),
-          // A label on the plank under a series - only where it can be read.
-          first.series?.name && g.books.length >= 3 ? h('span', { class: 'shelf-mark', text: first.series.name }) : null));
+          // A small brass plate on the shelf's edge under a series, engraved
+          // with its name (shortened to what fits).
+          first.series?.name && g.books.length >= 2 ? h('span', { class: 'shelf-mark', title: first.series.name },
+            h('span', { class: 'shelf-mark-text', text: plateName(first.series.name) })) : null));
       };
       for (const key of shelf.keys) {
         if (key.startsWith('e:')) continue;
@@ -378,6 +384,7 @@ export function libraryView(ctx, profile) {
     const top = h('div', { class: 'case-top', dataset: { zone: 'top', accept: 'o', max: '2' } },
       (layout.top ?? []).map((k) => ornamentEl(k.slice(2))));
     fill(caseBox, bookcase(shelves.length ? shelves : [emptyBlock()], relight, cabinet, top));
+    if (swiping() && !editing && shelves.length > 1) swipeShelves(caseBox, shelves);
     relight();
     requestAnimationFrame(() => { tidyLines(caseBox, Boolean(editing)); fitRoom(caseBox.querySelector('.room')); });
     if (editing) {
@@ -437,8 +444,17 @@ export function libraryView(ctx, profile) {
 
   paintTools();
   paint(animate);
+  // Books finished since the shelf was last drawn: their stamps have just
+  // come down (CSS .thunk); the sound lands with them, once.
+  const thunked = [...(ctx.state.justFinished ?? [])].filter((id) => byId.has(id));
+  if (thunked.length && canWrite && activeLook.stamp) {
+    setTimeout(() => play('stamp'), animate ? 1100 : 450);
+    for (const id of thunked) ctx.state.justFinished.delete(id);
+  }
+  let wasSwiping = swiping();
   const onResize = () => {
     if (!root.isConnected) return removeEventListener('resize', onResize);
+    if (swiping() !== wasSwiping) { wasSwiping = swiping(); paint(false); return; }
     tidyLines(caseBox, Boolean(editing));
     fitRoom(caseBox.querySelector('.room'));
   };
@@ -452,6 +468,35 @@ export function libraryView(ctx, profile) {
  * ornaments is hidden - except while rearranging, when they must stay
  * reachable.
  */
+/**
+ * The phone view: the shelves side by side in one row you swipe through, one
+ * shelf to a screen, with a dot for each underneath (and its name as you go).
+ */
+function swipeShelves(box, shelves) {
+  const track = box.querySelector('.case-shelves');
+  track.classList.add('swipe');
+  const name = h('span', { class: 'swipe-name' });
+  const dots = h('div', { class: 'swipe-dots', role: 'tablist', 'aria-label': 'Shelves' },
+    shelves.map((block, i) => h('button', {
+      class: 'swipe-dot', type: 'button', role: 'tab', 'aria-label': block.getAttribute('aria-label') ?? `Shelf ${i + 1}`,
+      onclick: () => track.scrollTo({ left: block.offsetLeft - track.offsetLeft, behavior: 'smooth' }),
+    })));
+  const step = (d) => track.scrollBy({ left: d * track.clientWidth, behavior: 'smooth' });
+  const nav = h('div', { class: 'swipe-nav' },
+    h('button', { class: 'swipe-arrow', type: 'button', 'aria-label': 'Previous shelf', onclick: () => step(-1) }, '‹'),
+    h('div', { class: 'swipe-mid' }, name, dots),
+    h('button', { class: 'swipe-arrow', type: 'button', 'aria-label': 'Next shelf', onclick: () => step(1) }, '›'));
+  // Above the case, where it's always in view (on a phone the tab bar covers the floor).
+  box.querySelector('.case-wrap .case').before(nav);
+  const mark = () => {
+    const i = Math.max(0, Math.min(shelves.length - 1, Math.round(track.scrollLeft / Math.max(1, track.clientWidth))));
+    [...dots.children].forEach((d, n) => d.setAttribute('aria-selected', String(n === i)));
+    name.textContent = shelves[i].querySelector('.bookend')?.getAttribute('aria-label')?.split(',')[0] ?? '';
+  };
+  track.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+  mark();
+}
+
 function tidyLines(box, editing) {
   for (const block of box.querySelectorAll('.shelf-block:not(.cabinet)')) {
     const items = [...block.children];
@@ -555,7 +600,7 @@ function roomData(room, look) {
 let activeBadges = [];
 
 /** What room.js needs to know beyond which room it is. */
-const roomOpts = (look) => ({ lamp: look.lamp, season: look.seasons ? seasonOf() : null });
+const roomOpts = (look) => ({ lamp: look.lamp, pet: look.pet, season: look.seasons ? seasonOf() : null });
 
 /** One stretch of shelving: a bookend with its name, the books, an ornament. */
 function shelfBlock(title, count, items, decoration, kind = '', n = null) {
@@ -577,25 +622,34 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
   const { cloth, finish } = style;
   const pages = Math.min(b.pages ?? 320, 1300);
   const t = Math.max(0, Math.min(1, (pages - 150) / 1000));
+  const height = Math.round(96 + t * 28);
   const pos = b.series?.position;
   const fav = isFavourite(ctx.state.libraries[profile.id], b.id);
   const wish = b.status === 'wish';
-  // The owner's stamp marks books they own; a ghost carries the stamp of
-  // whoever has said they'll buy it, if anyone has.
-  const stamped = activeLook.stamp && !wish;
+  // The owner's sigil is stamped on a book once they've finished it (and
+  // thunks on the moment they do); a ghost carries the stamp of whoever has
+  // said they'll buy it, if anyone has.
+  const stamped = activeLook.stamp && b.status === 'read';
+  const thunk = stamped && ctx.state.justFinished?.has(b.id);
   const reserved = wish ? reservationOf(ctx, profile, b) : null;
   const due = wish && b.released && b.released > today() ? b.released : null;
   const label = `${b.title}${seriesLabel(b) ? `, ${seriesLabel(b)}` : ''}${b.rating ? `, rated ${b.rating}` : ''}`
     + (b.status === 'reading' ? ', reading now' : b.status === 'tbr' ? ', to read' : wish ? ', on the wishlist' : '') + (fav ? ', a favourite' : '')
     + (due ? `, out ${fmtDay(due)}` : '') + (reserved ? `, ${reserved.by.name} is getting it` : '');
   const el = h('button', {
-    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}${stamped ? ' stamped' : ''}${fav ? ' fav' : ''}${reserved ? ' reserved' : ''}${due ? ' due' : ''}`, type: 'button',
-    style: `--h:${Math.round(86 + t * 30)}px;--w:${Math.round(19 + t * 13)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
+    class: `lspine ${finish} ${b.status}${b.rating >= 5 ? ' gilt' : ''}${isAudiobook(b) ? ' audio' : ''}${stamped ? ' stamped' : ''}${fav ? ' fav' : ''}${reserved ? ' reserved' : ''}${due ? ' due' : ''}${thunk ? ' thunk' : ''}`, type: 'button',
+    style: `--h:${height}px;--w:${Math.round(26 + t * 12)}px;--cloth:${cloth}${order != null ? `;--i:${order}` : ''}`,
     'aria-label': label + (isAudiobook(b) ? ', audiobook' : ''),
     dataset: { key: `b:${b.id}` },
-    onclick: () => { if (!editing) ctx.actions.openBook(b, profile); },
+    onclick: (e) => {
+      if (editing) return;
+      // On a touch screen a spine is a narrow target: a tap fans it out with
+      // its neighbours, as covers big enough to be sure of.
+      if (lastPointer === 'touch') return fanOut(ctx, profile, e.currentTarget);
+      ctx.actions.openBook(b, profile);
+    },
   },
-    h('span', { class: 'lspine-title', text: b.title }),
+    spineTitle(b.title, height - (due ? 30 : 14) - (21 + (stamped || reserved ? 14 : 0) + (isAudiobook(b) ? 13 : 0))),
     isAudiobook(b) ? h('span', { class: 'lspine-audio', 'aria-hidden': 'true', title: 'Audiobook' }) : null,
     pos != null && Number.isInteger(pos) ? h('span', { class: 'lspine-num', text: String(pos) }) : null,
     b.status === 'reading' ? h('span', { class: 'lspine-ribbon', 'aria-hidden': 'true' }) : null,
@@ -604,6 +658,8 @@ function spineEl(ctx, profile, b, style, order, editing = false) {
     stamped ? h('span', { class: 'lspine-stamp', 'aria-hidden': 'true' }, sigilEl(profile, { title: '' })) : null,
     due ? h('span', { class: 'lspine-due', 'aria-hidden': 'true', text: shortDay(due) }) : null,
     reserved ? h('span', { class: 'lspine-claim', 'aria-hidden': 'true', title: `${reserved.by.name} is getting this` }, sigilEl(reserved.by, { size: 'dot', title: '' })) : null);
+  el.book = b;
+  el.addEventListener('pointerdown', (e) => { lastPointer = e.pointerType; });
   if (order != null) el.classList.add('drop');
   el.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !editing) peek(el, b); });
   el.addEventListener('pointerleave', hidePeek);
@@ -618,6 +674,56 @@ const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT
 /** "MAR 14" - the tag on an unreleased ghost. */
 const shortDay = (iso) => `${MON[Number(iso.slice(5, 7)) - 1] ?? ''} ${Number(iso.slice(8, 10)) || ''}`.trim();
 const fmtDay = (iso) => new Date(`${iso.slice(0, 10)}T12:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+/**
+ * The title on a spine, on one line or two. Two lines stop a long title
+ * shrinking to "The Wa..."; the break goes at the space nearest the middle so
+ * the lines come out even. Each line still ends in "..." if it doesn't fit.
+ * `room` is the length of spine free for it, in pixels.
+ */
+/** A series name short enough for a brass plate: "The Red Rising Saga" -> "Red Rising". */
+const plateName = (name) => name.split(/[:(]/)[0].replace(/^The\s+/i, '')
+  .replace(/\s+(Saga|Trilogy|Series|Cycle|Sequence|Quartet|Duology|Chronicles)$/i, '').trim();
+
+function spineTitle(title, room) {
+  const text = String(title ?? '');
+  const fits = Math.max(4, Math.floor(room / 5));     // ~5px a character at this size
+  if (text.length <= fits || !text.includes(' ')) return h('span', { class: 'lspine-title', text });
+  // A subtitle starts the second line ("Mistborn:" / "The Final Empire").
+  const colon = text.indexOf(': ');
+  const mid = text.length / 2;
+  let at = colon > 0 ? colon + 1 : -1;
+  if (at < 0) for (let i = 0; i < text.length; i++) if (text[i] === ' ' && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i;
+  return h('span', { class: 'lspine-title two' },
+    h('span', { class: 'lspine-line', text: text.slice(0, at) }),
+    h('span', { class: 'lspine-line', text: text.slice(at + 1) }));
+}
+
+/* ----------------------------------------------------------------- fan */
+
+let lastPointer = 'mouse';
+let fanEl = null;
+
+/** The tapped spine and up to two either side, as covers to choose from. */
+function fanOut(ctx, profile, spine) {
+  hidePeek();
+  const all = [...spine.closest('.shelf-block').querySelectorAll('.lspine')];
+  const at = all.indexOf(spine);
+  const from = Math.max(0, Math.min(at - 2, all.length - 5));
+  const books = all.slice(from, from + 5).map((s) => s.book).filter(Boolean);
+  closeFan();
+  const close = () => closeFan();
+  fanEl = h('div', { class: 'fan-layer', onclick: (e) => { if (e.target === fanEl) close(); } },
+    h('div', { class: 'fan', role: 'dialog', 'aria-label': 'Pick a book' },
+      h('div', { class: 'fan-row' }, books.map((b, i) => h('button', {
+        class: `fan-book${b === spine.book ? ' picked' : ''}`, type: 'button', style: `--k:${i - (at - from)}`,
+        onclick: () => { close(); ctx.actions.openBook(b, profile); },
+      }, coverEl(b, { width: 120 }), h('span', { class: 'fan-title', text: b.title })))),
+      h('p', { class: 'fan-hint', text: 'Tap the one you meant' })));
+  document.body.append(fanEl);
+  requestAnimationFrame(() => fanEl?.classList.add('open'));
+}
+function closeFan() { fanEl?.remove(); fanEl = null; }
 
 /* ---------------------------------------------------------------- peek */
 

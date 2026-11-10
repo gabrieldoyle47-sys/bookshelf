@@ -33,6 +33,7 @@
  * parser.
  */
 
+import { petEl } from './pet.js';
 import { h } from './dom.js';
 import { FURNITURE } from './room-art.js';
 
@@ -250,7 +251,9 @@ export function roomFront(scene, onLamp = () => {}, look = {}) {
   return h('div', { class: 'room-front', 'aria-hidden': 'true' },
     ceilingLamps(look.lamp && look.lamp !== 'room' ? look.lamp : scene, onLamp),
     scene === 'cafe' ? h('div', { class: 'bokeh' }, Array.from({ length: 9 }, (_, n) => h('i', { style: `--n:${n}` }))) : null,
-    items);
+    items,
+    // The pet lies on the rug, in front of the case.
+    petEl(look.pet) ? h('div', { class: `pet-spot ${scene}` }, petEl(look.pet)) : null);
 }
 
 /** A tall plant in a pot, in the back corner beside the case. */

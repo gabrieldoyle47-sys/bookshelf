@@ -153,3 +153,46 @@ CREATE TABLE IF NOT EXISTS reservations (
   PRIMARY KEY (owner, book_id)
 );
 CREATE INDEX IF NOT EXISTS reservations_by ON reservations (by_user);
+
+-- Club meetings: someone offers a few times, members tick the ones they can
+-- make, the host settles on one.
+CREATE TABLE IF NOT EXISTS club_meetings (
+  id TEXT PRIMARY KEY,
+  club_id TEXT NOT NULL,
+  place TEXT,                                   -- an address or a video link
+  options TEXT NOT NULL,                        -- JSON: ["2026-11-20T19:00", ...]
+  chosen INTEGER,                               -- index into options, once settled
+  chosen_at TEXT,
+  created_by TEXT NOT NULL,
+  created TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS club_meetings_club ON club_meetings (club_id);
+CREATE TABLE IF NOT EXISTS club_meeting_votes (
+  meeting_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  option INTEGER NOT NULL,
+  PRIMARY KEY (meeting_id, user_id, option)
+);
+
+-- Ticking off the parts of a club read's schedule ("up to chapter 12 by Friday").
+CREATE TABLE IF NOT EXISTS club_checkins (
+  club_id TEXT NOT NULL,
+  read_key TEXT NOT NULL,                       -- which read: book id and start date
+  user_id TEXT NOT NULL,
+  part INTEGER NOT NULL,
+  at TEXT NOT NULL,
+  PRIMARY KEY (club_id, read_key, user_id, part)
+);
+
+-- Errors from people's browsers, for the admin page. Repeats are counted, not stored again.
+CREATE TABLE IF NOT EXISTS client_errors (
+  key TEXT PRIMARY KEY,                         -- a hash of the message and where it happened
+  message TEXT NOT NULL,
+  detail TEXT,
+  page TEXT,
+  user_id TEXT,
+  agent TEXT,
+  first TEXT NOT NULL,
+  last TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 1
+);

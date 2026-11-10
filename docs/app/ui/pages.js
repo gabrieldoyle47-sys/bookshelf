@@ -7,7 +7,7 @@
  * a series, the reader's own who's who and "Previously on…".
  */
 
-import { h, fill, coverEl, starsEl, fmtRelease, buyLinks } from './dom.js';
+import { h, fill, coverEl, coverSrc, starsEl, fmtRelease, buyLinks } from './dom.js';
 import { today } from '../core/model.js';
 import { completedSeries } from '../core/watch.js';
 import { avatar } from './together.js';
@@ -76,7 +76,7 @@ export function authorView(ctx, id) {
     const bio = a.bio ? h('p', { class: 'pg-bio clamp', text: a.bio }) : null;
     fill(root,
       h('header', { class: 'pg-head' },
-        a.image ? h('img', { class: 'pg-photo', src: a.image, alt: '', loading: 'lazy' })
+        a.image ? h('img', { class: 'pg-photo', src: coverSrc(a.image, 160), alt: '', loading: 'lazy' })
           : h('div', { class: 'pg-photo none', 'aria-hidden': 'true', text: a.name.slice(0, 1) }),
         h('div', { class: 'pg-title' },
           h('div', { class: 'eyebrow', text: 'Author' }),
@@ -160,7 +160,7 @@ export function seriesView(ctx, id) {
     const years = s.books.map((b) => b.releaseYear).filter(Boolean);
     fill(root,
       h('header', { class: 'pg-head series' },
-        h('div', { class: 'pg-stack', 'aria-hidden': 'true' }, mainBooks.slice(0, 4).map((b, i) => h('span', { style: `--i:${i}` }, coverEl({ cover: b.image })))),
+        h('div', { class: 'pg-stack', 'aria-hidden': 'true' }, mainBooks.slice(0, 4).map((b, i) => h('span', { style: `--i:${i}` }, coverEl({ ...b, cover: b.image })))),
         h('div', { class: 'pg-title' },
           h('div', { class: 'eyebrow', text: 'Series' }),
           h('h1', { text: s.name }),
@@ -212,7 +212,7 @@ function orderRow(ctx, s, b, now) {
   return h('li', { class: `pg-row${upcoming ? ' upcoming' : ''}${Number.isInteger(b.position) ? '' : ' extra'}` },
     h('button', { class: 'pg-row-main', type: 'button', onclick: () => openFrom(ctx, b, readers) },
       h('span', { class: 'pg-pos', text: b.position != null ? String(b.position) : '–' }),
-      coverEl({ cover: b.image }),
+      coverEl({ ...b, cover: b.image }),
       h('span', { class: 'book-main' },
         h('span', { class: 'book-title', text: b.title }),
         h('span', { class: 'book-meta', text: upcoming ? `Out ${fmtRelease(b.releaseDate).date}`

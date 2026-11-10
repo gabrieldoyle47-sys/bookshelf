@@ -8,6 +8,7 @@
  * goes through it, which is why this is the one place markup is parsed.
  */
 
+import { iconSvg } from './sigil.js';
 import { h } from './dom.js';
 import { arrangeShelf, shelfOrder } from '../core/arrange.js';
 
@@ -80,6 +81,15 @@ export function art(name) {
 }
 
 /** An empty state with a drawing above the words. */
+/**
+ * The small empty state, used wherever a list or a section has nothing in it
+ * yet: one line icon in a soft circle and a sentence. Every empty place on the
+ * site looks the same way (the big illustrated one, emptyArt, is for whole pages).
+ */
+export function emptyNote(text, icon = 'bookmark') {
+  return h('div', { class: 'empty-note' }, h('span', { class: 'empty-note-icon', 'aria-hidden': 'true' }, iconSvg(icon)), h('p', { text }));
+}
+
 export function emptyArt(name, text, ...extra) {
   return h('div', { class: 'empty empty-art' }, art(name), h('p', { text }), ...extra);
 }

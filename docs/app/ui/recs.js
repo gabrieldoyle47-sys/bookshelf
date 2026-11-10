@@ -15,7 +15,7 @@ import { carousel } from './carousel.js';
 import { nextInSeries } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 import { openRelease } from './upcoming.js';
-import { emptyArt } from './art.js';
+import { emptyArt, emptyNote } from './art.js';
 import { becauseSection, findSection } from './discover.js';
 
 /** New recommendations waiting for an answer - the tab's badge. */
@@ -89,7 +89,7 @@ function pickedForYou(ctx, profile, library) {
     const items = state.items.filter((s) => !have.has(String(s.book.id)) && !hidden.has(String(s.book.id)));
     body = items.length
       ? carousel(items.map((s) => suggestionCard(ctx, profile, s)), { label: `Suggestions for ${profile.name}`, className: 'suggest-row' })
-      : h('p', { class: 'col-empty', text: 'You have been through every suggestion — press Refresh for more.' });
+      : emptyNote('You have been through every suggestion — press Refresh for more.', 'compass');
   } else if (state.status === 'loading') {
     body = carousel(Array.from({ length: 5 }, () => h('div', { class: 'sg-card sk-card-skeleton' },
       h('div', { class: 'sk sg-sk-cover' }), h('div', { class: 'sk sk-line' }), h('div', { class: 'sk sk-line short' }))), { className: 'suggest-row' });
@@ -122,7 +122,7 @@ function suggestionCard(ctx, profile, s) {
 
   return h('article', { class: 'sg-card' },
     h('button', { class: 'sg-cover', type: 'button', onclick: preview, 'aria-label': `About ${b.title}` },
-      coverEl({ cover: b.image }),
+      coverEl({ ...b, cover: b.image }),
       s.match != null ? h('span', { class: 'sg-match', text: `${s.match}% match` }) : null),
     h('div', { class: 'sg-body' },
       h('div', { class: 'sg-title', text: b.title }),
@@ -158,9 +158,9 @@ function seriesColumn(ctx, profile, library) {
   if (!groups.length) {
     return h('section', { class: 'recs-col' }, head,
       h('p', { class: 'col-sub', text: 'Books already out in series you read, that are not on your shelf.' }),
-      h('p', { class: 'col-empty', text: Object.keys(ctx.state.seriesState).length
+      emptyNote(Object.keys(ctx.state.seriesState).length
         ? 'You are caught up on every series you read.'
-        : 'Nothing checked yet — press “Check for new releases” on the Upcoming tab.' }));
+        : 'Nothing checked yet — press “Check for new releases” on the Releases tab.', 'compass'));
   }
 
   return h('section', { class: 'recs-col' }, head,
@@ -189,7 +189,7 @@ function seriesRow(ctx, profile, b, isNext, queued = null) {
   }, null, { preview: true });
   return h('div', { class: `rec-row${isNext ? ' next' : ''}` },
     h('button', { class: 'rec-open', type: 'button', onclick: open, title: `About ${b.title}` },
-      coverEl({ cover: b.image }),
+      coverEl({ ...b, cover: b.image }),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-title', text: b.title }),
         h('div', { class: 'book-meta', text: [

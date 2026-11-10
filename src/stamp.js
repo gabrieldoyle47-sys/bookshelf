@@ -7,6 +7,9 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ROOT } from './store.js';
 
+// Every publish ships a fresh bundle of the site's code.
+await import('./build.js');
+
 const file = join(ROOT, 'docs', 'site.json');
 const site = JSON.parse(await readFile(file, 'utf8'));
 // A timestamp rather than a commit sha: stamping has to happen before the

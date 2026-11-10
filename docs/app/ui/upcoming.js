@@ -17,7 +17,7 @@ import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js'
 import { getConfig } from './storage.js';
 import { previouslyOn } from './memory.js';
 import { cssArt } from './shelfhero.js';
-import { emptyArt } from './art.js';
+import { emptyArt, emptyNote } from './art.js';
 import { upcomingFrom, authorUpcoming, trackedUpcoming } from '../core/watch.js';
 import { frag, pageHead, plural } from './views.js';
 
@@ -205,7 +205,7 @@ function nextUp(item, ctx, profile) {
     onclick: () => openRelease(ctx, item, profile),
   },
     h('div', { class: 'next-up-wash', 'aria-hidden': 'true' }),
-    coverEl({ cover: item.image }),
+    coverEl({ ...item, cover: item.image }),
     h('div', { class: 'next-up-main' },
       h('div', { class: 'eyebrow', text: 'Next up' }),
       h('div', { class: 'next-up-title', text: item.title }),
@@ -263,7 +263,7 @@ function releaseCard(item, ctx, profile) {
       class: 'rcard-main', type: 'button',
       onclick: () => openRelease(ctx, item, profile),
     },
-      coverEl({ cover: item.image }),
+      coverEl({ ...item, cover: item.image }),
       h('div', { class: 'book-main' },
         h('div', { class: 'book-title', text: item.title }),
         h('div', { class: 'book-meta', text: subline(item) }),
@@ -321,7 +321,7 @@ function trackSearch(ctx, profile) {
         const state = have.has(hit.id) ? 'On your shelf'
           : tracked.has(hit.id) ? 'Tracking' : null;
         results.append(h('div', { class: 'track-hit' },
-          coverEl({ cover: hit.image }),
+          coverEl({ ...hit, cover: hit.image }),
           h('div', { class: 'book-main' },
             h('div', { class: 'book-title', text: hit.title }),
             h('div', { class: 'book-meta', text: [authorNames(hit), hit.series?.name].filter(Boolean).join(' · ') }),
@@ -395,7 +395,7 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
   const library = profile ? ctx.state.libraries[profile.id] ?? { books: [] } : null;
 
   const extra = h('div', { class: 'release-extra' }, h('p', { class: 'hint', text: 'Loading details from Hardcover…' }));
-  const coverSlot = h('div', { class: 'release-cover' }, coverEl({ cover: item.image }));
+  const coverSlot = h('div', { class: 'release-cover' }, coverEl({ ...item, cover: item.image }));
   const metaSlot = h('div', { class: 'book-main' });
   const when = fmtRelease(item.releaseDate);
 
@@ -462,7 +462,7 @@ export function openRelease(ctx, item, profile, { preview = false } = {}) {
 
   const showDetails = (d) => {
     if (!d) { clear(extra).append(h('p', { class: 'hint', text: 'Hardcover has no more detail on this one yet.' })); return; }
-    if (d.image && !item.image) clear(coverSlot).append(coverEl({ cover: d.image }));
+    if (d.image && !item.image) clear(coverSlot).append(coverEl({ ...d, cover: d.image }));
     paintMeta(d);
     const desc = d.description ? h('p', { class: 'release-desc clamp', text: d.description }) : null;
     fill(extra,
@@ -522,7 +522,7 @@ function history(ctx, item, profile) {
     rows.length
       ? h('ul', { class: 'timeline' }, rows.map(([at, text]) => h('li', {},
           h('span', { class: 'when', text: fmtAgo(at) }), h('span', { text }))))
-      : h('p', { class: 'hint', text: 'Nothing has changed since the watcher first saw it.' }),
+      : emptyNote('Nothing has changed since the watcher first saw it.', 'lantern'),
     waiting.length ? h('p', { class: 'hint', text: `Waiting: ${waiting.map((p) => p.name).join(' and ')}${
       item.source === 'author' ? ` · suggested because of ${item.authorName}` : ''}` }) : null);
 }

@@ -130,6 +130,35 @@ export async function runReleaseCheck({
     }
   }
 
+  // Wishlist books not out yet (or with no date): their release date and
+  // cover as Hardcover has them now. One call for the whole turn's wishes.
+  const wishes = [];
+  for (const [profile, lib] of Object.entries(libraries)) {
+    if (only && !only.has(profile)) continue;
+    for (const b of lib.books ?? []) {
+      if (b.status === 'wish' && b.hardcoverId && (!b.released || b.released >= now || !b.cover)) wishes.push({ profile, book: b });
+    }
+  }
+  const wishUpdates = [];
+  if (wishes.length) {
+    try {
+      const fresh = await paced(() => booksByIds(gql, wishes.slice(0, 100).map((w) => w.book.hardcoverId)));
+      const byId = new Map(fresh.map((b) => [String(b.id), b]));
+      for (const { profile, book } of wishes) {
+        const data = byId.get(String(book.hardcoverId));
+        if (!data) continue;
+        const change = {};
+        if (data.releaseDate && data.releaseDate !== book.released) change.released = data.releaseDate;
+        if (data.releaseYear && data.releaseYear !== book.releaseYear) change.releaseYear = data.releaseYear;
+        if (data.image && !book.cover) change.cover = data.image;
+        if (Object.keys(change).length) wishUpdates.push({ profile, bookId: book.id, ...change });
+      }
+      log(`  ✓ ${wishes.length} wishlist book${wishes.length === 1 ? '' : 's'}, ${wishUpdates.length} updated`);
+    } catch (err) {
+      failures.push(`wishlist books: ${err.message}`);
+    }
+  }
+
   // Count what is actually coming, so a first run - where every series is new
   // and so, by design, silent - can still say something useful.
   let upcoming = 0;
@@ -147,5 +176,6 @@ export async function runReleaseCheck({
     checkedSeries: series.length,
     checkedAuthors: readAuthors.length,
     checkedTracked: tracked.length,
+    wishUpdates,
   };
 }

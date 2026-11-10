@@ -190,8 +190,39 @@ export async function clubDetail(db, me, clubId) {
       votes: votes.filter((v) => v.suggestion_id === s.id).map((v) => v.user_id) })),
     posts: (await all(db, 'SELECT * FROM club_posts WHERE club_id = ? ORDER BY created DESC LIMIT 200', clubId))
       .map((p) => ({ id: p.id, by: p.user_id, bookId: p.book_id, progress: p.progress, text: p.text, created: p.created })),
+    meeting: await meetingOf(db, clubId),
+    checkins: await checkinsOf(db, club),
   };
 }
+
+/** The club's next (or most recent) meeting, with who can make which time. */
+async function meetingOf(db, clubId) {
+  const m = await one(db, 'SELECT * FROM club_meetings WHERE club_id = ? ORDER BY created DESC LIMIT 1', clubId);
+  if (!m) return null;
+  const votes = await all(db, 'SELECT user_id, option FROM club_meeting_votes WHERE meeting_id = ?', m.id);
+  const options = parse(m.options, []);
+  // A settled meeting that has been and gone is over.
+  if (m.chosen != null && options[m.chosen] && new Date(options[m.chosen]) < new Date(Date.now() - 6 * 3600e3)) return null;
+  return { id: m.id, place: m.place, options, chosen: m.chosen, createdBy: m.created_by, created: m.created,
+    votes: options.map((_, i) => votes.filter((v) => v.option === i).map((v) => v.user_id)) };
+}
+
+const readKey = (current) => (current?.book ? `${current.book.hardcoverId}:${current.started ?? ''}` : null);
+
+async function checkinsOf(db, club) {
+  const key = readKey(parse(club.current));
+  if (!key) return [];
+  return (await all(db, 'SELECT user_id, part, at FROM club_checkins WHERE club_id = ? AND read_key = ?', club.id, key))
+    .map((c) => ({ by: c.user_id, part: c.part, at: c.at }));
+}
+
+/** A schedule as clubs keep it: up to 12 parts, each a label and a date to reach it by. */
+function cleanSchedule(raw) {
+  return (Array.isArray(raw) ? raw : []).slice(0, 12)
+    .map((p) => ({ label: clean(p?.label, 60), by: /^\d{4}-\d{2}-\d{2}$/.test(p?.by ?? '') ? p.by : null }))
+    .filter((p) => p.label);
+}
+const MEET_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export async function clubAction(db, me, action, input, areFriends) {
   const id = String(input.id ?? '');
@@ -296,6 +327,64 @@ export async function clubAction(db, me, action, input, areFriends) {
         newCode(12), id, me.id, current?.book?.hardcoverId ?? null, progress, text, at);
       return { ok: true };
     }
+    case 'schedule': {
+      const club = await needHost(db, id, me);
+      const current = parse(club.current);
+      if (!current?.book) no(400, 'Choose the club’s read first.');
+      await run(db, 'UPDATE clubs SET current = ? WHERE id = ?', JSON.stringify({ ...current, schedule: cleanSchedule(input.schedule) }), id);
+      return { ok: true };
+    }
+    case 'checkin': {
+      const club = await needMember(db, id, me);
+      const current = parse(club.current);
+      const part = Math.round(Number(input.part));
+      if (!current?.schedule?.[part]) no(404, 'That part of the schedule is gone.');
+      const key = readKey(current);
+      const had = await one(db, 'SELECT 1 AS x FROM club_checkins WHERE club_id = ? AND read_key = ? AND user_id = ? AND part = ?', id, key, me.id, part);
+      if (had) await run(db, 'DELETE FROM club_checkins WHERE club_id = ? AND read_key = ? AND user_id = ? AND part = ?', id, key, me.id, part);
+      else await run(db, 'INSERT INTO club_checkins (club_id, read_key, user_id, part, at) VALUES (?, ?, ?, ?, ?)', id, key, me.id, part, at);
+      return { ok: true };
+    }
+    case 'meet': {
+      await needMember(db, id, me);
+      const options = [...new Set((input.options ?? []).filter((o) => MEET_AT.test(o)))].sort().slice(0, 5);
+      if (options.length < 1) no(400, 'Offer at least one time.');
+      // A new proposal replaces one not yet settled.
+      const open = await all(db, 'SELECT id FROM club_meetings WHERE club_id = ? AND chosen IS NULL', id);
+      for (const m of open) { await run(db, 'DELETE FROM club_meeting_votes WHERE meeting_id = ?', m.id); await run(db, 'DELETE FROM club_meetings WHERE id = ?', m.id); }
+      const mid = newCode(10);
+      await run(db, 'INSERT INTO club_meetings (id, club_id, place, options, created_by, created) VALUES (?, ?, ?, ?, ?, ?)',
+        mid, id, clean(input.place, 200), JSON.stringify(options), me.id, at);
+      for (let i = 0; i < options.length; i++) await run(db, 'INSERT INTO club_meeting_votes (meeting_id, user_id, option) VALUES (?, ?, ?)', mid, me.id, i);
+      return { ok: true };
+    }
+    case 'meetvote': {
+      await needMember(db, id, me);
+      const m = await one(db, 'SELECT * FROM club_meetings WHERE id = ? AND club_id = ?', String(input.meeting ?? ''), id);
+      if (!m) no(404, 'That meeting is gone.');
+      const option = Math.round(Number(input.option));
+      if (!parse(m.options, [])[option]) no(400, 'Which time?');
+      const had = await one(db, 'SELECT 1 AS x FROM club_meeting_votes WHERE meeting_id = ? AND user_id = ? AND option = ?', m.id, me.id, option);
+      if (had) await run(db, 'DELETE FROM club_meeting_votes WHERE meeting_id = ? AND user_id = ? AND option = ?', m.id, me.id, option);
+      else await run(db, 'INSERT INTO club_meeting_votes (meeting_id, user_id, option) VALUES (?, ?, ?)', m.id, me.id, option);
+      return { ok: true };
+    }
+    case 'meetpick': {
+      await needHost(db, id, me);
+      const m = await one(db, 'SELECT * FROM club_meetings WHERE id = ? AND club_id = ?', String(input.meeting ?? ''), id);
+      if (!m) no(404, 'That meeting is gone.');
+      const option = input.option == null ? null : Math.round(Number(input.option));
+      if (option != null && !parse(m.options, [])[option]) no(400, 'Which time?');
+      await run(db, 'UPDATE club_meetings SET chosen = ?, chosen_at = ?, place = COALESCE(?, place) WHERE id = ?',
+        option, option == null ? null : at, input.place != null ? clean(input.place, 200) : null, m.id);
+      return { ok: true };
+    }
+    case 'meetcancel': {
+      await needHost(db, id, me);
+      const m = await one(db, 'SELECT id FROM club_meetings WHERE id = ? AND club_id = ?', String(input.meeting ?? ''), id);
+      if (m) { await run(db, 'DELETE FROM club_meeting_votes WHERE meeting_id = ?', m.id); await run(db, 'DELETE FROM club_meetings WHERE id = ?', m.id); }
+      return { ok: true };
+    }
     case 'unpost': {
       const club = await needMember(db, id, me);
       const post = await one(db, 'SELECT * FROM club_posts WHERE id = ? AND club_id = ?', String(input.post ?? ''), id);
@@ -319,7 +408,9 @@ async function finishCurrent(db, club) {
 async function deleteClub(db, id) {
   const sugg = await all(db, 'SELECT id FROM club_suggestions WHERE club_id = ?', id);
   for (const s of sugg) await run(db, 'DELETE FROM club_votes WHERE suggestion_id = ?', s.id);
-  for (const t of ['club_suggestions', 'club_posts', 'club_reads', 'club_members']) await run(db, `DELETE FROM ${t} WHERE club_id = ?`, id);
+  const meets = await all(db, 'SELECT id FROM club_meetings WHERE club_id = ?', id);
+  for (const m of meets) await run(db, 'DELETE FROM club_meeting_votes WHERE meeting_id = ?', m.id);
+  for (const t of ['club_suggestions', 'club_posts', 'club_reads', 'club_members', 'club_meetings', 'club_checkins']) await run(db, `DELETE FROM ${t} WHERE club_id = ?`, id);
   await run(db, 'DELETE FROM clubs WHERE id = ?', id);
 }
 
@@ -390,7 +481,78 @@ export async function tidyReservations(db, ownerId, library) {
   return run(db, `DELETE FROM reservations WHERE owner = ? AND book_id NOT IN (${wished.map(() => '?').join(',')})`, ownerId, ...wished);
 }
 
+/* -------------------------------------------------------- notifications */
+
+/**
+ * What has happened in the person's clubs and to their shelf since `since`
+ * that the site can't see from the shelves themselves: club posts, reads,
+ * suggestions, meetings, invitations, wishlist reservations and friend
+ * requests. The site adds friends' reading, reactions, recommendations and
+ * releases, which it already has.
+ */
+export async function notifications(db, me, since) {
+  const after = /^\d{4}-\d{2}-\d{2}/.test(since ?? '') ? since : new Date(Date.now() - 30 * 864e5).toISOString();
+  const out = [];
+  const clubs = await all(db, `SELECT c.* FROM clubs c JOIN club_members m ON m.club_id = c.id WHERE m.user_id = ? AND m.status = 'member'`, me.id);
+  const names = new Map((await all(db, "SELECT id, display_name, colour, sigil FROM users WHERE status = 'active'")).map((u) => [u.id, { id: u.id, name: u.display_name, colour: u.colour, sigil: parse(u.sigil) }]));
+  for (const c of clubs) {
+    const club = { id: c.id, name: c.name, icon: c.icon, colour: c.colour };
+    const current = parse(c.current);
+    if (current?.started && current.started >= after.slice(0, 10) && c.host !== me.id) {
+      out.push({ kind: 'club-read', at: `${current.started}T12:00:00.000Z`, club, by: names.get(c.host), book: current.book });
+    }
+    for (const p of await all(db, 'SELECT * FROM club_posts WHERE club_id = ? AND created > ? AND user_id != ? ORDER BY created DESC LIMIT 20', c.id, after, me.id)) {
+      out.push({ kind: 'club-post', at: p.created, club, by: names.get(p.user_id), progress: p.progress });
+    }
+    for (const s of await all(db, 'SELECT * FROM club_suggestions WHERE club_id = ? AND created > ? AND by != ?', c.id, after, me.id)) {
+      out.push({ kind: 'club-suggest', at: s.created, club, by: names.get(s.by), book: parse(s.book, {}) });
+    }
+    for (const m of await all(db, 'SELECT * FROM club_meetings WHERE club_id = ? AND (created > ? OR chosen_at > ?)', c.id, after, after)) {
+      if (m.chosen != null && m.chosen_at > after) out.push({ kind: 'club-meet-set', at: m.chosen_at, club, when: parse(m.options, [])[m.chosen], place: m.place });
+      else if (m.created_by !== me.id && m.created > after) out.push({ kind: 'club-meet', at: m.created, club, by: names.get(m.created_by) });
+    }
+  }
+  for (const i of await all(db, `SELECT m.*, c.name, c.icon, c.colour FROM club_members m JOIN clubs c ON c.id = m.club_id WHERE m.user_id = ? AND m.status = 'invited'`, me.id)) {
+    out.push({ kind: 'club-invite', at: i.joined ?? nowIso(), club: { id: i.club_id, name: i.name, icon: i.icon, colour: i.colour }, by: names.get(i.invited_by) });
+  }
+  for (const r of await all(db, 'SELECT * FROM reservations WHERE owner = ? AND at >= ? AND by_user != ?', me.id, after.slice(0, 10), me.id)) {
+    out.push({ kind: 'reserved', at: `${r.at}T12:00:00.000Z`, by: names.get(r.by_user), bookId: r.book_id });
+  }
+  for (const f of await all(db, "SELECT * FROM friendships WHERE status = 'pending' AND (a = ? OR b = ?) AND requested_by != ?", me.id, me.id, me.id)) {
+    out.push({ kind: 'friend-request', at: f.created ?? nowIso(), by: names.get(f.requested_by) });
+  }
+  return out.filter((x) => x.by !== undefined || !('by' in x)).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 80);
+}
+
+/* --------------------------------------------------------------- errors */
+
+/** A browser error, kept once and counted after that. */
+export async function recordError(db, me, input, agent) {
+  const message = clean(input.message, 300);
+  if (!message) return { ok: true };
+  const page = clean(input.page, 120);
+  const detail = String(input.detail ?? '').slice(0, 2000);
+  const where = (detail.match(/\/app\/[^\s)]+/) ?? [''])[0];
+  const key = (await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${message}|${where}`)));
+  const hex = [...new Uint8Array(key)].slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const at = nowIso();
+  const had = await one(db, 'SELECT count FROM client_errors WHERE key = ?', hex);
+  if (had) await run(db, 'UPDATE client_errors SET count = count + 1, last = ?, page = ?, user_id = ? WHERE key = ?', at, page, me?.id ?? null, hex);
+  else {
+    // Kept small: the oldest go once there are 200.
+    await run(db, 'INSERT INTO client_errors (key, message, detail, page, user_id, agent, first, last) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      hex, message, detail, page, me?.id ?? null, clean(agent, 160), at, at);
+    await run(db, 'DELETE FROM client_errors WHERE key NOT IN (SELECT key FROM client_errors ORDER BY last DESC LIMIT 200)');
+  }
+  return { ok: true };
+}
+
+export const recentErrors = (db) => all(db, 'SELECT * FROM client_errors ORDER BY last DESC LIMIT 50');
+export const clearErrors = (db) => run(db, 'DELETE FROM client_errors');
+
 export async function forgetUser(db, id) {
+  await run(db, 'DELETE FROM club_meeting_votes WHERE user_id = ?', id);
+  await run(db, 'DELETE FROM club_checkins WHERE user_id = ?', id);
   await run(db, 'DELETE FROM reservations WHERE owner = ? OR by_user = ?', id, id);
   await run(db, 'DELETE FROM club_members WHERE user_id = ?', id);
   await run(db, 'DELETE FROM club_votes WHERE user_id = ?', id);

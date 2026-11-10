@@ -7,7 +7,7 @@
  * shelfView's paint).
  */
 
-import { h, starsEl, authorNames, seriesLabel, fmtReadOnShort } from './dom.js';
+import { h, starsEl, authorNames, seriesLabel, fmtReadOnShort, coverImg, madeCover } from './dom.js';
 import { readOnOf } from '../core/model.js';
 
 const LAYOUT_KEY = 'bookshelf.layout';
@@ -72,12 +72,8 @@ function tile(book, ctx) {
   }
 
   const art = book.cover
-    ? h('img', {
-        class: 'tile-art', src: book.cover, alt: '', loading: 'lazy', decoding: 'async',
-        onerror: (e) => e.target.replaceWith(
-          h('div', { class: 'tile-art tile-fallback' }, h('span', { text: book.title }))),
-      })
-    : h('div', { class: 'tile-art tile-fallback' }, h('span', { text: book.title }));
+    ? coverImg(book, { cls: 'tile-art', width: 240, fallback: () => madeCover(book, 'tile-art') })
+    : madeCover(book, 'tile-art');
 
   return h('button', {
     class: 'tile', type: 'button',

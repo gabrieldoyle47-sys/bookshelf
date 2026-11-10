@@ -172,6 +172,17 @@
     })();
   </script>
 
-  <script type="module" src="./app/ui/main.js"></script>
+  <script>
+    // The live site runs the one bundled file (src/build.js); on this
+    // computer, the modules as they are, so changes show without a build.
+    (function () {
+      var q = location.search;
+      var local = (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && !/[?&]bundle\b/.test(q)) || /[?&]modules\b/.test(q);
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.src = local ? './app/ui/main.js' : './app/bundle.js';
+      document.body.appendChild(s);
+    })();
+  </script>
 </body>
 </html>

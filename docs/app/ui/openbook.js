@@ -11,12 +11,13 @@
  * opening away to the left.
  */
 
-import { h, fill, coverEl, authorNames, starsEl, fmtReadOn, fmtRating, buyLinks } from './dom.js';
-import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary, isFavourite, today } from '../core/model.js';
+import { h, fill, coverEl, authorNames, starsEl, fmtReadOn, fmtRating, buyLinks, libbyUrl } from './dom.js';
+import { readOnOf, cleanTags, isAudiobook, audioHours, REACTIONS, reactionSummary, isFavourite, today, timesRead, DNF_REASONS, lookOf } from '../core/model.js';
 import { sigilEl } from './sigil.js';
 import { shelfPalette } from './art.js';
 import { previouslyOn, whosWhoBox } from './memory.js';
 import { play } from './sound.js';
+import { petWatch } from './pet.js';
 
 const STATUS = { read: 'Finished', reading: 'Reading now', tbr: 'On the to-read pile', abandoned: 'Put down', wish: 'On the wishlist' };
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,6 +30,8 @@ export function openBookView(ctx, book, profile) {
     document.body.append(dialog);
     // Escape and a click outside the book both close it the slow way.
     dialog.addEventListener('cancel', (e) => { e.preventDefault(); dialog.closeBook?.(); });
+    // However it closes (a link inside it, too), the pet settles back down.
+    dialog.addEventListener('close', () => petWatch(false));
     dialog.addEventListener('click', (e) => { if (e.target === dialog || e.target.classList.contains('ob-stage')) dialog.closeBook?.(); });
   }
   if (dialog.open) dialog.close();
@@ -40,7 +43,7 @@ export function openBookView(ctx, book, profile) {
   const pageB = rightPage(ctx, book, profile, () => closeBook());
 
   const front = h('div', { class: 'ob-face front', style: `--cloth:${cloth}` },
-    book.cover ? coverEl(book) : h('div', { class: 'ob-plain-cover' }, h('span', { text: book.title })));
+    book.cover ? coverEl(book, { width: 560 }) : h('div', { class: 'ob-plain-cover' }, h('span', { text: book.title })));
   const back = h('div', { class: 'ob-face back' },
     wide ? [h('div', { class: 'ob-page-inner' }, pageA), h('span', { class: 'ob-folio', text: '1' })] : h('div', { class: 'ob-endpaper' }));
   const cover = h('div', { class: 'ob-cover' }, front, back);
@@ -55,6 +58,7 @@ export function openBookView(ctx, book, profile) {
   dialog.querySelector('.ob-close')?.focus({ preventScroll: true });
 
   play('flip');
+  petWatch(true);
   // Two frames, so the closed state is painted before the cover swings.
   requestAnimationFrame(() => requestAnimationFrame(() => bookEl.classList.remove('closed')));
 
@@ -65,6 +69,7 @@ export function openBookView(ctx, book, profile) {
     play('flip');
     bookEl.classList.add('closed');
     dialog.classList.add('closing');
+    petWatch(false);
     setTimeout(() => {
       dialog.close();
       dialog.closeBook = null;
@@ -93,7 +98,9 @@ function leftPage(ctx, book, profile) {
     ['Progress', book.status === 'reading' && book.progress?.page
       ? `Page ${book.progress.page}${book.pages ? ` of ${book.pages}` : ''}` : null],
     ['Published', book.releaseYear ? String(book.releaseYear) : null],
+    ['Got to', book.status === 'abandoned' && book.dnf?.page ? `Page ${book.dnf.page}${book.pages ? ` of ${book.pages}` : ''}` : null],
   ].filter(([, v]) => v);
+  const reasons = book.status === 'abandoned' ? (book.dnf?.reasons ?? []).map((r) => DNF_REASONS.find(([id]) => id === r)?.[1]).filter(Boolean) : [];
 
   return h('div', { class: 'ob-left' },
     h('div', { class: 'ob-eyebrow', text: book.status === 'wish' ? `On ${profile.name}’s wishlist` : `${profile.name}’s copy · ${STATUS[book.status] ?? ''}` }),
@@ -108,6 +115,10 @@ function leftPage(ctx, book, profile) {
       starsEl(book.rating), h('span', { class: 'ob-rating-n', text: `${fmtRating(book.rating)} / 5` }),
       reactionBar(ctx, profile, book, 'rating')) : null,
     book.note ? h('blockquote', { class: 'ob-note', text: book.note }) : null,
+    reasons.length || book.dnf?.note ? h('div', { class: 'ob-dnf' }, h('span', { class: 'k', text: 'Put down because' }),
+      reasons.length ? h('div', { class: 'ob-tags' }, reasons.map((r) => h('span', { class: 'ob-tag', text: r }))) : null,
+      book.dnf?.note ? h('p', { text: book.dnf.note }) : null) : null,
+    book.status === 'read' ? rereadCounter(ctx, profile, book) : null,
     facts.length ? h('dl', { class: 'ob-facts' }, facts.map(([k, v]) => h('div', {},
       h('dt', { text: k }), h('dd', {}, v,
         k === 'Finished' ? reactionBar(ctx, profile, book, 'finished') : null)))) : null);
@@ -120,6 +131,7 @@ function rightPage(ctx, book, profile, close) {
   const moods = (book.moods ?? []).slice(0, 2);
   const pos = book.series?.position;
   return h('div', { class: 'ob-right' },
+    catchUp(ctx, profile, book),
     tags.length || moods.length ? h('div', { class: 'ob-tags' },
       tags.map((g) => h('span', { class: 'ob-tag', text: g })),
       moods.map((m) => h('span', { class: 'ob-tag mood', text: m.toLowerCase() }))) : null,
@@ -127,12 +139,70 @@ function rightPage(ctx, book, profile, close) {
       ? previouslyOn(ctx, profile, { seriesId: book.series.id, seriesName: book.series.name, before: pos }) : null,
     book.series?.id ? whosWhoBox(ctx, profile, { seriesId: book.series.id, upTo: typeof pos === 'number' ? pos : Infinity }) : null,
     book.status === 'wish' ? wishBox(ctx, book, profile, close) : null,
-    book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book, { released: !(book.released > today()) })) : null,
+    book.status !== 'read' ? h('div', { class: 'ob-buy' }, buyLinks(book, { released: !(book.released > today()) }), libbyRow(ctx, book)) : null,
     h('div', { class: 'ob-actions' },
       h('button', { class: 'btn secondary ob-close', type: 'button', onclick: () => close() }, 'Close'),
       (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) && book.status === 'read' ? favButton(ctx, profile, book) : null,
       (ctx.state.canEdit?.(profile.id) ?? ctx.state.canWrite) ? h('button', { class: 'btn', type: 'button', onclick: () => dialog.editBook() }, 'Edit') : null,
       wishButton(ctx, book, profile)));
+}
+
+/** Borrow from your own library on Libby (set in Settings), or how to set one up. */
+function libbyRow(ctx, book) {
+  if (book.released && book.released > today()) return null;
+  const me = ctx.state.profiles?.find((p) => p.id === ctx.state.me?.id) ?? ctx.state.me;
+  const library = lookOf(me ?? {}).libby;
+  const href = libbyUrl(book, library);
+  return h('div', { class: 'buy-row libby-row' }, h('span', { class: 'buy-label', text: 'Borrow' }),
+    href ? h('a', { class: 'buy-store libby', href, target: '_blank', rel: 'noopener', title: `Look for ${book.title} at your library on Libby` },
+      'Libby', h('span', { class: 'buy-arrow', 'aria-hidden': 'true', text: '↗' }))
+      : h('button', { class: 'buy-store libby', type: 'button', onclick: () => ctx.actions.openSettings?.() }, 'Set up Libby'));
+}
+
+/* --------------------------------------------------------------- re-reads */
+
+/** "Read 3 times", with - and + for the owner. Re-reads don't count in stats or the goal. */
+function rereadCounter(ctx, profile, book) {
+  const own = ctx.state.canEdit?.(profile.id);
+  const n = () => timesRead(ctx.state.libraries[profile.id]?.books.find((b) => b.id === book.id) ?? book);
+  if (!own && n() === 1) return null;
+  const label = h('span', { class: 'ob-reread-n' });
+  const minus = h('button', { class: 'ob-reread-btn', type: 'button', 'aria-label': 'One fewer re-read' }, '−');
+  const plus = h('button', { class: 'ob-reread-btn', type: 'button', 'aria-label': 'Read it again', title: 'Read it again' }, '+');
+  const paint = () => { label.textContent = n() === 1 ? 'Read once' : `Read ${n()} times`; minus.disabled = n() <= 1; };
+  const change = async (d) => { plus.disabled = minus.disabled = true; await ctx.actions.setRereads(profile, book, n() - 1 + d); plus.disabled = false; paint(); };
+  minus.onclick = () => change(-1);
+  plus.onclick = () => change(1);
+  paint();
+  return h('div', { class: 'ob-reread' }, label, own ? [minus, plus] : null);
+}
+
+/* -------------------------------------------------------------- catch-up */
+
+/**
+ * Coming back to a series after a long time: on the next book (not started
+ * yet, or barely started), say how long it's been since the last one and
+ * offer the "Previously on" recap.
+ */
+function catchUp(ctx, profile, book) {
+  const pos = book.series?.position;
+  if (!book.series?.id || typeof pos !== 'number' || !['tbr', 'wish', 'reading'].includes(book.status)) return null;
+  if (book.status === 'reading' && (book.progress?.page ?? 0) > 40) return null;
+  const last = (ctx.state.libraries[profile.id]?.books ?? [])
+    .filter((b) => b.series?.id === book.series.id && b.status === 'read' && typeof b.series.position === 'number' && b.series.position < pos)
+    .map((b) => ({ b, at: b.finished ?? (readOnOf(b)?.length >= 7 ? `${readOnOf(b).slice(0, 7)}-15` : null) }))
+    .filter((x) => x.at).sort((x, y) => y.at.localeCompare(x.at))[0];
+  if (!last) return null;
+  const months = Math.floor((new Date(today()) - new Date(last.at)) / (864e5 * 30.44));
+  if (months < 6) return null;
+  const gap = months >= 24 ? `${Math.floor(months / 12)} years` : months === 12 ? 'a year' : `${months} months`;
+  return h('div', { class: 'ob-catchup', role: 'note' },
+    h('strong', { text: `It’s been ${gap} since ${last.b.title}.` }),
+    h('span', { text: 'Catch up before you start?' }),
+    h('button', { class: 'link-btn', type: 'button', onclick: (e) => {
+      const prev = e.currentTarget.closest('.ob-right')?.querySelector('details.prev-on');
+      if (prev) { prev.open = true; prev.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    } }, 'Previously on…'));
 }
 
 /* --------------------------------------------------------------- wishlist */

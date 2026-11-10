@@ -12,7 +12,7 @@ import {
 import { visibleEvents, unseenEvents, eventStamp } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
 import { profileHero, readingSpotlight } from './shelfhero.js';
-import { emptyArt } from './art.js';
+import { emptyArt, emptyNote } from './art.js';
 
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -34,8 +34,8 @@ function pageHead(title, sub, ...actions) {
     ...actions);
 }
 
-function emptyState(text) {
-  return h('p', { class: 'empty', text });
+function emptyState(text, icon) {
+  return emptyNote(text, icon);
 }
 
 /** One book row. `side` is whatever belongs on the right-hand side. */
@@ -310,7 +310,7 @@ function plainColumn(status, books, ctx, wishes = []) {
     columnHead(STATUS_LABEL[status], books.length),
     books.length
       ? h('div', { class: 'books' }, newest(books).map((b) => bookRow(b, ctx, sideFor(b))))
-      : h('p', { class: 'col-empty', text: status === 'tbr' ? 'Nothing waiting.' : 'Not reading anything.' }),
+      : emptyNote(status === 'tbr' ? 'Nothing waiting.' : 'Not reading anything.', status === 'tbr' ? 'bookmark' : 'book'),
     // Under the books you own and haven't read: the ones you'd like to buy.
     wishes.length ? h('div', { class: 'wish-part' },
       columnHead(STATUS_LABEL.wish, wishes.length),
@@ -334,7 +334,7 @@ function finishedColumn(books, ctx, filters) {
 
   if (!books.length) {
     return h('section', { class: 'shelf-col' }, head,
-      h('p', { class: 'col-empty', text: 'Nothing finished yet.' }));
+      emptyNote('Nothing finished yet.', 'star'));
   }
 
   // Grouping one or two books is just noise.

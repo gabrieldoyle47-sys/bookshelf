@@ -18,7 +18,7 @@ import { sigilEl, iconSvg, SIGILS, SIGIL_NAMES, SIGIL_COLOURS } from './sigil.js
 import { tasteMatch, readTogether, matchPairs, activity } from '../core/together.js';
 import { readingEstimate, today } from '../core/model.js';
 import { openCard } from './card.js';
-import { emptyArt } from './art.js';
+import { emptyArt, emptyNote } from './art.js';
 
 const page = (title, sub, ...actions) => h('div', { class: 'page-head' },
   h('div', {}, h('h1', { text: title }), sub ? h('div', { class: 'sub', text: sub }) : null), h('div', { class: 'spacer' }), actions);
@@ -42,7 +42,7 @@ function bookSearch(ctx, placeholder, onPick) {
         fill(results, hits.map((b) => h('button', { class: 'bs-hit', type: 'button', onclick: () => {
           fill(results); input.value = '';
           onPick({ id: b.id, hardcoverId: String(b.id), title: b.title, author: authorNames(b), image: b.image, cover: b.image, pages: b.pages });
-        } }, coverEl({ cover: b.image }), h('span', {}, h('strong', { text: b.title }), h('span', { class: 'count', text: ` ${authorNames(b)}` })))));
+        } }, coverEl({ ...b, cover: b.image }), h('span', {}, h('strong', { text: b.title }), h('span', { class: 'count', text: ` ${authorNames(b)}` })))));
       } catch (err) { fill(results, h('p', { class: 'hint error', text: err.message })); }
     }, 300);
   });
@@ -62,6 +62,15 @@ const progressRow = (person, pct) => h('div', { class: 'cl-progress' },
   sigilEl(person, { size: 'sm' }), h('span', { class: 'cl-pname', text: person.name }),
   h('span', { class: 'cl-bar' }, h('i', { style: `width:${pct ?? 0}%` })),
   h('span', { class: 'count', text: pct == null ? 'not started' : pct >= 100 ? 'finished' : `${pct}%` }));
+
+/** The book two readers rated most alike - and highest, among equals. */
+function twinBook(mine, theirs) {
+  const key = (b) => String(b.hardcoverId ?? b.id).replace(/^hc:/, '');
+  const byKey = new Map(theirs.filter((b) => b.status === 'read' && b.rating).map((b) => [key(b), b]));
+  return mine.filter((b) => b.status === 'read' && b.rating && byKey.has(key(b)))
+    .map((b) => ({ b, gap: Math.abs(b.rating - byKey.get(key(b)).rating), both: b.rating + byKey.get(key(b)).rating }))
+    .sort((x, y) => x.gap - y.gap || y.both - x.both)[0]?.b ?? null;
+}
 
 /* ================================================================ hub */
 
@@ -121,12 +130,17 @@ export function clubsView(ctx) {
         f.incoming.map((p) => personRow(p, [
           h('button', { class: 'btn small', type: 'button', onclick: async () => { await call('/friends/respond', { id: p.id, accept: true }); await ctx.actions.reloadFriends(); } }, 'Accept'),
           h('button', { class: 'btn secondary small', type: 'button', onclick: async () => { await call('/friends/respond', { id: p.id, accept: false }); paintFriends(); } }, 'Decline')]))) : null,
-      f.friends.length ? h('div', { class: 'friend-cards' }, f.friends.map((p) => {
-        const m = tasteMatch(me, ctx.state.libraries[p.id]?.books ?? []);
-        return h('a', { class: 'friend-card', href: `#/with/${p.id}` }, sigilEl(p, { size: 'lg' }),
-          h('div', {}, h('strong', { text: p.name }), h('div', { class: 'count', text: `@${p.username}` })),
-          h('div', { class: 'fc-match' }, h('strong', { text: `${m.score}%` }), h('span', { text: 'taste match' })));
-      })) : h('p', { class: 'hint', text: 'No friends yet — find someone below.' }),
+      // A leaderboard: friends in order of how alike your tastes are, each
+      // with the book you two feel most the same about.
+      f.friends.length ? h('ol', { class: 'friend-cards leaderboard' }, f.friends
+        .map((p) => ({ p, m: tasteMatch(me, ctx.state.libraries[p.id]?.books ?? []), twin: twinBook(me, ctx.state.libraries[p.id]?.books ?? []) }))
+        .sort((a, b) => b.m.score - a.m.score)
+        .map(({ p, m, twin }, i) => h('li', {}, h('a', { class: `friend-card${i === 0 && f.friends.length > 1 ? ' top' : ''}`, href: `#/with/${p.id}` },
+          h('span', { class: 'fc-rank', text: String(i + 1) }), sigilEl(p, { size: 'lg' }),
+          h('div', { class: 'fc-main' }, h('strong', { text: p.name }),
+            h('div', { class: 'count', text: twin ? `You both feel the same about ${twin.title}` : `@${p.username}` })),
+          h('div', { class: 'fc-match' }, h('strong', { text: `${m.score}%` }), h('span', { text: 'taste match' }))))))
+        : emptyNote('No friends yet — find someone below.', 'owl'),
       f.outgoing.length ? h('div', { class: 'requests' }, h('div', { class: 'k', text: 'Waiting for an answer' }),
         f.outgoing.map((p) => personRow(p, h('span', { class: 'pill', text: 'Request sent' })))) : null,
       h('div', { class: 'find-people' }, h('div', { class: 'k', text: 'Find people' }), search, results));
@@ -232,7 +246,7 @@ export function withView(ctx, friendId) {
       h('div', { class: 'section-head' }, h('h2', { text: 'Buddy read' }), h('span', { class: 'count', text: `since ${fmtDate(b.started)}` }),
         h('div', { class: 'spacer' }),
         h('button', { class: 'link-btn', type: 'button', onclick: async () => { if (confirm('End this buddy read?') && await call('/buddy/end', { friend: friend.id })) paintBuddy(); } }, 'End')),
-      h('div', { class: 'cl-read' }, coverEl({ cover: b.book.cover }),
+      h('div', { class: 'cl-read' }, coverEl(b.book),
         h('div', { class: 'cl-read-main' }, h('strong', { text: b.book.title }), b.book.author ? h('div', { class: 'count', text: b.book.author }) : null,
           progressRow(me, progressIn(libs[me.id], b.book.hardcoverId)),
           progressRow(friend, progressIn(libs[friend.id], b.book.hardcoverId)),
@@ -251,10 +265,10 @@ export function withView(ctx, friendId) {
       h('ul', { class: 'mb-why' }, why.map((w) => h('li', { text: w })))),
     buddy,
     h('section', { class: 'section' }, h('div', { class: 'section-head' }, h('h2', { text: 'Where you disagree' }), h('span', { class: 'count', text: 'biggest rating gaps' })),
-      debates.length ? debates.map(ratingRow) : h('p', { class: 'hint', text: 'No big disagreements yet.' })),
+      debates.length ? debates.map(ratingRow) : emptyNote('No big disagreements yet.', 'sword')),
     agree.length ? h('section', { class: 'section' }, h('div', { class: 'section-head' }, h('h2', { text: 'You both loved' })), agree.map(ratingRow)) : null,
     h('section', { class: 'section' }, h('div', { class: 'section-head' }, h('h2', { text: 'Read by both of you' }), h('span', { class: 'count', text: String(common.length) })),
-      common.length ? common.map(ratingRow) : h('p', { class: 'hint', text: 'Nothing in common yet.' })));
+      common.length ? common.map(ratingRow) : emptyNote('Nothing in common yet.', 'book')));
 }
 
 /* ================================================================ club */
@@ -276,6 +290,7 @@ export function clubView(ctx, clubId) {
   }
 
   function paint(club, members) {
+    currentMe = meId;
     const isHost = club.host === meId;
     const byId = Object.fromEntries(club.members.map((x) => [x.id, x]));
     if (club.myStatus !== 'member') {
@@ -294,10 +309,11 @@ export function clubView(ctx, clubId) {
         club.current.target ? h('span', { class: 'pill', text: `finish by ${fmtDate(club.current.target)}` }) : null,
         h('div', { class: 'spacer' }),
         isHost ? h('button', { class: 'btn secondary small', type: 'button', onclick: async () => { if (confirm('Mark this read finished? It goes on the club shelf.') && await call('/club/finish', { id: club.id })) load(); } }, 'Finished — to the shelf') : null),
-      h('div', { class: 'cl-read' }, coverEl({ cover: club.current.book.cover }),
+      h('div', { class: 'cl-read' }, coverEl(club.current.book),
         h('div', { class: 'cl-read-main' }, h('strong', { class: 'cl-read-title', text: club.current.book.title }),
           club.current.book.author ? h('div', { class: 'count', text: club.current.book.author }) : null,
-          members.map((x) => progressRow(x, progressIn(libs[x.id], club.current.book.hardcoverId))))))
+          members.map((x) => progressRow(x, progressIn(libs[x.id], club.current.book.hardcoverId))))),
+      scheduleBox(club, members, isHost, load))
       : h('section', { class: 'section cl-current' }, h('div', { class: 'section-head' }, h('h2', { text: 'Reading now' })),
         h('p', { class: 'hint', text: isHost ? 'Set the club’s read below, or pick a winner from the vote.' : 'Nothing set yet — suggest a book and vote below.' }),
         isHost ? bookSearch(ctx, 'Set the club read: search for a book', async (book) => {
@@ -325,13 +341,13 @@ export function clubView(ctx, clubId) {
               h('span', { class: 'count', text: `${p.progress != null && p.bookId ? `at ${p.progress}% · ` : ''}${fmtAgo(p.created)}` }),
               p.by === meId || isHost ? h('button', { class: 'link-btn', type: 'button', onclick: async () => { if (confirm('Remove this post?') && await call('/club/unpost', { id: club.id, post: p.id })) load(); } }, 'Remove') : null),
             body));
-      }) : h('p', { class: 'hint', text: 'No posts yet.' }));
+      }) : emptyNote('No posts yet — say what you think so far.', 'quill'));
 
     // The vote on the next read.
     const vote = h('section', { class: 'section cl-vote' },
       h('div', { class: 'section-head' }, h('h2', { text: 'Vote on the next read' })),
       [...club.suggestions].sort((a, b) => b.votes.length - a.votes.length).map((s) => h('div', { class: 'cl-sugg' },
-        coverEl({ cover: s.book.cover }),
+        coverEl(s.book),
         h('div', { class: 'book-main' }, h('div', { class: 'book-title', text: s.book.title }),
           h('div', { class: 'book-meta', text: `${s.book.author ? `${s.book.author} · ` : ''}suggested by ${byId[s.by]?.name ?? 'a member'}` })),
         h('button', { class: `btn ${s.votes.includes(meId) ? '' : 'secondary'} small`, type: 'button', 'aria-pressed': String(s.votes.includes(meId)),
@@ -345,7 +361,7 @@ export function clubView(ctx, clubId) {
     // The club's shelf.
     const shelf = h('section', { class: 'section cl-shelf' },
       h('div', { class: 'section-head' }, h('h2', { text: 'Club shelf' }), h('span', { class: 'count', text: `${club.history.length} read together` })),
-      club.history.length ? club.history.map((b) => h('div', { class: 'cmp-row' }, coverEl({ cover: b.cover }),
+      club.history.length ? club.history.map((b) => h('div', { class: 'cmp-row' }, coverEl(b),
         h('div', { class: 'book-main' }, h('div', { class: 'book-title', text: b.title }), h('div', { class: 'book-meta', text: `finished ${fmtDate(b.finished)}` })),
         h('div', { class: 'cmp-ratings' }, members.map((x) => {
           const mine = (libs[x.id]?.books ?? []).find((y) => String(y.hardcoverId) === String(b.hardcoverId));
@@ -369,7 +385,7 @@ export function clubView(ctx, clubId) {
       feed.length ? h('ol', { class: 'feed small' }, feed.map((it) => h('li', { class: 'cl-feed-item' },
         sigilEl(byId[it.id] ?? {}, { size: 'sm' }),
         h('span', {}, h('strong', { text: byId[it.id]?.name ?? '' }), ` ${{ finished: 'finished', started: 'started', added: 'wants to read', recommended: 'recommended' }[it.type]} `, h('em', { text: it.book.title })),
-        h('span', { class: 'count', text: fmtAgo(it.at) })))) : h('p', { class: 'hint', text: 'Nothing yet.' }),
+        h('span', { class: 'count', text: fmtAgo(it.at) })))) : emptyNote('Nothing yet.', 'lantern'),
       h('div', { class: 'row cl-side-actions' },
         isHost ? h('button', { class: 'btn secondary small', type: 'button', onclick: () => newClub(ctx, club) }, 'Edit club') : null,
         h('button', { class: 'link-btn danger', type: 'button', onclick: async () => {
@@ -379,11 +395,131 @@ export function clubView(ctx, clubId) {
     fill(root,
       h('div', { class: 'club-head', style: `--club:${club.colour}` }, clubBadge(club, 'xl'),
         h('div', {}, h('div', { class: 'eyebrow', text: 'Book club' }), h('h1', { text: club.name }), club.description ? h('div', { class: 'sub', text: club.description }) : null)),
-      h('div', { class: 'club-columns' }, h('div', { class: 'club-main' }, current, discussion, vote, shelf), side));
+      h('div', { class: 'club-columns' }, h('div', { class: 'club-main' }, current, meetBox(club, members, isHost, load), discussion, vote, shelf), side));
   }
 
   load();
   return root;
+}
+
+/* ------------------------------------------------------ reading schedule */
+
+/**
+ * The club read in parts ("Chapters 1-12, by Friday"), each ticked off by
+ * the members who have got there. The host writes it, or splits the read
+ * evenly up to the finish-by date.
+ */
+function scheduleBox(club, members, isHost, reload) {
+  const parts = club.current.schedule ?? [];
+  const done = (i, who) => (club.checkins ?? []).some((c) => c.part === i && c.by === who);
+  const box = h('div', { class: 'cl-schedule' });
+  const view = () => fill(box,
+    h('div', { class: 'cl-sched-head' }, h('span', { class: 'k', text: 'Schedule' }),
+      isHost ? h('button', { class: 'link-btn', type: 'button', onclick: edit }, parts.length ? 'Change' : 'Make a schedule') : null),
+    parts.length ? h('ol', { class: 'cl-parts' }, parts.map((p, i) => {
+      const mine = done(i, meIdOf(club));
+      const late = p.by && p.by < today() && !mine;
+      return h('li', { class: `cl-part${mine ? ' done' : ''}${late ? ' late' : ''}` },
+        h('button', { class: 'cl-tick', type: 'button', 'aria-pressed': String(mine), 'aria-label': mine ? `Untick ${p.label}` : `I’ve read ${p.label}`,
+          onclick: async () => { if (await call('/club/checkin', { id: club.id, part: i })) reload(); } }, mine ? '✓' : ''),
+        h('div', { class: 'cl-part-main' }, h('strong', { text: p.label }), p.by ? h('span', { class: 'count', text: `by ${fmtDate(p.by)}` }) : null),
+        h('div', { class: 'cl-part-who' }, members.filter((m) => done(i, m.id)).map((m) => sigilEl(m, { size: 'sm' }))));
+    })) : h('p', { class: 'hint', text: isHost ? 'Split the read into parts with dates, so everyone moves through it together.' : 'No schedule — read at your own pace.' }));
+  function edit() {
+    const rows = (parts.length ? parts : [{ label: '', by: '' }]).map((p) => ({ ...p }));
+    const list = h('div', { class: 'cl-sched-edit' });
+    const paintRows = () => fill(list, rows.map((r, i) => h('div', { class: 'row' },
+      h('input', { type: 'text', value: r.label, placeholder: `Part ${i + 1}, e.g. Chapters 1–10`, maxlength: '60', oninput: (e) => { r.label = e.target.value; } }),
+      h('input', { type: 'date', value: r.by ?? '', onchange: (e) => { r.by = e.target.value; } }),
+      h('button', { class: 'link-btn', type: 'button', 'aria-label': 'Remove this part', onclick: () => { rows.splice(i, 1); paintRows(); } }, '✕'))));
+    const split = () => {
+      const n = Math.max(2, Math.min(8, Number(prompt('Split into how many parts?', '4')) || 0));
+      const pages = club.current.book.pages;
+      const start = new Date(club.current.started ?? today());
+      const end = club.current.target ? new Date(club.current.target) : new Date(start.getTime() + n * 7 * 864e5);
+      rows.splice(0, rows.length, ...Array.from({ length: n }, (_, i) => ({
+        label: pages ? `Pages ${Math.round((pages * i) / n) + 1}–${Math.round((pages * (i + 1)) / n)}` : `Part ${i + 1} of ${n}`,
+        by: new Date(start.getTime() + ((end - start) * (i + 1)) / n).toISOString().slice(0, 10),
+      })));
+      paintRows();
+    };
+    paintRows();
+    fill(box, h('div', { class: 'cl-sched-head' }, h('span', { class: 'k', text: 'Schedule' })), list,
+      h('div', { class: 'row' },
+        h('button', { class: 'btn secondary small', type: 'button', onclick: () => { rows.push({ label: '', by: '' }); paintRows(); } }, '+ Part'),
+        h('button', { class: 'btn secondary small', type: 'button', onclick: split }, 'Split evenly'),
+        h('div', { class: 'spacer' }),
+        h('button', { class: 'link-btn', type: 'button', onclick: view }, 'Cancel'),
+        h('button', { class: 'btn small', type: 'button', onclick: async () => {
+          if (await call('/club/schedule', { id: club.id, schedule: rows.filter((r) => r.label.trim()) })) reload();
+        } }, 'Save schedule')));
+  }
+  view();
+  return box;
+}
+
+let currentMe = null;
+const meIdOf = () => currentMe;
+
+/* --------------------------------------------------------------- meetings */
+
+const fmtWhen = (iso) => new Date(iso).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+/**
+ * Meeting up: someone offers a few times, everyone ticks what they can make,
+ * the host settles it - then it shows the time, the place and "Add to calendar".
+ */
+function meetBox(club, members, isHost, reload) {
+  const m = club.meeting;
+  const sec = h('section', { class: 'section cl-meet' }, h('div', { class: 'section-head' }, h('h2', { text: 'Meet' })));
+  const propose = () => {
+    const opts = ['', '', ''];
+    const place = h('input', { type: 'text', maxlength: '200', placeholder: 'Where — an address, a café, or a video link', value: m?.place ?? '' });
+    const inputs = h('div', { class: 'cl-meet-opts' });
+    const paintOpts = () => fill(inputs, opts.map((o, i) => h('input', { type: 'datetime-local', value: o, 'aria-label': `Time ${i + 1}`, onchange: (e) => { opts[i] = e.target.value; } })),
+      opts.length < 5 ? h('button', { class: 'link-btn', type: 'button', onclick: () => { opts.push(''); paintOpts(); } }, '+ another time') : null);
+    paintOpts();
+    fill(sec, h('div', { class: 'section-head' }, h('h2', { text: 'Meet' })),
+      h('p', { class: 'hint', text: 'Offer a few times; everyone ticks the ones they can make.' }), inputs, place,
+      h('div', { class: 'row' }, h('div', { class: 'spacer' }),
+        m ? h('button', { class: 'link-btn', type: 'button', onclick: () => reload() }, 'Cancel') : null,
+        h('button', { class: 'btn small', type: 'button', onclick: async () => {
+          const options = opts.filter(Boolean).map((o) => o.slice(0, 16));
+          if (!options.length) return toast('Pick at least one time.', true);
+          if (await call('/club/meet', { id: club.id, options, place: place.value })) reload();
+        } }, 'Offer these times')));
+  };
+  if (!m) {
+    sec.append(h('p', { class: 'hint', text: 'No meeting planned.' }), h('button', { class: 'btn secondary small', type: 'button', onclick: propose }, 'Plan a meeting'));
+    return sec;
+  }
+  if (m.chosen != null) {
+    const when = m.options[m.chosen];
+    const { worker } = storage.getConfig();
+    const ics = worker ? `${worker}/ics?${new URLSearchParams({ kind: 'meeting', id: m.id, club: club.name, start: when, place: m.place ?? '', book: club.current?.book?.title ?? '' })}` : null;
+    const days = Math.ceil((new Date(when) - new Date()) / 864e5);
+    sec.append(h('div', { class: 'cl-meet-set' },
+      h('div', { class: 'cl-meet-when' }, h('strong', { text: fmtWhen(when) }), h('span', { class: 'pill', text: days <= 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days` })),
+      m.place ? (/^https:\/\//.test(m.place) ? h('a', { href: m.place, target: '_blank', rel: 'noopener', text: 'Join the video call ↗' }) : h('div', { class: 'count', text: m.place })) : null,
+      h('div', { class: 'row' },
+        ics ? h('a', { class: 'btn secondary small', href: ics }, h('span', { class: 'ico ico-calendar', 'aria-hidden': 'true' }), 'Add to calendar') : null,
+        isHost ? h('button', { class: 'link-btn', type: 'button', onclick: propose }, 'Change') : null,
+        isHost ? h('button', { class: 'link-btn danger', type: 'button', onclick: async () => { if (confirm('Call off this meeting?') && await call('/club/meetcancel', { id: club.id, meeting: m.id })) reload(); } }, 'Call off') : null)));
+    return sec;
+  }
+  const best = Math.max(...m.votes.map((v) => v.length));
+  sec.append(h('p', { class: 'hint', text: `Tick every time you can make${m.place ? ` — ${m.place}` : ''}.` }),
+    h('div', { class: 'cl-meet-grid' }, m.options.map((o, i) => {
+      const mine = m.votes[i].includes(currentMe);
+      return h('div', { class: `cl-meet-opt${m.votes[i].length === best && best > 0 ? ' best' : ''}` },
+        h('button', { class: 'cl-tick', type: 'button', 'aria-pressed': String(mine), onclick: async () => { if (await call('/club/meetvote', { id: club.id, meeting: m.id, option: i })) reload(); } }, mine ? '✓' : ''),
+        h('div', { class: 'cl-part-main' }, h('strong', { text: fmtWhen(o) }), h('span', { class: 'count', text: `${m.votes[i].length} of ${members.length} can make it` })),
+        h('div', { class: 'cl-part-who' }, members.filter((x) => m.votes[i].includes(x.id)).map((x) => sigilEl(x, { size: 'sm' }))),
+        isHost ? h('button', { class: 'btn secondary small', type: 'button', onclick: async () => { if (await call('/club/meetpick', { id: club.id, meeting: m.id, option: i })) reload(); } }, 'Settle on this') : null);
+    })),
+    isHost ? h('div', { class: 'row' }, h('button', { class: 'link-btn', type: 'button', onclick: propose }, 'Offer different times'),
+      h('button', { class: 'link-btn danger', type: 'button', onclick: async () => { if (confirm('Call off this meeting?') && await call('/club/meetcancel', { id: club.id, meeting: m.id })) reload(); } }, 'Call off')) : null);
+  return sec;
 }
 
 function inviteBox(ctx, club, reload) {

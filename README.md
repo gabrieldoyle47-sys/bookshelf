@@ -215,6 +215,40 @@ shelf it actually covers rather than implying it knows the whole picture.
   posts from further into the book stay blurred until you click, a vote on the next
   read, the club's shelf of finished reads, a group taste match and a feed.
 
+## Around the shelf
+
+- **Spines** are wider with the title on two lines (split at a subtitle or the middle),
+  a double gold band at the head for five stars, a brass plate on the shelf under each
+  series, and your sigil stamped at the foot once you've finished a book — it thunks
+  on the next time you look.
+- **A pet on the rug** — a black cat or a Cavalier King Charles (Decorate → Room). It
+  breathes, flicks its tail, and looks up while a book is open.
+- **On a phone** the case shows one shelf at a time; swipe, or use the arrows and dots
+  (Arrange → On a phone → Whole case for the tall view). Tapping a spine fans it out
+  with its neighbours as covers, so you open the one you meant.
+- **Books without a cover yet** get a typeset cloth cover in their series colour.
+  Covers load resized (through the open wsrv.nl image proxy) — about a twentieth of
+  the size of Hardcover's originals.
+- **The open book**: a re-read counter on finished books (it doesn't change stats or
+  the goal); why you put a book down, with how far you got (“Might come back later”
+  keeps the series watched); a nudge to catch up when you return to a series after six
+  months or more; and “Borrow on Libby” from your own library (Settings).
+
+## Notifications, clubs and Wrapped
+
+- **The bell** (top right) gathers friends starting and finishing books, reactions,
+  recommendations, release news, club posts, reads, suggestions, meetings and invites,
+  wishlist reservations and friend requests. Read state follows you between devices.
+- **Clubs** can plan meetings (offer times, everyone ticks what they can make, the host
+  settles it, “Add to calendar”) and split the read into a schedule everyone ticks off.
+  The Book clubs page ranks friends by taste match.
+- **Play your year** ends with a group chapter — everyone's year and a few awards — and
+  every slide can be shared as a 1080×1920 picture for an Instagram story. **Poster**
+  draws the year's covers on shelves with your numbers and sigil, to print (2400×3200)
+  or share. Admin can hold this year's until 1 December.
+- **Errors** in anyone's browser are reported (message and code location, nothing
+  personal) and listed on the Admin page.
+
 ## Wishlist
 
 - **Owned vs wanted.** "Want to read" is a book you have and haven't read; **Wishlist**
@@ -253,7 +287,7 @@ minute. Each person is also held to 40 lookups a minute while using the site.
 
 ```
 docs/app/core/    shared by the browser, the API and the watcher — hardcover, model, diff engine
-docs/app/ui/      the website
+docs/app/ui/      the website (docs/app/bundle.js is all of it bundled, built by src/build.js)
 api/              the accounts API (Cloudflare Worker + D1): auth, shelves, friends, clubs, admin
 src/              run-check-api.js (the nightly watcher), serve.js (local dev)
 tools/            the shelf migration and the room-art generator

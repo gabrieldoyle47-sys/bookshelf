@@ -12,6 +12,29 @@ export const STATUSES = ['tbr', 'reading', 'read', 'abandoned', 'wish'];
 /** Books on the to-read side of the shelf: owned and waiting, or wished for. */
 export const onPile = (b) => b?.status === 'tbr' || b?.status === 'wish';
 
+/**
+ * Why a book was put down. "Might come back later" is a pause, not a verdict:
+ * it does not count against the series the way giving up does.
+ */
+export const DNF_REASONS = [
+  ['slow', 'Too slow'], ['not-for-me', 'Not for me'], ['style', 'Writing style'], ['characters', 'Didn’t connect with the characters'],
+  ['content', 'Content I didn’t want'], ['lost-interest', 'Lost interest'], ['later', 'Might come back later'],
+];
+/** A clean did-not-finish record, or null. */
+export function cleanDnf(raw) {
+  if (!raw) return null;
+  const ids = DNF_REASONS.map(([id]) => id);
+  const reasons = [...new Set((raw.reasons ?? []).filter((r) => ids.includes(r)))];
+  const note = String(raw.note ?? '').trim().slice(0, 500);
+  const page = Number(raw.page) > 0 ? Math.round(Number(raw.page)) : null;
+  return reasons.length || note || page ? { reasons, note, page } : null;
+}
+/** Paused rather than given up on: kept out of the dislike rules. */
+export const pausedBook = (book) => book.status === 'abandoned' && (book.dnf?.reasons ?? []).includes('later');
+
+/** Times a finished book has been read: once, plus its re-reads. */
+export const timesRead = (book) => 1 + Math.max(0, Math.round(Number(book.rereads) || 0));
+
 /** Ratings at or below this drop the series off the watchlist. */
 export const DISLIKE_AT_OR_BELOW = 2;
 /** Ratings at or above this start watching the author, not just the series. */
@@ -333,7 +356,7 @@ export function deriveWatchlist(library) {
   for (const book of library.books) {
     if (!book.series?.id) continue;
     const disliked =
-      book.status === 'abandoned' ||
+      (book.status === 'abandoned' && !pausedBook(book)) ||
       (typeof book.rating === 'number' && book.rating <= DISLIKE_AT_OR_BELOW);
     if (disliked) vetoed.add(book.series.id);
   }
@@ -894,9 +917,10 @@ export const ROOM_OPTIONS = {
   wood: ['room', 'walnut', 'oak', 'cherry', 'ebony', 'driftwood'],
   rug: ['room', 'crimson', 'navy', 'sage', 'gold', 'none'],
   lamp: ['room', 'library', 'fire', 'rain', 'cafe'],
+  pet: ['none', 'cat', 'dog'],
 };
 
-const DEFAULT_LOOK = { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', seasons: false, stamp: true };
+const DEFAULT_LOOK = { palette: 'classic', font: 'classic', room: 'library', wall: 'room', wood: 'room', rug: 'room', lamp: 'room', pet: 'none', seasons: false, stamp: true };
 
 /**
  * A person's whole look, with anything missing or unknown at its default -
@@ -918,9 +942,12 @@ function cleanLook(raw) {
     wood: pick(raw.wood, ROOM_OPTIONS.wood, 'room'),
     rug: pick(raw.rug, ROOM_OPTIONS.rug, 'room'),
     lamp: pick(raw.lamp, ROOM_OPTIONS.lamp, 'room'),
+    pet: pick(raw.pet, ROOM_OPTIONS.pet, 'none'),
     seasons: raw.seasons === true,
     // The sigil stamped at the foot of every spine: on unless turned off.
     stamp: raw.stamp !== false,
+    // The Libby library the member borrows from (its short name in libbyapp.com/library/<name>).
+    libby: /^[a-z0-9][a-z0-9-]{1,40}$/.test(String(raw.libby ?? '')) ? raw.libby : '',
   };
 }
 

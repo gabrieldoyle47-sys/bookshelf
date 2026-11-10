@@ -8,7 +8,7 @@
  * now-playing treatment), progress, and a finish estimate.
  */
 
-import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
+import { h, fill, coverEl, coverSrc, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
 import { readOnOf, readYearOf, readingEstimate, today } from '../core/model.js';
 import { bookshelf, shelfPalette } from './art.js';
 import { cardButton } from './together.js';
@@ -16,7 +16,7 @@ import { carousel } from './carousel.js';
 import { plural } from './views.js';
 
 /** A cover as a CSS background, with anything that could escape url("…") removed. */
-export const cssArt = (src) => (src ? `--art:url("${String(src).replace(/["\\\n\r]/g, '')}")` : '');
+export const cssArt = (src, width = 600) => (src ? `--art:url("${String(coverSrc(src, width)).replace(/["\\\n\r]/g, '')}")` : '');
 
 export function profileHero(ctx, profile, library, { tally, actions }) {
   const books = library.books ?? [];
