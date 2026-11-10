@@ -9,7 +9,6 @@
 import { h, fill, toast } from './dom.js';
 import * as storage from './storage.js';
 import { avatar } from './together.js';
-import { PROFILE_COLOURS } from '../core/model.js';
 
 /* --------------------------------------------------------- sign in / join */
 
@@ -23,7 +22,9 @@ export function signInScreen(onSignedIn) {
   let signupMode = 'open';
   const box = h('div', { class: 'auth-card' });
   const page = h('div', { class: 'auth-page' },
-    h('div', { class: 'auth-brand' }, h('span', { class: 'brand-mark' }), h('span', { text: 'Bookshelf' })),
+    h('div', { class: 'auth-brand' },
+      // The same book mark as the sidebar's (index.html); it was an empty square here.
+      document.querySelector('.brand .brand-mark')?.cloneNode(true) ?? h('span', { class: 'brand-mark' }), h('span', { text: 'Bookshelf' })),
     box,
     h('p', { class: 'auth-foot hint', text: 'A small reading club’s shelves. Your books are only visible to signed-in members.' }));
   storage.api('/auth/mode').then((m) => { signupMode = m.signupMode; if (mode === 'signup') paint(); }).catch(() => {});
@@ -130,11 +131,7 @@ export function accountSection(ctx, me, { onChanged, onSignedOut }) {
   const msg = (el, text, bad = false) => { el.textContent = text; el.classList.toggle('error', bad); };
 
   const nameInput = h('input', { type: 'text', value: me.name, maxlength: '30' });
-  let colour = me.colour ?? PROFILE_COLOURS[0];
-  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Colour' }, PROFILE_COLOURS.map((c) => h('button', {
-    class: 'swatch', type: 'button', role: 'radio', 'aria-checked': String(c === colour), style: `background:${c}`, 'aria-label': `Colour ${c}`,
-    onclick: (e) => { colour = c; for (const s of swatches.children) s.setAttribute('aria-checked', String(s === e.currentTarget)); },
-  })));
+
   const profileMsg = h('span', { class: 'hint' });
 
   const current = h('input', { type: 'password', autocomplete: 'current-password' });
@@ -156,9 +153,10 @@ export function accountSection(ctx, me, { onChanged, onSignedOut }) {
       h('h3', { text: 'You' }),
       h('p', { class: 'hint', text: `Signed in as @${me.username}${me.role === 'admin' ? ' · admin' : ''}` }),
       h('label', { class: 'field' }, h('span', { text: 'Display name' }), nameInput),
-      h('div', { class: 'field' }, h('span', { text: 'Colour' }), swatches),
+      // Your colour is your sigil's, chosen on your library card.
+      h('p', { class: 'hint', text: 'Your colour, sigil, banner and bio are on your library card — the round button at the top right, then Edit card.' }),
       h('div', { class: 'row' }, h('button', { class: 'btn small', type: 'button', onclick: (e) => run(e.currentTarget, profileMsg, async () => {
-        await storage.api('/me', { method: 'PATCH', body: { displayName: nameInput.value, colour } });
+        await storage.api('/me', { method: 'PATCH', body: { displayName: nameInput.value } });
         onChanged();
       }, 'Saved') }, 'Save'), profileMsg)),
     h('section', { class: 'acct-section' },

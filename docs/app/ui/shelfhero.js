@@ -11,7 +11,7 @@
 import { h, fill, coverEl, authorNames, seriesLabel, fmtDate, fmtReadOnShort, countUp } from './dom.js';
 import { readOnOf, readYearOf, readingEstimate, today } from '../core/model.js';
 import { bookshelf, shelfPalette } from './art.js';
-import { avatar, cardButton } from './together.js';
+import { cardButton } from './together.js';
 import { carousel } from './carousel.js';
 import { plural } from './views.js';
 

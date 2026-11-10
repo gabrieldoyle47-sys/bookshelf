@@ -12,7 +12,7 @@
  * does not throw them away.
  */
 
-import { h, fill, coverEl } from './dom.js';
+import { h, coverEl } from './dom.js';
 import { cleanTags, onShelfIds } from '../core/model.js';
 import { becauseYouLoved, vibeMatches } from '../core/suggest.js';
 import { AWARD_LISTS } from '../core/hardcover.js';

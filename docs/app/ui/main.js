@@ -12,12 +12,10 @@ import {
 import { scoreSuggestions, discoveryGenres } from '../core/suggest.js';
 import {
   bookFromHardcover, deriveWatchlist, applyStatusDates, STATUSES, readOnOf, isValidReadOn, today as todayISO,
-  normaliseRating, hideBook, unhideBook, trackBook, untrackBook, addRecommendation, answerRecommendation, setGoal,
+  normaliseRating, hideBook, unhideBook, trackBook, untrackBook, answerRecommendation, setGoal,
   reopenRecommendation, restoreBook, datesProblem,
-  setProgress, goalProgress,
-  addReaction, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, PROFILE_THEMES, lookOf, setProfileLook, seasonOf,
-  toggleFavourite, markAnnounced, cleanTags, bookFromShelf, setStatus,
-} from '../core/model.js';
+  setProgress, goalProgress, upsertSeriesPerson, removeSeriesPerson, setAudiobook, isAudiobook, audioHours, lookOf, setProfileLook, seasonOf,
+  toggleFavourite, markAnnounced, cleanTags, bookFromShelf, setStatus,} from '../core/model.js';
 import { unseenEvents, eventStamp } from '../core/watch.js';
 import { shelfView, whatsNewView } from './views.js';
 import { avatar } from './together.js';

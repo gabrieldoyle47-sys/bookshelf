@@ -106,9 +106,13 @@ function publicProfile(u, extra = {}) {
   // `lastSeen` is how far through What's new they have read (the name the
   // site has always used); activity is `last_seen`, for the admin page only.
   const parsed = (v) => { try { return v ? JSON.parse(v) : null; } catch { return null; } };
+  // A member's colour is their sigil's, once they have chosen one, so they
+  // are the same colour everywhere (chips, charts, their shelf header).
+  const sigil = parsed(u.sigil);
+  const colour = /^#[0-9a-f]{6}$/i.test(sigil?.bg ?? '') ? sigil.bg : u.colour;
   return {
-    id: u.id, username: u.username, name: u.display_name, colour: u.colour, look, lastSeen: u.news_seen,
-    bio: u.bio ?? '', sigil: parsed(u.sigil), banner: parsed(u.banner), joined: u.created, ...extra,
+    id: u.id, username: u.username, name: u.display_name, colour, look, lastSeen: u.news_seen,
+    bio: u.bio ?? '', sigil, banner: parsed(u.banner), joined: u.created, ...extra,
   };
 }
 

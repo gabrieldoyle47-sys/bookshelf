@@ -12,8 +12,7 @@
  */
 
 import {
-  h, clear, fill, buyLinks, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, toast, isPlaceholderDate,
-} from './dom.js';
+  h, clear, fill, buyLinks, fmtDate, fmtRelease, fmtAgo, authorNames, coverEl, isPlaceholderDate,} from './dom.js';
 import { deriveWatchlist, hiddenIds, onShelfIds, today } from '../core/model.js';
 import { getConfig } from './storage.js';
 import { previouslyOn } from './memory.js';
@@ -347,7 +346,7 @@ function trackSearch(ctx, profile) {
 
   const input = h('input', {
     type: 'search', class: 'track-input',
-    placeholder: 'Track any upcoming book — search by title or author…',
+    placeholder: 'Track an upcoming book…',
     'aria-label': 'Search for a book to track', autocomplete: 'off', spellcheck: 'false',
     oninput: (e) => {
       clearTimeout(timer);

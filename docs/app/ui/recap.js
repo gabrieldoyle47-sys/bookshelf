@@ -6,7 +6,7 @@
  */
 
 import { playStory } from './story.js';
-import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, starsEl, fmtRating, toast } from './dom.js';
+import { h, clear, fill, fmtReadOnShort, authorNames, coverEl, fmtRating, toast } from './dom.js';
 import { goalProgress, today } from '../core/model.js';
 import { recapYears, yearInBooks } from '../core/recap.js';
 import { plural } from './views.js';

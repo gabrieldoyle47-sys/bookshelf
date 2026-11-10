@@ -23,10 +23,10 @@ import { arrangeShelf, shelfOrder, MORE, mergeLayout, placeTrophies, shelvable, 
 import { readOnOf, cleanTags, isAudiobook, audioHours, today, lookOf, seasonOf, isFavourite, onPile } from '../core/model.js';
 import { earnedBadges } from '../core/badges.js';
 import { badgeStamp } from './badges.js';
-import { sigilMark, sigilEl } from './sigil.js';
+import { sigilEl } from './sigil.js';
 import { completedSeries } from '../core/watch.js';
 import { shelfPalette, emptyArt, ornament, ORNAMENT_CHOICES, trinketFor, trinketArt } from './art.js';
-import { avatar, cardButton } from './together.js';
+import { cardButton } from './together.js';
 import { roomBox, roomFront, cornerPlant, fitRoom, sceneSwitch, hangingBasket, lightRoom } from './room.js';
 import { playRoom } from './sound.js';
 import { enableDrag, readShelves, readTop } from './shelfdrag.js';

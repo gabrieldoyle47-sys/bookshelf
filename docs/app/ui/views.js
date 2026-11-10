@@ -8,8 +8,7 @@ import {
   h, clear, starsEl, fmtDate, fmtDays, fmtReadOnShort, authorNames, coverEl, seriesLabel, daysUntil,
 } from './dom.js';
 import {
-  readOnOf, readYearOf, today, tagCounts, matchesQuery, matchesRating, RATING_FILTERS,
-} from '../core/model.js';
+  readOnOf, readYearOf, today, matchesQuery, matchesRating, RATING_FILTERS,} from '../core/model.js';
 import { visibleEvents, unseenEvents, eventStamp } from '../core/watch.js';
 import { getLayout, layoutToggle, coverWall } from './covers.js';
 import { profileHero, readingSpotlight } from './shelfhero.js';
@@ -237,9 +236,12 @@ export function shelfView(ctx, profile) {
     }
 
     const filtering = filters.query || filters.rating !== 'all';
-    tally.textContent = filtering
-      ? `${books.length} of ${library.books.length} books`
-      : plural(library.books.length, 'book');
+    // Books you have; the wishlist is counted on its own.
+    const owned = (list) => list.filter((b) => b.status !== 'wish').length;
+    const wishes = library.books.length - owned(library.books);
+    tally.textContent = (filtering
+      ? `${owned(books)} of ${owned(library.books)} books`
+      : plural(owned(library.books), 'book')) + (wishes ? ` · ${wishes} wished for` : '');
 
     const abandoned = of('abandoned');
     clear(extra).append(abandoned.length ? h('details', { class: 'optional' },

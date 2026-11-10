@@ -1479,8 +1479,8 @@ button.card.release:hover .book-title { color: var(--accent); }
   font-size: .78rem; font-weight: 600; color: var(--accent); border-radius: 6px; padding: .2rem .25rem;
 }
 .buy-menu summary::-webkit-details-marker { display: none; }
-.buy-caret { font-size: .7em; transition: transform var(--fast); }
-.buy-menu[open] .buy-caret { transform: rotate(180deg); }
+.buy-caret { display: inline-block; width: 6px; height: 6px; margin-left: 6px; font-size: 0; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--fast); }
+.buy-menu[open] .buy-caret { transform: translateY(1px) rotate(225deg); }
 .buy-pop {
   position: fixed; z-index: 60;
   display: grid; gap: .2rem; padding: .35rem; min-width: 150px;
@@ -4157,3 +4157,14 @@ a.person-main:hover strong { text-decoration: underline; }
 .lc-banner.art, .banner-choice.art { position: relative; overflow: hidden; }
 .banner-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .banner-choice.art span { position: relative; z-index: 1; }
+
+/* On the darker wood of dark mode, ink pressed in disappears; the stamps are
+   gilded instead - the family colour warmed with gold leaf. */
+:root[data-theme="dark"] .badge-stamp.pressed { color: color-mix(in srgb, var(--ink) 40%, #e9cf9c); mix-blend-mode: normal; opacity: .85;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / .5)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge-stamp.pressed { color: color-mix(in srgb, var(--ink) 40%, #e9cf9c); mix-blend-mode: normal; opacity: .85;
+    filter: drop-shadow(0 1px 0 rgb(0 0 0 / .5)); }
+}
+/* Admin's sections sit in a grid; the general section margins doubled the gaps. */
+.admin-page > .section, .admin-page > section { margin: .4rem 0; }
